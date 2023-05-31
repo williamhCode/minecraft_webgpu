@@ -40,14 +40,37 @@ int main(int, char **) {
   Adapter adapter = instance.requestAdapter(adapterOpts);
   std::cout << "Got adapter: " << adapter << std::endl;
 
+  SupportedLimits supportedLimits;
+  adapter.getLimits(&supportedLimits);
+
+  // Don't forget to = Default
+  RequiredLimits requiredLimits = Default;
+  requiredLimits.limits.maxVertexAttributes = 2;
+  requiredLimits.limits.maxVertexBuffers = 1;
+  requiredLimits.limits.maxBufferSize = 6 * 5 * sizeof(float);
+  requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
+  requiredLimits.limits.minStorageBufferOffsetAlignment =
+      supportedLimits.limits.minStorageBufferOffsetAlignment;
+  requiredLimits.limits.minUniformBufferOffsetAlignment =
+      supportedLimits.limits.minUniformBufferOffsetAlignment;
+  requiredLimits.limits.maxInterStageShaderComponents = 3;
+
   std::cout << "Requesting device..." << std::endl;
   DeviceDescriptor deviceDesc;
   deviceDesc.label = "My Device";
   deviceDesc.requiredFeaturesCount = 0;
-  deviceDesc.requiredLimits = nullptr;
+  deviceDesc.requiredLimits = &requiredLimits;
   deviceDesc.defaultQueue.label = "The default queue";
   Device device = adapter.requestDevice(deviceDesc);
   std::cout << "Got device: " << device << std::endl;
+
+  // Add an error callback for more debug info
+  auto h = device.setUncapturedErrorCallback([](ErrorType type, char const *message) {
+    std::cout << "Device error: type " << type;
+    if (message)
+      std::cout << " (message: " << message << ")";
+    std::cout << std::endl;
+  });
 
   Queue queue = device.getQueue();
 
@@ -57,9 +80,13 @@ int main(int, char **) {
 #else
   TextureFormat swapChainFormat = TextureFormat::BGRA8Unorm;
 #endif
+
+  int width, height;
+  glfwGetFramebufferSize(window, &width, &height);
+
   SwapChainDescriptor swapChainDesc;
-  swapChainDesc.width = 640;
-  swapChainDesc.height = 480;
+  swapChainDesc.width = width;
+  swapChainDesc.height = height;
   swapChainDesc.usage = TextureUsage::RenderAttachment;
   swapChainDesc.format = swapChainFormat;
   swapChainDesc.presentMode = PresentMode::Fifo;
@@ -68,22 +95,36 @@ int main(int, char **) {
 
   std::cout << "Creating shader module..." << std::endl;
   const char *shaderSource = R"(
+struct VertexInput {
+    @location(0) position: vec2f,
+    @location(1) color: vec3f,
+};
+
+/**
+ * A structure with fields labeled with builtins and locations can also be used
+ * as *output* of the vertex shader, which is also the input of the fragment
+ * shader.
+ */
+struct VertexOutput {
+    @builtin(position) position: vec4f,
+    // The location here does not refer to a vertex attribute, it just means
+    // that this field must be handled by the rasterizer.
+    // (It can also refer to another field of another struct that would be used
+    // as input to the fragment shader.)
+    @location(0) color: vec3f,
+};
+
 @vertex
-fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> @builtin(position) vec4<f32> {
-	var p = vec2f(0.0, 0.0);
-	if (in_vertex_index == 0u) {
-		p = vec2f(-0.5, -0.5);
-	} else if (in_vertex_index == 1u) {
-		p = vec2f(0.5, -0.5);
-	} else {
-		p = vec2f(0.0, 0.5);
-	}
-	return vec4f(p, 0.0, 1.0);
+fn vs_main(in: VertexInput) -> VertexOutput {
+    var out: VertexOutput;
+    out.position = vec4f(in.position, 0.0, 1.0);
+    out.color = in.color; // forward to the fragment shader
+    return out;
 }
 
 @fragment
-fn fs_main() -> @location(0) vec4f {
-    return vec4f(0.0, 0.4, 1.0, 1.0);
+fn fs_main(in: VertexOutput) -> @location(0) vec4f {
+    return vec4f(in.color, 1.0);
 }
 )";
 
@@ -115,12 +156,28 @@ fn fs_main() -> @location(0) vec4f {
   std::cout << "Creating render pipeline..." << std::endl;
   RenderPipelineDescriptor pipelineDesc;
 
-  // Vertex fetch
-  // (We don't use any input buffer so far)
-  pipelineDesc.vertex.bufferCount = 0;
-  pipelineDesc.vertex.buffers = nullptr;
+  // We now have 2 attributes
+  std::vector<VertexAttribute> vertexAttribs(2);
 
-  // Vertex shader
+  // Position attribute
+  vertexAttribs[0].shaderLocation = 0;
+  vertexAttribs[0].format = VertexFormat::Float32x2;
+  vertexAttribs[0].offset = 0;
+
+  // Color attribute
+  vertexAttribs[1].shaderLocation = 1;
+  vertexAttribs[1].format = VertexFormat::Float32x3; // different type!
+  vertexAttribs[1].offset = 2 * sizeof(float);       // non null offset!
+
+  VertexBufferLayout vertexBufferLayout;
+  vertexBufferLayout.attributeCount = static_cast<uint32_t>(vertexAttribs.size());
+  vertexBufferLayout.attributes = vertexAttribs.data();
+  vertexBufferLayout.arrayStride = 5 * sizeof(float);
+  vertexBufferLayout.stepMode = VertexStepMode::Vertex;
+
+  pipelineDesc.vertex.bufferCount = 1;
+  pipelineDesc.vertex.buffers = &vertexBufferLayout;
+
   pipelineDesc.vertex.module = shaderModule;
   pipelineDesc.vertex.entryPoint = "vs_main";
   pipelineDesc.vertex.constantCount = 0;
@@ -140,12 +197,10 @@ fn fs_main() -> @location(0) vec4f {
   fragmentState.constants = nullptr;
 
   // Configure blend state
-  BlendState blendState;
-  // Usual alpha blending for the color:
+  BlendState blendState = Default;
   blendState.color.srcFactor = BlendFactor::SrcAlpha;
   blendState.color.dstFactor = BlendFactor::OneMinusSrcAlpha;
   blendState.color.operation = BlendOperation::Add;
-  // We leave the target alpha untouched:
   blendState.alpha.srcFactor = BlendFactor::Zero;
   blendState.alpha.dstFactor = BlendFactor::One;
   blendState.alpha.operation = BlendOperation::Add;
@@ -153,28 +208,61 @@ fn fs_main() -> @location(0) vec4f {
   ColorTargetState colorTarget;
   colorTarget.format = swapChainFormat;
   colorTarget.blend = &blendState;
-  colorTarget.writeMask =
-    ColorWriteMask::All; // We could write to only some of the color channels.
+  colorTarget.writeMask = ColorWriteMask::All;
 
   // We have only one target because our render pass has only one output color
   // attachment.
   fragmentState.targetCount = 1;
   fragmentState.targets = &colorTarget;
 
-  // Depth and stencil tests are not used here
   pipelineDesc.depthStencil = nullptr;
 
-  // Multi-sampling
-  // Samples per pixel
   pipelineDesc.multisample.count = 1;
   pipelineDesc.multisample.mask = ~0u;
   pipelineDesc.multisample.alphaToCoverageEnabled = false;
 
-  // Pipeline layout
+  // layout is automatically configured
   pipelineDesc.layout = nullptr;
 
   RenderPipeline pipeline = device.createRenderPipeline(pipelineDesc);
   std::cout << "Render pipeline: " << pipeline << std::endl;
+
+  // Vertex buffer
+  // The de-duplicated list of point positions
+  // clang-format off
+	std::vector<float> pointData = {
+		// x,   y,     r,   g,   b
+		-0.5, -0.5,   1.0, 0.0, 0.0,
+		+0.5, -0.5,   0.0, 1.0, 0.0,
+		+0.5, +0.5,   0.0, 0.0, 1.0,
+		-0.5, +0.5,   1.0, 1.0, 0.0,
+	};
+  // clang-format on
+
+  // Create vertex buffer
+  BufferDescriptor bufferDesc;
+  bufferDesc.size = pointData.size() * sizeof(float);
+  bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
+  bufferDesc.mappedAtCreation = false;
+  Buffer vertexBuffer = device.createBuffer(bufferDesc);
+  queue.writeBuffer(vertexBuffer, 0, pointData.data(), bufferDesc.size);
+
+  // Index Buffer
+  // This is a list of indices referencing positions in the pointData
+  std::vector<uint16_t> indexData = {
+      0, 1, 2, // Triangle #0
+      0, 2, 3  // Triangle #1
+  };
+
+  int indexCount = static_cast<int>(indexData.size());
+
+  // Create index buffer
+  // (we reuse the bufferDesc initialized for the vertexBuffer)
+  bufferDesc.size = indexData.size() * sizeof(float);
+  bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
+  bufferDesc.mappedAtCreation = false;
+  Buffer indexBuffer = device.createBuffer(bufferDesc);
+  queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
@@ -189,30 +277,41 @@ fn fs_main() -> @location(0) vec4f {
     commandEncoderDesc.label = "Command Encoder";
     CommandEncoder encoder = device.createCommandEncoder(commandEncoderDesc);
 
+    RenderPassDescriptor renderPassDesc;
+
     RenderPassColorAttachment renderPassColorAttachment;
     renderPassColorAttachment.view = nextTexture;
     renderPassColorAttachment.resolveTarget = nullptr;
     renderPassColorAttachment.loadOp = LoadOp::Clear;
     renderPassColorAttachment.storeOp = StoreOp::Store;
-    renderPassColorAttachment.clearValue = Color{0.9, 0.1, 0.2, 1.0};
-
-    RenderPassDescriptor renderPassDesc;
+    renderPassColorAttachment.clearValue = Color{0.05, 0.05, 0.05, 1.0};
     renderPassDesc.colorAttachmentCount = 1;
     renderPassDesc.colorAttachments = &renderPassColorAttachment;
+
     renderPassDesc.depthStencilAttachment = nullptr;
     renderPassDesc.timestampWriteCount = 0;
     renderPassDesc.timestampWrites = nullptr;
-
     RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
+
     renderPass.setPipeline(pipeline);
-    renderPass.draw(3, 1, 0, 0);
+
+    // Set both vertex and index buffers
+    renderPass.setVertexBuffer(0, vertexBuffer, 0, pointData.size() * sizeof(float));
+    // The second argument must correspond to the choice of uint16_t or uint32_t
+    // we've done when creating the index buffer.
+    renderPass.setIndexBuffer(
+        indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t)
+    );
+
+    renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+
     renderPass.end();
 
     CommandBufferDescriptor cmdBufferDescriptor;
     cmdBufferDescriptor.label = "Command buffer";
     CommandBuffer command = encoder.finish(cmdBufferDescriptor);
-
     queue.submit(command);
+
     swapChain.present();
 
     // release resources

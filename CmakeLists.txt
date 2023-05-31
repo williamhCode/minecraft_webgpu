@@ -25,7 +25,7 @@ target_copy_webgpu_binaries(App)
 
 # options
 set_target_properties(App PROPERTIES
-    CXX_STANDARD 20
+    CXX_STANDARD 17
     # COMPILE_WARNING_AS_ERROR ON
 )
 # set_target_properties(App PROPERTIES VS_DEBUGGER_ENVIRONMENT "DAWN_DEBUG_BREAK_ON_ERROR=1")
