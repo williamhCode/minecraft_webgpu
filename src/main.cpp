@@ -1,17 +1,31 @@
 #include "webgpu-release.h"
+
+// An optional library that makes displaying enum values much easier
+#include "magic_enum.hpp"
+
 #include <GLFW/glfw3.h>
 #include <glfw3webgpu.h>
 
 #define WEBGPU_CPP_IMPLEMENTATION
-#include <webgpu/webgpu.h>
 #include <webgpu/webgpu.hpp>
 
 #include <cassert>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
-
-#define UNUSED(x) (void)x;
+#include <sstream>
+#include <string>
 
 using namespace wgpu;
+namespace fs = std::filesystem;
+
+#define RESOURCE_DIR "./src/resources"
+
+ShaderModule loadShaderModule(const fs::path &path, Device device);
+bool loadGeometry(
+    const fs::path &path, std::vector<float> &pointData,
+    std::vector<uint16_t> &indexData
+);
 
 int main(int, char **) {
   Instance instance = createInstance(InstanceDescriptor{});
@@ -59,7 +73,8 @@ int main(int, char **) {
   DeviceDescriptor deviceDesc;
   deviceDesc.label = "My Device";
   deviceDesc.requiredFeaturesCount = 0;
-  deviceDesc.requiredLimits = &requiredLimits;
+  // deviceDesc.requiredLimits = &requiredLimits;
+  deviceDesc.requiredLimits = nullptr;
   deviceDesc.defaultQueue.label = "The default queue";
   Device device = adapter.requestDevice(deviceDesc);
   std::cout << "Got device: " << device << std::endl;
@@ -94,62 +109,7 @@ int main(int, char **) {
   std::cout << "Swapchain: " << swapChain << std::endl;
 
   std::cout << "Creating shader module..." << std::endl;
-  const char *shaderSource = R"(
-struct VertexInput {
-    @location(0) position: vec2f,
-    @location(1) color: vec3f,
-};
-
-/**
- * A structure with fields labeled with builtins and locations can also be used
- * as *output* of the vertex shader, which is also the input of the fragment
- * shader.
- */
-struct VertexOutput {
-    @builtin(position) position: vec4f,
-    // The location here does not refer to a vertex attribute, it just means
-    // that this field must be handled by the rasterizer.
-    // (It can also refer to another field of another struct that would be used
-    // as input to the fragment shader.)
-    @location(0) color: vec3f,
-};
-
-@vertex
-fn vs_main(in: VertexInput) -> VertexOutput {
-    var out: VertexOutput;
-    out.position = vec4f(in.position, 0.0, 1.0);
-    out.color = in.color; // forward to the fragment shader
-    return out;
-}
-
-@fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-    return vec4f(in.color, 1.0);
-}
-)";
-
-  ShaderModuleDescriptor shaderDesc;
-#ifdef WEBGPU_BACKEND_WGPU
-  shaderDesc.hintCount = 0;
-  shaderDesc.hints = nullptr;
-#endif
-
-  // Use the extension mechanism to load a WGSL shader source code
-  ShaderModuleWGSLDescriptor shaderCodeDesc;
-  // Set the chained struct's header
-  shaderCodeDesc.chain.next = nullptr;
-  shaderCodeDesc.chain.sType = SType::ShaderModuleWGSLDescriptor;
-  // Connect the chain
-  shaderDesc.nextInChain = &shaderCodeDesc.chain;
-
-  // Setup the actual payload of the shader code descriptor
-#ifdef WEBGPU_BACKEND_WGPU
-  shaderCodeDesc.code = shaderSource;
-#else
-  shaderCodeDesc.source = shaderSource;
-#endif
-
-  ShaderModule shaderModule = device.createShaderModule(shaderDesc);
+  ShaderModule shaderModule = loadShaderModule(RESOURCE_DIR "/shader.wgsl", device);
   std::cout << "Shader module: " << shaderModule << std::endl;
 
   // create render pipeline
@@ -227,17 +187,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   RenderPipeline pipeline = device.createRenderPipeline(pipelineDesc);
   std::cout << "Render pipeline: " << pipeline << std::endl;
 
-  // Vertex buffer
-  // The de-duplicated list of point positions
-  // clang-format off
-	std::vector<float> pointData = {
-		// x,   y,     r,   g,   b
-		-0.5, -0.5,   1.0, 0.0, 0.0,
-		+0.5, -0.5,   0.0, 1.0, 0.0,
-		+0.5, +0.5,   0.0, 0.0, 1.0,
-		-0.5, +0.5,   1.0, 1.0, 0.0,
-	};
-  // clang-format on
+  // data
+  std::vector<float> pointData;
+  std::vector<uint16_t> indexData;
+
+  bool success = loadGeometry(RESOURCE_DIR "/webgpu.txt", pointData, indexData);
+  if (!success) {
+    std::cerr << "Could not load geometry!" << std::endl;
+    return 1;
+  }
 
   // Create vertex buffer
   BufferDescriptor bufferDesc;
@@ -246,13 +204,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   bufferDesc.mappedAtCreation = false;
   Buffer vertexBuffer = device.createBuffer(bufferDesc);
   queue.writeBuffer(vertexBuffer, 0, pointData.data(), bufferDesc.size);
-
-  // Index Buffer
-  // This is a list of indices referencing positions in the pointData
-  std::vector<uint16_t> indexData = {
-      0, 1, 2, // Triangle #0
-      0, 2, 3  // Triangle #1
-  };
 
   int indexCount = static_cast<int>(indexData.size());
 
@@ -327,4 +278,81 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   glfwTerminate();
 
   return 0;
+}
+
+ShaderModule loadShaderModule(const fs::path &path, Device device) {
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    return nullptr;
+  }
+  file.seekg(0, std::ios::end);
+  size_t size = file.tellg();
+  std::string shaderSource(size, ' ');
+  file.seekg(0);
+  file.read(shaderSource.data(), size);
+
+  ShaderModuleWGSLDescriptor shaderCodeDesc{};
+  shaderCodeDesc.chain.next = nullptr;
+  shaderCodeDesc.chain.sType = SType::ShaderModuleWGSLDescriptor;
+  shaderCodeDesc.code = shaderSource.c_str();
+  ShaderModuleDescriptor shaderDesc{};
+  shaderDesc.hintCount = 0;
+  shaderDesc.hints = nullptr;
+  shaderDesc.nextInChain = &shaderCodeDesc.chain;
+  return device.createShaderModule(shaderDesc);
+}
+
+bool loadGeometry(
+    const fs::path &path, std::vector<float> &pointData,
+    std::vector<uint16_t> &indexData
+) {
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    return false;
+  }
+
+  pointData.clear();
+  indexData.clear();
+
+  enum class Section {
+    None,
+    Points,
+    Indices,
+  };
+  Section currentSection = Section::None;
+
+  float value;
+  uint16_t index;
+  std::string line;
+  while (!file.eof()) {
+    getline(file, line);
+
+    // overcome the `CRLF` problem
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();
+    }
+
+    if (line == "[points]") {
+      currentSection = Section::Points;
+    } else if (line == "[indices]") {
+      currentSection = Section::Indices;
+    } else if (line[0] == '#' || line.empty()) {
+      // Do nothing, this is a comment
+    } else if (currentSection == Section::Points) {
+      std::istringstream iss(line);
+      // Get x, y, r, g, b
+      for (int i = 0; i < 5; ++i) {
+        iss >> value;
+        pointData.push_back(value);
+      }
+    } else if (currentSection == Section::Indices) {
+      std::istringstream iss(line);
+      // Get corners #0 #1 and #2
+      for (int i = 0; i < 3; ++i) {
+        iss >> index;
+        indexData.push_back(index);
+      }
+    }
+  }
+  return true;
 }
