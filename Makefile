@@ -1,17 +1,18 @@
 .PHONY: build
 
+BACKEND = dawn
 TYPE = debug
-BACKEND = wgpu
 
 build:
-	cmake --build build/$(BACKEND)/$(TYPE)
+	-cmake --build build/$(BACKEND)/$(TYPE)
 	cp build/$(BACKEND)/$(TYPE)/compile_commands.json .
 
 build-setup:
-	cmake . -B build/wgpu/debug -DWEBGPU_BACKEND=WGPU -DCMAKE_BUILD_TYPE=Debug -GNinja
-	cmake . -B build/wgpu/release -DWEBGPU_BACKEND=WGPU -DCMAKE_BUILD_TYPE=Release -GNinja
-	cmake . -B build/dawn/debug -DWEBGPU_BACKEND=DAWN -DCMAKE_BUILD_TYPE=Debug -GNinja
-	cmake . -B build/dawn/release -DWEBGPU_BACKEND=DAWN -DCMAKE_BUILD_TYPE=Release -GNinja
+	cmake . -B build/dawn/debug -DCMAKE_BUILD_TYPE=Debug -GNinja
+	# cmake . -B build/dawn/release -DWEBGPU_BACKEND=DAWN -DCMAKE_BUILD_TYPE=Release -GNinja
+
+xcode-setup:
+	cmake . -B xcode -GXcode
 
 run:
 	build/$(BACKEND)/$(TYPE)/App

@@ -1,14 +1,14 @@
-#include "webgpu-release.h"
+// #include "webgpu-release.h"
 
 // An optional library that makes displaying enum values much easier
 #include "magic_enum.hpp"
 
 #include <GLFW/glfw3.h>
-#include <glfw3webgpu.h>
 
-#define WEBGPU_CPP_IMPLEMENTATION
-#include <webgpu/webgpu.hpp>
+#include <webgpu/webgpu_cpp.h>
+#include <webgpu/webgpu_glfw.h>
 
+#include <array>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
@@ -19,7 +19,14 @@
 using namespace wgpu;
 namespace fs = std::filesystem;
 
-#define RESOURCE_DIR "./src/resources"
+/**
+ * The same structure as in the shader, replicated in C++
+ */
+struct MyUniforms {
+  std::array<float, 4> color;
+  float time;
+  float _pad[3];
+};
 
 ShaderModule loadShaderModule(const fs::path &path, Device device);
 bool loadGeometry(
@@ -28,7 +35,7 @@ bool loadGeometry(
 );
 
 int main(int, char **) {
-  Instance instance = createInstance(InstanceDescriptor{});
+  Instance instance = CreateInstance();
   if (!instance) {
     std::cerr << "Could not initialize WebGPU!" << std::endl;
     return 1;
@@ -48,34 +55,51 @@ int main(int, char **) {
   }
 
   std::cout << "Requesting adapter..." << std::endl;
-  Surface surface = glfwGetWGPUSurface(instance, window);
-  RequestAdapterOptions adapterOpts;
-  adapterOpts.compatibleSurface = surface;
-  Adapter adapter = instance.requestAdapter(adapterOpts);
-  std::cout << "Got adapter: " << adapter << std::endl;
+  Surface surface = glfw::CreateSurfaceForWindow(instance, window);
+  RequestAdapterOptions adapterOpts{};
+
+  struct UserData {
+		WGPUAdapter adapter = nullptr;
+		bool requestEnded = false;
+	};
+	UserData userData;
+
+	auto onAdapterRequestEnded = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, char const * message, void * pUserData) {
+		UserData& userData = *reinterpret_cast<UserData*>(pUserData);
+		if (status == WGPURequestAdapterStatus_Success) {
+			userData.adapter = adapter;
+		} else {
+			std::cout << "Could not get WebGPU adapter: " << message << std::endl;
+		}
+		userData.requestEnded = true;
+	};
+
+  instance.RequestAdapter(&adapterOpts, onAdapterRequestEnded, &userData);
+
+  std::cout << "Got adapter: " << userData.adapter << std::endl;
 
   SupportedLimits supportedLimits;
   adapter.getLimits(&supportedLimits);
 
   // Don't forget to = Default
-  RequiredLimits requiredLimits = Default;
-  requiredLimits.limits.maxVertexAttributes = 2;
-  requiredLimits.limits.maxVertexBuffers = 1;
-  requiredLimits.limits.maxBufferSize = 6 * 5 * sizeof(float);
-  requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
-  requiredLimits.limits.minStorageBufferOffsetAlignment =
-      supportedLimits.limits.minStorageBufferOffsetAlignment;
-  requiredLimits.limits.minUniformBufferOffsetAlignment =
-      supportedLimits.limits.minUniformBufferOffsetAlignment;
-  requiredLimits.limits.maxInterStageShaderComponents = 3;
+  // RequiredLimits requiredLimits = Default;
+  // requiredLimits.limits.maxVertexAttributes = 2;
+  // requiredLimits.limits.maxVertexBuffers = 1;
+  // requiredLimits.limits.maxBufferSize = 6 * 5 * sizeof(float);
+  // requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
+  // requiredLimits.limits.minStorageBufferOffsetAlignment =
+  //     supportedLimits.limits.minStorageBufferOffsetAlignment;
+  // requiredLimits.limits.minUniformBufferOffsetAlignment =
+  //     supportedLimits.limits.minUniformBufferOffsetAlignment;
+  // requiredLimits.limits.maxInterStageShaderComponents = 3;
 
   std::cout << "Requesting device..." << std::endl;
   DeviceDescriptor deviceDesc;
-  deviceDesc.label = "My Device";
-  deviceDesc.requiredFeaturesCount = 0;
-  // deviceDesc.requiredLimits = &requiredLimits;
-  deviceDesc.requiredLimits = nullptr;
-  deviceDesc.defaultQueue.label = "The default queue";
+  // deviceDesc.label = "My Device";
+  // deviceDesc.requiredFeaturesCount = 0;
+  // // deviceDesc.requiredLimits = &requiredLimits;
+  // deviceDesc.requiredLimits = nullptr;
+  // deviceDesc.defaultQueue.label = "The default queue";
   Device device = adapter.requestDevice(deviceDesc);
   std::cout << "Got device: " << device << std::endl;
 
@@ -181,8 +205,28 @@ int main(int, char **) {
   pipelineDesc.multisample.mask = ~0u;
   pipelineDesc.multisample.alphaToCoverageEnabled = false;
 
-  // layout is automatically configured
-  pipelineDesc.layout = nullptr;
+  // Create binding layout (don't forget to = Default)
+  // BindGroupLayoutEntry bindingLayout = Default;
+  BindGroupLayoutEntry bindingLayout;
+  // The binding index as used in the @binding attribute in the shader
+  bindingLayout.binding = 0;
+  // The stage that needs to access this resource
+  bindingLayout.visibility = ShaderStage::Vertex | ShaderStage::Fragment;
+  bindingLayout.buffer.type = BufferBindingType::Uniform;
+  bindingLayout.buffer.minBindingSize = sizeof(MyUniforms);
+
+  // Create a bind group layout
+  BindGroupLayoutDescriptor bindGroupLayoutDesc;
+  bindGroupLayoutDesc.entryCount = 1;
+  bindGroupLayoutDesc.entries = &bindingLayout;
+  BindGroupLayout bindGroupLayout = device.createBindGroupLayout(bindGroupLayoutDesc);
+
+  // Create the pipeline layout
+  PipelineLayoutDescriptor layoutDesc;
+  layoutDesc.bindGroupLayoutCount = 1;
+  layoutDesc.bindGroupLayouts = (WGPUBindGroupLayout *)&bindGroupLayout;
+  PipelineLayout layout = device.createPipelineLayout(layoutDesc);
+  pipelineDesc.layout = layout;
 
   RenderPipeline pipeline = device.createRenderPipeline(pipelineDesc);
   std::cout << "Render pipeline: " << pipeline << std::endl;
@@ -215,8 +259,50 @@ int main(int, char **) {
   Buffer indexBuffer = device.createBuffer(bufferDesc);
   queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
+  // Create uniform buffer
+  // The buffer will only contain 1 float with the value of uTime
+  bufferDesc.size = sizeof(MyUniforms);
+  // Make sure to flag the buffer as BufferUsage::Uniform
+  bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
+  bufferDesc.mappedAtCreation = false;
+  Buffer uniformBuffer = device.createBuffer(bufferDesc);
+
+  // Upload the initial value of the uniforms
+  MyUniforms uniforms;
+  uniforms.time = 1.0f;
+  uniforms.color = {0.0f, 1.0f, 0.4f, 1.0f};
+  queue.writeBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
+
+  // Create a binding
+  BindGroupEntry binding{};
+  // The index of the binding (the entries in bindGroupDesc can be in any order)
+  binding.binding = 0;
+  // The buffer it is actually bound to
+  binding.buffer = uniformBuffer;
+  // We can specify an offset within the buffer, so that a single buffer can hold
+  // multiple uniform blocks.
+  binding.offset = 0;
+  // And we specify again the size of the buffer.
+  binding.size = sizeof(MyUniforms);
+
+  // A bind group contains one or multiple bindings
+  BindGroupDescriptor bindGroupDesc;
+  bindGroupDesc.layout = bindGroupLayout;
+  // There must be as many bindings as declared in the layout!
+  bindGroupDesc.entryCount = bindGroupLayoutDesc.entryCount;
+  bindGroupDesc.entries = &binding;
+  BindGroup bindGroup = device.createBindGroup(bindGroupDesc);
+
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
+
+    // Update uniform buffer
+    uniforms.time = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
+    // Only update the 1-st float of the buffer
+    queue.writeBuffer(
+        uniformBuffer, offsetof(MyUniforms, time), &uniforms.time,
+        sizeof(MyUniforms::time)
+    );
 
     TextureView nextTexture = swapChain.getCurrentTextureView();
     if (!nextTexture) {
@@ -253,6 +339,8 @@ int main(int, char **) {
     renderPass.setIndexBuffer(
         indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t)
     );
+    // Set binding group
+    renderPass.setBindGroup(0, bindGroup, 0, nullptr);
 
     renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
 
@@ -294,10 +382,8 @@ ShaderModule loadShaderModule(const fs::path &path, Device device) {
   ShaderModuleWGSLDescriptor shaderCodeDesc{};
   shaderCodeDesc.chain.next = nullptr;
   shaderCodeDesc.chain.sType = SType::ShaderModuleWGSLDescriptor;
-  shaderCodeDesc.code = shaderSource.c_str();
+  shaderCodeDesc.source = shaderSource.c_str();
   ShaderModuleDescriptor shaderDesc{};
-  shaderDesc.hintCount = 0;
-  shaderDesc.hints = nullptr;
   shaderDesc.nextInChain = &shaderCodeDesc.chain;
   return device.createShaderModule(shaderDesc);
 }
