@@ -9,7 +9,7 @@ build:
 
 build-setup:
 	cmake . -B build/dawn/debug -DCMAKE_BUILD_TYPE=Debug -GNinja
-	# cmake . -B build/dawn/release -DWEBGPU_BACKEND=DAWN -DCMAKE_BUILD_TYPE=Release -GNinja
+	cmake . -B build/dawn/release -DCMAKE_BUILD_TYPE=Release -GNinja
 
 xcode-setup:
 	cmake . -B xcode -GXcode

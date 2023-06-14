@@ -9,30 +9,29 @@ project(
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
 
 # include
-include_directories(
-    ${PROJECT_SOURCE_DIR}/src
-)
 add_subdirectory(deps/glfw)
 add_subdirectory(deps/webgpu)
 
 # sources
 add_executable(App
 	src/main.cpp
+	src/webgpu-utils.cpp
+	src/webgpu-utils.h
 )
+# target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_compile_definitions(App PRIVATE
     RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src/resources"
 )
 
-target_link_libraries(App PRIVATE glfw webgpu glfw3webgpu)
-target_copy_webgpu_binaries(App)
+target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp)
 
 # options
 set_target_properties(App PROPERTIES
     CXX_STANDARD 20
     # COMPILE_WARNING_AS_ERROR ON
 )
-# set_target_properties(App PROPERTIES VS_DEBUGGER_ENVIRONMENT "DAWN_DEBUG_BREAK_ON_ERROR=1")
+set_target_properties(App PROPERTIES VS_DEBUGGER_ENVIRONMENT "DAWN_DEBUG_BREAK_ON_ERROR=1")
 
 if (MSVC)
     target_compile_options(App PRIVATE /W4)

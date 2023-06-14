@@ -1,14 +1,14 @@
-// #include "webgpu-release.h"
-
 // An optional library that makes displaying enum values much easier
-#include "magic_enum.hpp"
+// #include "magic_enum.hpp"
 
 #include <GLFW/glfw3.h>
 
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
+#include "webgpu-utils.h"
 
 #include <array>
+#include <vector>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
@@ -34,7 +34,7 @@ bool loadGeometry(
     std::vector<uint16_t> &indexData
 );
 
-int main(int, char **) {
+int main() {
   Instance instance = CreateInstance();
   if (!instance) {
     std::cerr << "Could not initialize WebGPU!" << std::endl;
@@ -57,61 +57,24 @@ int main(int, char **) {
   std::cout << "Requesting adapter..." << std::endl;
   Surface surface = glfw::CreateSurfaceForWindow(instance, window);
   RequestAdapterOptions adapterOpts{};
+  Adapter adapter = wgpu_utils::RequestAdapter(instance, &adapterOpts);
+  std::cout << "Got adapter: " << adapter.Get() << std::endl;
 
-  struct UserData {
-		WGPUAdapter adapter = nullptr;
-		bool requestEnded = false;
-	};
-	UserData userData;
-
-	auto onAdapterRequestEnded = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, char const * message, void * pUserData) {
-		UserData& userData = *reinterpret_cast<UserData*>(pUserData);
-		if (status == WGPURequestAdapterStatus_Success) {
-			userData.adapter = adapter;
-		} else {
-			std::cout << "Could not get WebGPU adapter: " << message << std::endl;
-		}
-		userData.requestEnded = true;
-	};
-
-  instance.RequestAdapter(&adapterOpts, onAdapterRequestEnded, &userData);
-
-  std::cout << "Got adapter: " << userData.adapter << std::endl;
-
-  SupportedLimits supportedLimits;
-  adapter.getLimits(&supportedLimits);
-
-  // Don't forget to = Default
-  // RequiredLimits requiredLimits = Default;
-  // requiredLimits.limits.maxVertexAttributes = 2;
-  // requiredLimits.limits.maxVertexBuffers = 1;
-  // requiredLimits.limits.maxBufferSize = 6 * 5 * sizeof(float);
-  // requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
-  // requiredLimits.limits.minStorageBufferOffsetAlignment =
-  //     supportedLimits.limits.minStorageBufferOffsetAlignment;
-  // requiredLimits.limits.minUniformBufferOffsetAlignment =
-  //     supportedLimits.limits.minUniformBufferOffsetAlignment;
-  // requiredLimits.limits.maxInterStageShaderComponents = 3;
+  // SupportedLimits supportedLimits;
+  // adapter.GetLimits(&supportedLimits);
 
   std::cout << "Requesting device..." << std::endl;
   DeviceDescriptor deviceDesc;
-  // deviceDesc.label = "My Device";
-  // deviceDesc.requiredFeaturesCount = 0;
-  // // deviceDesc.requiredLimits = &requiredLimits;
-  // deviceDesc.requiredLimits = nullptr;
-  // deviceDesc.defaultQueue.label = "The default queue";
-  Device device = adapter.requestDevice(deviceDesc);
-  std::cout << "Got device: " << device << std::endl;
+  deviceDesc.label = "My Device";
+  deviceDesc.requiredFeaturesCount = 0;
+  // deviceDesc.requiredLimits = &requiredLimits;
+  deviceDesc.requiredLimits = nullptr;
+  deviceDesc.defaultQueue.label = "The default queue";
+  Device device = wgpu_utils::RequestDevice(adapter, &deviceDesc);
+  std::cout << "Got device: " << device.Get() << std::endl;
+  wgpu_utils::SetUncapturedErrorCallback(device);
 
-  // Add an error callback for more debug info
-  auto h = device.setUncapturedErrorCallback([](ErrorType type, char const *message) {
-    std::cout << "Device error: type " << type;
-    if (message)
-      std::cout << " (message: " << message << ")";
-    std::cout << std::endl;
-  });
-
-  Queue queue = device.getQueue();
+  Queue queue = device.GetQueue();
 
   std::cout << "Creating swapchain device..." << std::endl;
 #ifdef WEBGPU_BACKEND_WGPU
@@ -129,12 +92,12 @@ int main(int, char **) {
   swapChainDesc.usage = TextureUsage::RenderAttachment;
   swapChainDesc.format = swapChainFormat;
   swapChainDesc.presentMode = PresentMode::Fifo;
-  SwapChain swapChain = device.createSwapChain(surface, swapChainDesc);
-  std::cout << "Swapchain: " << swapChain << std::endl;
+  SwapChain swapChain = device.CreateSwapChain(surface, &swapChainDesc);
+  std::cout << "Swapchain: " << swapChain.Get() << std::endl;
 
   std::cout << "Creating shader module..." << std::endl;
   ShaderModule shaderModule = loadShaderModule(RESOURCE_DIR "/shader.wgsl", device);
-  std::cout << "Shader module: " << shaderModule << std::endl;
+  std::cout << "Shader module: " << shaderModule.Get() << std::endl;
 
   // create render pipeline
   std::cout << "Creating render pipeline..." << std::endl;
@@ -181,7 +144,7 @@ int main(int, char **) {
   fragmentState.constants = nullptr;
 
   // Configure blend state
-  BlendState blendState = Default;
+  BlendState blendState;
   blendState.color.srcFactor = BlendFactor::SrcAlpha;
   blendState.color.dstFactor = BlendFactor::OneMinusSrcAlpha;
   blendState.color.operation = BlendOperation::Add;
@@ -219,17 +182,17 @@ int main(int, char **) {
   BindGroupLayoutDescriptor bindGroupLayoutDesc;
   bindGroupLayoutDesc.entryCount = 1;
   bindGroupLayoutDesc.entries = &bindingLayout;
-  BindGroupLayout bindGroupLayout = device.createBindGroupLayout(bindGroupLayoutDesc);
+  BindGroupLayout bindGroupLayout = device.CreateBindGroupLayout(&bindGroupLayoutDesc);
 
   // Create the pipeline layout
   PipelineLayoutDescriptor layoutDesc;
   layoutDesc.bindGroupLayoutCount = 1;
-  layoutDesc.bindGroupLayouts = (WGPUBindGroupLayout *)&bindGroupLayout;
-  PipelineLayout layout = device.createPipelineLayout(layoutDesc);
+  layoutDesc.bindGroupLayouts = &bindGroupLayout;
+  PipelineLayout layout = device.CreatePipelineLayout(&layoutDesc);
   pipelineDesc.layout = layout;
 
-  RenderPipeline pipeline = device.createRenderPipeline(pipelineDesc);
-  std::cout << "Render pipeline: " << pipeline << std::endl;
+  RenderPipeline pipeline = device.CreateRenderPipeline(&pipelineDesc);
+  std::cout << "Render pipeline: " << pipeline.Get() << std::endl;
 
   // data
   std::vector<float> pointData;
@@ -246,8 +209,8 @@ int main(int, char **) {
   bufferDesc.size = pointData.size() * sizeof(float);
   bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
   bufferDesc.mappedAtCreation = false;
-  Buffer vertexBuffer = device.createBuffer(bufferDesc);
-  queue.writeBuffer(vertexBuffer, 0, pointData.data(), bufferDesc.size);
+  Buffer vertexBuffer = device.CreateBuffer(&bufferDesc);
+  queue.WriteBuffer(vertexBuffer, 0, pointData.data(), bufferDesc.size);
 
   int indexCount = static_cast<int>(indexData.size());
 
@@ -256,8 +219,8 @@ int main(int, char **) {
   bufferDesc.size = indexData.size() * sizeof(float);
   bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
   bufferDesc.mappedAtCreation = false;
-  Buffer indexBuffer = device.createBuffer(bufferDesc);
-  queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
+  Buffer indexBuffer = device.CreateBuffer(&bufferDesc);
+  queue.WriteBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
   // Create uniform buffer
   // The buffer will only contain 1 float with the value of uTime
@@ -265,13 +228,13 @@ int main(int, char **) {
   // Make sure to flag the buffer as BufferUsage::Uniform
   bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
   bufferDesc.mappedAtCreation = false;
-  Buffer uniformBuffer = device.createBuffer(bufferDesc);
+  Buffer uniformBuffer = device.CreateBuffer(&bufferDesc);
 
   // Upload the initial value of the uniforms
   MyUniforms uniforms;
   uniforms.time = 1.0f;
   uniforms.color = {0.0f, 1.0f, 0.4f, 1.0f};
-  queue.writeBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
+  queue.WriteBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
 
   // Create a binding
   BindGroupEntry binding{};
@@ -291,7 +254,7 @@ int main(int, char **) {
   // There must be as many bindings as declared in the layout!
   bindGroupDesc.entryCount = bindGroupLayoutDesc.entryCount;
   bindGroupDesc.entries = &binding;
-  BindGroup bindGroup = device.createBindGroup(bindGroupDesc);
+  BindGroup bindGroup = device.CreateBindGroup(&bindGroupDesc);
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
@@ -299,12 +262,12 @@ int main(int, char **) {
     // Update uniform buffer
     uniforms.time = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
     // Only update the 1-st float of the buffer
-    queue.writeBuffer(
+    queue.WriteBuffer(
         uniformBuffer, offsetof(MyUniforms, time), &uniforms.time,
         sizeof(MyUniforms::time)
     );
 
-    TextureView nextTexture = swapChain.getCurrentTextureView();
+    TextureView nextTexture = swapChain.GetCurrentTextureView();
     if (!nextTexture) {
       std::cerr << "Cannot acquire next swap chain texture" << std::endl;
       return 1;
@@ -312,7 +275,7 @@ int main(int, char **) {
 
     CommandEncoderDescriptor commandEncoderDesc;
     commandEncoderDesc.label = "Command Encoder";
-    CommandEncoder encoder = device.createCommandEncoder(commandEncoderDesc);
+    CommandEncoder encoder = device.CreateCommandEncoder(&commandEncoderDesc);
 
     RenderPassDescriptor renderPassDesc;
 
@@ -328,40 +291,40 @@ int main(int, char **) {
     renderPassDesc.depthStencilAttachment = nullptr;
     renderPassDesc.timestampWriteCount = 0;
     renderPassDesc.timestampWrites = nullptr;
-    RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
+    RenderPassEncoder renderPass = encoder.BeginRenderPass(&renderPassDesc);
 
-    renderPass.setPipeline(pipeline);
+    renderPass.SetPipeline(pipeline);
 
     // Set both vertex and index buffers
-    renderPass.setVertexBuffer(0, vertexBuffer, 0, pointData.size() * sizeof(float));
+    renderPass.SetVertexBuffer(0, vertexBuffer, 0, pointData.size() * sizeof(float));
     // The second argument must correspond to the choice of uint16_t or uint32_t
     // we've done when creating the index buffer.
-    renderPass.setIndexBuffer(
+    renderPass.SetIndexBuffer(
         indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t)
     );
     // Set binding group
-    renderPass.setBindGroup(0, bindGroup, 0, nullptr);
+    renderPass.SetBindGroup(0, bindGroup, 0, nullptr);
 
-    renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+    renderPass.DrawIndexed(indexCount, 1, 0, 0, 0);
 
-    renderPass.end();
+    renderPass.End();
 
     CommandBufferDescriptor cmdBufferDescriptor;
     cmdBufferDescriptor.label = "Command buffer";
-    CommandBuffer command = encoder.finish(cmdBufferDescriptor);
-    queue.submit(command);
+    CommandBuffer command = encoder.Finish(&cmdBufferDescriptor);
+    queue.Submit(1, &command);
 
-    swapChain.present();
+    swapChain.Present();
 
     // release resources
-    wgpuTextureViewRelease(nextTexture);
+    nextTexture.Release();
   }
 
   // release resources
-  wgpuSwapChainRelease(swapChain);
-  wgpuDeviceRelease(device);
-  wgpuAdapterRelease(adapter);
-  wgpuInstanceRelease(instance);
+  swapChain.Release();
+  device.Release();
+  adapter.Release();
+  instance.Release();
   glfwDestroyWindow(window);
   glfwTerminate();
 
@@ -380,12 +343,11 @@ ShaderModule loadShaderModule(const fs::path &path, Device device) {
   file.read(shaderSource.data(), size);
 
   ShaderModuleWGSLDescriptor shaderCodeDesc{};
-  shaderCodeDesc.chain.next = nullptr;
-  shaderCodeDesc.chain.sType = SType::ShaderModuleWGSLDescriptor;
+  shaderCodeDesc.nextInChain = nullptr;
   shaderCodeDesc.source = shaderSource.c_str();
   ShaderModuleDescriptor shaderDesc{};
-  shaderDesc.nextInChain = &shaderCodeDesc.chain;
-  return device.createShaderModule(shaderDesc);
+  shaderDesc.nextInChain = &shaderCodeDesc;
+  return device.CreateShaderModule(&shaderDesc);
 }
 
 bool loadGeometry(
