@@ -2,6 +2,8 @@
 #include <iostream>
 #include <ostream>
 
+namespace wgpu_utils {
+
 using namespace wgpu;
 
 Adapter RequestAdapter(Instance instance, RequestAdapterOptions const *options) {
@@ -64,3 +66,5 @@ void SetUncapturedErrorCallback(Device device) {
 
   device.SetUncapturedErrorCallback(onUncapturedError, nullptr);
 }
+
+} // namespace wgpu_utils

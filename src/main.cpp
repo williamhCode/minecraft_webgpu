@@ -3,18 +3,15 @@
 
 #include <GLFW/glfw3.h>
 
+#include "webgpu-utils.h"
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
-#include "webgpu-utils.h"
 
 #include <array>
-#include <vector>
-#include <cassert>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <vector>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -30,8 +27,7 @@ struct MyUniforms {
 
 ShaderModule loadShaderModule(const fs::path &path, Device device);
 bool loadGeometry(
-    const fs::path &path, std::vector<float> &pointData,
-    std::vector<uint16_t> &indexData
+  const fs::path &path, std::vector<float> &pointData, std::vector<uint16_t> &indexData
 );
 
 int main() {
@@ -64,12 +60,12 @@ int main() {
   // adapter.GetLimits(&supportedLimits);
 
   std::cout << "Requesting device..." << std::endl;
-  DeviceDescriptor deviceDesc;
-  deviceDesc.label = "My Device";
-  deviceDesc.requiredFeaturesCount = 0;
-  // deviceDesc.requiredLimits = &requiredLimits;
-  deviceDesc.requiredLimits = nullptr;
-  deviceDesc.defaultQueue.label = "The default queue";
+  DeviceDescriptor deviceDesc{
+    .label = "My Device",
+    .requiredFeaturesCount = 0,
+    .requiredLimits = nullptr,
+    .defaultQueue{.label = "The default queue"},
+  };
   Device device = wgpu_utils::RequestDevice(adapter, &deviceDesc);
   std::cout << "Got device: " << device.Get() << std::endl;
   wgpu_utils::SetUncapturedErrorCallback(device);
@@ -86,12 +82,13 @@ int main() {
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
 
-  SwapChainDescriptor swapChainDesc;
-  swapChainDesc.width = width;
-  swapChainDesc.height = height;
-  swapChainDesc.usage = TextureUsage::RenderAttachment;
-  swapChainDesc.format = swapChainFormat;
-  swapChainDesc.presentMode = PresentMode::Fifo;
+  SwapChainDescriptor swapChainDesc{
+    .usage = TextureUsage::RenderAttachment,
+    .format = swapChainFormat,
+    .width = static_cast<uint32_t>(width),
+    .height = static_cast<uint32_t>(height),
+    .presentMode = PresentMode::Fifo,
+  };
   SwapChain swapChain = device.CreateSwapChain(surface, &swapChainDesc);
   std::cout << "Swapchain: " << swapChain.Get() << std::endl;
 
@@ -99,98 +96,98 @@ int main() {
   ShaderModule shaderModule = loadShaderModule(RESOURCE_DIR "/shader.wgsl", device);
   std::cout << "Shader module: " << shaderModule.Get() << std::endl;
 
-  // create render pipeline
+  // create render pipeline ------------------------------------------------ //
   std::cout << "Creating render pipeline..." << std::endl;
-  RenderPipelineDescriptor pipelineDesc;
 
-  // We now have 2 attributes
-  std::vector<VertexAttribute> vertexAttribs(2);
-
-  // Position attribute
-  vertexAttribs[0].shaderLocation = 0;
-  vertexAttribs[0].format = VertexFormat::Float32x2;
-  vertexAttribs[0].offset = 0;
-
-  // Color attribute
-  vertexAttribs[1].shaderLocation = 1;
-  vertexAttribs[1].format = VertexFormat::Float32x3; // different type!
-  vertexAttribs[1].offset = 2 * sizeof(float);       // non null offset!
-
-  VertexBufferLayout vertexBufferLayout;
-  vertexBufferLayout.attributeCount = static_cast<uint32_t>(vertexAttribs.size());
-  vertexBufferLayout.attributes = vertexAttribs.data();
-  vertexBufferLayout.arrayStride = 5 * sizeof(float);
-  vertexBufferLayout.stepMode = VertexStepMode::Vertex;
-
-  pipelineDesc.vertex.bufferCount = 1;
-  pipelineDesc.vertex.buffers = &vertexBufferLayout;
-
-  pipelineDesc.vertex.module = shaderModule;
-  pipelineDesc.vertex.entryPoint = "vs_main";
-  pipelineDesc.vertex.constantCount = 0;
-  pipelineDesc.vertex.constants = nullptr;
-
-  pipelineDesc.primitive.topology = PrimitiveTopology::TriangleList;
-  pipelineDesc.primitive.stripIndexFormat = IndexFormat::Undefined;
-  pipelineDesc.primitive.frontFace = FrontFace::CCW;
-  pipelineDesc.primitive.cullMode = CullMode::None;
-
-  // Fragment shader
-  FragmentState fragmentState;
-  pipelineDesc.fragment = &fragmentState;
-  fragmentState.module = shaderModule;
-  fragmentState.entryPoint = "fs_main";
-  fragmentState.constantCount = 0;
-  fragmentState.constants = nullptr;
-
-  // Configure blend state
-  BlendState blendState;
-  blendState.color.srcFactor = BlendFactor::SrcAlpha;
-  blendState.color.dstFactor = BlendFactor::OneMinusSrcAlpha;
-  blendState.color.operation = BlendOperation::Add;
-  blendState.alpha.srcFactor = BlendFactor::Zero;
-  blendState.alpha.dstFactor = BlendFactor::One;
-  blendState.alpha.operation = BlendOperation::Add;
-
-  ColorTargetState colorTarget;
-  colorTarget.format = swapChainFormat;
-  colorTarget.blend = &blendState;
-  colorTarget.writeMask = ColorWriteMask::All;
-
-  // We have only one target because our render pass has only one output color
-  // attachment.
-  fragmentState.targetCount = 1;
-  fragmentState.targets = &colorTarget;
-
-  pipelineDesc.depthStencil = nullptr;
-
-  pipelineDesc.multisample.count = 1;
-  pipelineDesc.multisample.mask = ~0u;
-  pipelineDesc.multisample.alphaToCoverageEnabled = false;
-
-  // Create binding layout (don't forget to = Default)
-  // BindGroupLayoutEntry bindingLayout = Default;
-  BindGroupLayoutEntry bindingLayout;
-  // The binding index as used in the @binding attribute in the shader
-  bindingLayout.binding = 0;
-  // The stage that needs to access this resource
-  bindingLayout.visibility = ShaderStage::Vertex | ShaderStage::Fragment;
-  bindingLayout.buffer.type = BufferBindingType::Uniform;
-  bindingLayout.buffer.minBindingSize = sizeof(MyUniforms);
-
-  // Create a bind group layout
-  BindGroupLayoutDescriptor bindGroupLayoutDesc;
-  bindGroupLayoutDesc.entryCount = 1;
-  bindGroupLayoutDesc.entries = &bindingLayout;
+  // PipelineLayout -----------------------------
+  BindGroupLayoutEntry bindingLayout{
+    // The binding index as used in the @binding attribute in the shader
+    .binding = 0,
+    .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
+    .buffer{
+      .type = BufferBindingType::Uniform,
+      .minBindingSize = sizeof(MyUniforms),
+    },
+  };
+  BindGroupLayoutDescriptor bindGroupLayoutDesc{
+    .entryCount = 1,
+    .entries = &bindingLayout,
+  };
   BindGroupLayout bindGroupLayout = device.CreateBindGroupLayout(&bindGroupLayoutDesc);
+  PipelineLayoutDescriptor layoutDesc{
+    .bindGroupLayoutCount = 1,
+    .bindGroupLayouts = &bindGroupLayout,
+  };
+  PipelineLayout pipelineLayout = device.CreatePipelineLayout(&layoutDesc);
 
-  // Create the pipeline layout
-  PipelineLayoutDescriptor layoutDesc;
-  layoutDesc.bindGroupLayoutCount = 1;
-  layoutDesc.bindGroupLayouts = &bindGroupLayout;
-  PipelineLayout layout = device.CreatePipelineLayout(&layoutDesc);
-  pipelineDesc.layout = layout;
+  // Vertex State ---------------------------------
+  std::vector<VertexAttribute> vertexAttribs{
+    {
+      .format = VertexFormat::Float32x2,
+      .offset = 0,
+      .shaderLocation = 0,
+    },
+    {
+      .format = VertexFormat::Float32x3,
+      .offset = 2 * sizeof(float),
+      .shaderLocation = 1,
+    },
+  };
+  VertexBufferLayout vertexBufferLayout{
+    .arrayStride = 5 * sizeof(float),
+    .stepMode = VertexStepMode::Vertex,
+    .attributeCount = static_cast<uint32_t>((vertexAttribs.size())),
+    .attributes = vertexAttribs.data(),
+  };
+  VertexState vertexState{
+    .module = shaderModule,
+    .entryPoint = "vs_main",
+    .bufferCount = 1,
+    .buffers = &vertexBufferLayout,
+  };
 
+  // Primitve State --------------------------------
+  PrimitiveState primitiveState{
+    .topology = PrimitiveTopology::TriangleList,
+    .stripIndexFormat = IndexFormat::Undefined,
+    .frontFace = FrontFace::CCW,
+    .cullMode = CullMode::None,
+  };
+
+  // Fragment State --------------------------------
+  BlendState blendState{
+    .color{
+      .operation = BlendOperation::Add,
+      .srcFactor = BlendFactor::SrcAlpha,
+      .dstFactor = BlendFactor::OneMinusSrcAlpha,
+    },
+    .alpha{
+      .operation = BlendOperation::Add,
+      .srcFactor = BlendFactor::Zero,
+      .dstFactor = BlendFactor::One,
+    },
+  };
+  ColorTargetState colorTarget{
+    .format = swapChainFormat,
+    .blend = &blendState,
+    .writeMask = ColorWriteMask::All,
+  };
+  FragmentState fragmentState{
+    .module = shaderModule,
+    .entryPoint = "fs_main",
+    .constantCount = 0,
+    .constants = nullptr,
+    .targetCount = 1,
+    .targets = &colorTarget,
+  };
+
+  // finally, create Render Pipeline
+  RenderPipelineDescriptor pipelineDesc{
+    .layout = pipelineLayout,
+    .vertex = vertexState,
+    .primitive = primitiveState,
+    .fragment = &fragmentState,
+  };
   RenderPipeline pipeline = device.CreateRenderPipeline(&pipelineDesc);
   std::cout << "Render pipeline: " << pipeline.Get() << std::endl;
 
@@ -204,56 +201,48 @@ int main() {
     return 1;
   }
 
+  int indexCount = static_cast<int>(indexData.size());
+
   // Create vertex buffer
-  BufferDescriptor bufferDesc;
-  bufferDesc.size = pointData.size() * sizeof(float);
-  bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
-  bufferDesc.mappedAtCreation = false;
+  BufferDescriptor bufferDesc{
+    .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
+    .size = pointData.size() * sizeof(float),
+  };
   Buffer vertexBuffer = device.CreateBuffer(&bufferDesc);
   queue.WriteBuffer(vertexBuffer, 0, pointData.data(), bufferDesc.size);
 
-  int indexCount = static_cast<int>(indexData.size());
-
   // Create index buffer
-  // (we reuse the bufferDesc initialized for the vertexBuffer)
   bufferDesc.size = indexData.size() * sizeof(float);
   bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
-  bufferDesc.mappedAtCreation = false;
   Buffer indexBuffer = device.CreateBuffer(&bufferDesc);
   queue.WriteBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
   // Create uniform buffer
-  // The buffer will only contain 1 float with the value of uTime
   bufferDesc.size = sizeof(MyUniforms);
-  // Make sure to flag the buffer as BufferUsage::Uniform
   bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
-  bufferDesc.mappedAtCreation = false;
   Buffer uniformBuffer = device.CreateBuffer(&bufferDesc);
 
   // Upload the initial value of the uniforms
-  MyUniforms uniforms;
-  uniforms.time = 1.0f;
-  uniforms.color = {0.0f, 1.0f, 0.4f, 1.0f};
+  MyUniforms uniforms{
+    .color = {0.0f, 1.0f, 0.4f, 1.0f},
+    .time = 1.0f,
+  };
   queue.WriteBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
 
   // Create a binding
-  BindGroupEntry binding{};
-  // The index of the binding (the entries in bindGroupDesc can be in any order)
-  binding.binding = 0;
-  // The buffer it is actually bound to
-  binding.buffer = uniformBuffer;
-  // We can specify an offset within the buffer, so that a single buffer can hold
-  // multiple uniform blocks.
-  binding.offset = 0;
-  // And we specify again the size of the buffer.
-  binding.size = sizeof(MyUniforms);
-
+  BindGroupEntry binding{
+    .binding = 0,
+    .buffer = uniformBuffer,
+    .offset = 0,
+    .size = sizeof(MyUniforms),
+  };
   // A bind group contains one or multiple bindings
-  BindGroupDescriptor bindGroupDesc;
-  bindGroupDesc.layout = bindGroupLayout;
-  // There must be as many bindings as declared in the layout!
-  bindGroupDesc.entryCount = bindGroupLayoutDesc.entryCount;
-  bindGroupDesc.entries = &binding;
+  BindGroupDescriptor bindGroupDesc{
+    .layout = bindGroupLayout,
+    // There must be as many bindings as declared in the layout!
+    .entryCount = bindGroupLayoutDesc.entryCount,
+    .entries = &binding,
+  };
   BindGroup bindGroup = device.CreateBindGroup(&bindGroupDesc);
 
   while (!glfwWindowShouldClose(window)) {
@@ -263,8 +252,8 @@ int main() {
     uniforms.time = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
     // Only update the 1-st float of the buffer
     queue.WriteBuffer(
-        uniformBuffer, offsetof(MyUniforms, time), &uniforms.time,
-        sizeof(MyUniforms::time)
+      uniformBuffer, offsetof(MyUniforms, time), &uniforms.time,
+      sizeof(MyUniforms::time)
     );
 
     TextureView nextTexture = swapChain.GetCurrentTextureView();
@@ -273,44 +262,35 @@ int main() {
       return 1;
     }
 
-    CommandEncoderDescriptor commandEncoderDesc;
-    commandEncoderDesc.label = "Command Encoder";
+    CommandEncoderDescriptor commandEncoderDesc{.label = "Render encoder"};
     CommandEncoder encoder = device.CreateCommandEncoder(&commandEncoderDesc);
 
-    RenderPassDescriptor renderPassDesc;
-
-    RenderPassColorAttachment renderPassColorAttachment;
-    renderPassColorAttachment.view = nextTexture;
-    renderPassColorAttachment.resolveTarget = nullptr;
-    renderPassColorAttachment.loadOp = LoadOp::Clear;
-    renderPassColorAttachment.storeOp = StoreOp::Store;
-    renderPassColorAttachment.clearValue = Color{0.05, 0.05, 0.05, 1.0};
-    renderPassDesc.colorAttachmentCount = 1;
-    renderPassDesc.colorAttachments = &renderPassColorAttachment;
-
-    renderPassDesc.depthStencilAttachment = nullptr;
-    renderPassDesc.timestampWriteCount = 0;
-    renderPassDesc.timestampWrites = nullptr;
+    RenderPassColorAttachment renderPassColorAttachment{
+      .view = nextTexture,
+      .loadOp = LoadOp::Clear,
+      .storeOp = StoreOp::Store,
+      .clearValue = Color{0.05, 0.05, 0.05, 1.0},
+    };
+    RenderPassDescriptor renderPassDesc{
+      .colorAttachmentCount = 1,
+      .colorAttachments = &renderPassColorAttachment,
+    };
     RenderPassEncoder renderPass = encoder.BeginRenderPass(&renderPassDesc);
 
     renderPass.SetPipeline(pipeline);
-
     // Set both vertex and index buffers
     renderPass.SetVertexBuffer(0, vertexBuffer, 0, pointData.size() * sizeof(float));
     // The second argument must correspond to the choice of uint16_t or uint32_t
     // we've done when creating the index buffer.
     renderPass.SetIndexBuffer(
-        indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t)
+      indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t)
     );
     // Set binding group
     renderPass.SetBindGroup(0, bindGroup, 0, nullptr);
-
     renderPass.DrawIndexed(indexCount, 1, 0, 0, 0);
-
     renderPass.End();
 
-    CommandBufferDescriptor cmdBufferDescriptor;
-    cmdBufferDescriptor.label = "Command buffer";
+    CommandBufferDescriptor cmdBufferDescriptor{.label = "Command buffer"};
     CommandBuffer command = encoder.Finish(&cmdBufferDescriptor);
     queue.Submit(1, &command);
 
@@ -351,8 +331,7 @@ ShaderModule loadShaderModule(const fs::path &path, Device device) {
 }
 
 bool loadGeometry(
-    const fs::path &path, std::vector<float> &pointData,
-    std::vector<uint16_t> &indexData
+  const fs::path &path, std::vector<float> &pointData, std::vector<uint16_t> &indexData
 ) {
   std::ifstream file(path);
   if (!file.is_open()) {

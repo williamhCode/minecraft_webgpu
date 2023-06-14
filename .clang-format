@@ -2,6 +2,6 @@
 Language:        Cpp
 ColumnLimit:     88
 AlignAfterOpenBracket: BlockIndent
-# ContinuationIndentWidth: 2
+ContinuationIndentWidth: 2
 ...
 

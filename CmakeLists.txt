@@ -8,7 +8,6 @@ project(
 # variables
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
 
-# include
 add_subdirectory(deps/glfw)
 add_subdirectory(deps/webgpu)
 
@@ -16,9 +15,8 @@ add_subdirectory(deps/webgpu)
 add_executable(App
 	src/main.cpp
 	src/webgpu-utils.cpp
-	src/webgpu-utils.h
 )
-# target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_compile_definitions(App PRIVATE
     RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src/resources"
