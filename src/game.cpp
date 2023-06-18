@@ -5,6 +5,7 @@
 
 #include "util/webgpu-util.hpp"
 #include "util/util.hpp"
+#include "pipeline/simple.hpp"
 
 #include <array>
 #include <fstream>
@@ -13,15 +14,6 @@
 #include <vector>
 
 using namespace wgpu;
-
-struct MyUniforms {
-  glm::mat4 projectionMatrix;
-  glm::mat4 viewMatrix;
-  glm::mat4 modelMatrix;
-  glm::vec4 color;
-  float time;
-  float _pad[3];
-};
 
 void _keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   Game *game = reinterpret_cast<Game *>(glfwGetWindowUserPointer(window));
@@ -41,10 +33,10 @@ Game::Game() {
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   m_width = 1024;
   m_height = 640;
-  this->m_window = glfwCreateWindow(m_width, m_height, "Learn WebGPU", NULL, NULL);
+  m_window = glfwCreateWindow(m_width, m_height, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
@@ -61,114 +53,11 @@ Game::Game() {
   glfwGetCursorPos(m_window, &xpos, &ypos);
   m_lastMousePos = glm::vec2(xpos, ypos);
 
+  // init wgpu
   m_handle = util::Handle::init(m_window);
 
   // shader module
-  ShaderModule shaderModule =
-    util::loadShaderModule(RESOURCE_DIR "/shader.wgsl", m_handle.device);
-
-  // create render pipeline ------------------------------------------------ //
-
-  // PipelineLayout -----------------------------
-  BindGroupLayoutEntry bindingLayout{
-    // The binding index as used in the @binding attribute in the shader
-    .binding = 0,
-    .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
-    .buffer{
-      .type = BufferBindingType::Uniform,
-      .hasDynamicOffset = true,
-      .minBindingSize = sizeof(MyUniforms),
-    },
-  };
-  BindGroupLayoutDescriptor bindGroupLayoutDesc{
-    .entryCount = 1,
-    .entries = &bindingLayout,
-  };
-  BindGroupLayout bindGroupLayout = m_handle.device.CreateBindGroupLayout(&bindGroupLayoutDesc);
-  PipelineLayoutDescriptor layoutDesc{
-    .bindGroupLayoutCount = 1,
-    .bindGroupLayouts = &bindGroupLayout,
-  };
-  PipelineLayout pipelineLayout = m_handle.device.CreatePipelineLayout(&layoutDesc);
-
-  // Vertex State ---------------------------------
-  std::vector<VertexAttribute> vertexAttribs{
-    {
-      .format = VertexFormat::Float32x3,
-      .offset = 0,
-      .shaderLocation = 0,
-    },
-    {
-      .format = VertexFormat::Float32x3,
-      .offset = 3 * sizeof(float),
-      .shaderLocation = 1,
-    },
-  };
-  VertexBufferLayout vertexBufferLayout{
-    .arrayStride = 6 * sizeof(float),
-    .stepMode = VertexStepMode::Vertex,
-    .attributeCount = static_cast<uint32_t>(vertexAttribs.size()),
-    .attributes = vertexAttribs.data(),
-  };
-  VertexState vertexState{
-    .module = shaderModule,
-    .entryPoint = "vs_main",
-    .bufferCount = 1,
-    .buffers = &vertexBufferLayout,
-  };
-
-  // Primitve State --------------------------------
-  PrimitiveState primitiveState{
-    .topology = PrimitiveTopology::TriangleList,
-    .stripIndexFormat = IndexFormat::Undefined,
-    .frontFace = FrontFace::CCW,
-    .cullMode = CullMode::None,
-  };
-
-  // Depth Stencil State ---------------------------
-  TextureFormat depthTextureFormat = TextureFormat::Depth24Plus;
-  DepthStencilState depthStencilState{
-    .format = depthTextureFormat,
-    .depthWriteEnabled = true,
-    .depthCompare = CompareFunction::Less,
-    .stencilReadMask = 0,
-    .stencilWriteMask = 0,
-  };
-
-  // Fragment State --------------------------------
-  BlendState blendState{
-    .color{
-      .operation = BlendOperation::Add,
-      .srcFactor = BlendFactor::SrcAlpha,
-      .dstFactor = BlendFactor::OneMinusSrcAlpha,
-    },
-    .alpha{
-      .operation = BlendOperation::Add,
-      .srcFactor = BlendFactor::Zero,
-      .dstFactor = BlendFactor::One,
-    },
-  };
-  ColorTargetState colorTarget{
-    .format = m_handle.swapChainFormat,
-    .blend = &blendState,
-    .writeMask = ColorWriteMask::All,
-  };
-  FragmentState fragmentState{
-    .module = shaderModule,
-    .entryPoint = "fs_main",
-    .targetCount = 1,
-    .targets = &colorTarget,
-  };
-
-  // finally, create Render Pipeline
-  RenderPipelineDescriptor pipelineDesc{
-    .layout = pipelineLayout,
-    .vertex = vertexState,
-    .primitive = primitiveState,
-    .depthStencil = &depthStencilState,
-    .fragment = &fragmentState,
-  };
-  RenderPipeline pipeline = m_handle.device.CreateRenderPipeline(&pipelineDesc);
+  auto pipeline = createPipeline_simple(m_handle);
 
   // data
   std::vector<float> pointData;
@@ -196,55 +85,61 @@ Game::Game() {
   Buffer indexBuffer = m_handle.device.CreateBuffer(&bufferDesc);
   m_handle.queue.WriteBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
-  // Create uniform buffer
-  uint32_t uniformStride = std::max(
-    (uint32_t)sizeof(MyUniforms),
-    (uint32_t)m_handle.deviceLimits.minUniformBufferOffsetAlignment);
-  bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
-  bufferDesc.size = sizeof(MyUniforms);
-  // bufferDesc.size = uniformStride + sizeof(MyUniforms);
-  Buffer uniformBuffer = m_handle.device.CreateBuffer(&bufferDesc);
-
+  // Camera
   m_camera = util::Camera(
     glm::vec3(0, -4.0, 3.0),
     glm::vec3(-0.5, 0, 0),
     glm::radians(45.0f),
     (float)m_width / m_height,
     0.1,
-    100);
+    100
+  );
 
-  MyUniforms uniforms{
-    .projectionMatrix = m_camera.getProjection(),
-    .viewMatrix = m_camera.getView(),
-    .modelMatrix = glm::mat4(1.0),
-    .color = {0.0f, 1.0f, 0.4f, 1.0f},
-    .time = 0.0f,
-  };
-  m_handle.queue.WriteBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
+  // Create uniform buffers
+  bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
+  bufferDesc.size = sizeof(glm::mat4);
+  Buffer uniformBuffer0 = m_handle.device.CreateBuffer(&bufferDesc);
+  Buffer uniformBuffer1 = m_handle.device.CreateBuffer(&bufferDesc);
+  glm::mat4 model(1.0);
+  m_handle.queue.WriteBuffer(uniformBuffer1, 0, &model, sizeof(model));
 
-  // Create a binding
-  BindGroupEntry binding{
-    .binding = 0,
-    .buffer = uniformBuffer,
-    .offset = 0,
-    .size = sizeof(MyUniforms),
-  };
-  // A bind group contains one or multiple bindings
-  BindGroupDescriptor bindGroupDesc{
-    // .layout = bindGroupLayout,
-    .layout = pipeline.GetBindGroupLayout(0),
-    // There must be as many bindings as declared in the layout!
-    // .entryCount = bindGroupLayoutDesc.entryCount,
-    .entryCount = 1,
-    .entries = &binding,
-  };
-  BindGroup bindGroup = m_handle.device.CreateBindGroup(&bindGroupDesc);
+  // Create bindings
+  BindGroup bindGroup0;
+  {
+    BindGroupEntry binding{
+      .binding = 0,
+      .buffer = uniformBuffer0,
+      .size = sizeof(glm::mat4),
+    };
+    // A bind group contains one or multiple bindings
+    BindGroupDescriptor bindGroupDesc{
+      .layout = pipeline.GetBindGroupLayout(0),
+      .entryCount = 1,
+      .entries = &binding,
+    };
+    bindGroup0 = m_handle.device.CreateBindGroup(&bindGroupDesc);
+  }
+  BindGroup bindGroup1;
+  {
+    BindGroupEntry binding{
+      .binding = 0,
+      .buffer = uniformBuffer1,
+      .size = sizeof(glm::mat4),
+    };
+    // A bind group contains one or multiple bindings
+    BindGroupDescriptor bindGroupDesc{
+      .layout = pipeline.GetBindGroupLayout(1),
+      .entryCount = 1,
+      .entries = &binding,
+    };
+    bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
+  }
 
   // Create the depth texture
   TextureDescriptor depthTextureDesc{
     .usage = TextureUsage::RenderAttachment,
     .size = {static_cast<uint32_t>(m_FBWidth), static_cast<uint32_t>(m_FBHeight)},
-    .format = depthTextureFormat,
+    .format = TextureFormat::Depth24Plus,
   };
   Texture depthTexture = m_handle.device.CreateTexture(&depthTextureDesc);
 
@@ -278,12 +173,8 @@ Game::Game() {
     m_camera.move(move_dir * m_dt);
     m_camera.update();
 
-    uniforms.viewMatrix = m_camera.getView();
-    m_handle.queue.WriteBuffer(
-      uniformBuffer,
-      offsetof(MyUniforms, viewMatrix),
-      &uniforms.viewMatrix,
-      sizeof(MyUniforms::viewMatrix));
+    auto viewProj = m_camera.getViewProj();
+    m_handle.queue.WriteBuffer(uniformBuffer0, 0, &viewProj, sizeof(viewProj));
 
     TextureView nextTexture = m_handle.swapChain.GetCurrentTextureView();
     if (!nextTexture) {
@@ -291,8 +182,9 @@ Game::Game() {
       std::exit(1);
     }
 
-    CommandEncoderDescriptor commandEncoderDesc{.label = "Render encoder"};
-    CommandEncoder commandEncoder = m_handle.device.CreateCommandEncoder(&commandEncoderDesc);
+    CommandEncoderDescriptor commandEncoderDesc{};
+    CommandEncoder commandEncoder =
+      m_handle.device.CreateCommandEncoder(&commandEncoderDesc);
 
     RenderPassColorAttachment colorAttachment{
       .view = nextTexture,
@@ -318,23 +210,16 @@ Game::Game() {
 
     passEncoder.SetVertexBuffer(0, vertexBuffer, 0, vertexBuffer.GetSize());
     passEncoder.SetIndexBuffer(
-      indexBuffer, IndexFormat::Uint16, 0, indexBuffer.GetSize());
+      indexBuffer, IndexFormat::Uint16, 0, indexBuffer.GetSize()
+    );
 
-    uint32_t dynamicOffset = 0;
-
-    // Set binding group
-    // dynamicOffset = 0 * uniformStride;
-    passEncoder.SetBindGroup(0, bindGroup, 1, &dynamicOffset);
-    passEncoder.DrawIndexed(indexCount, 1, 0, 0, 0);
-
-    // Set binding group with a different uniform offset
-    // dynamicOffset = 1 * uniformStride;
-    // renderPass.SetBindGroup(0, bindGroup, 1, &dynamicOffset);
-    // renderPass.DrawIndexed(indexCount, 1, 0, 0, 0);
+    passEncoder.SetBindGroup(0, bindGroup0);
+    passEncoder.SetBindGroup(1, bindGroup1);
+    passEncoder.DrawIndexed(indexCount);
 
     passEncoder.End();
 
-    CommandBufferDescriptor cmdBufferDescriptor{.label = "Command buffer"};
+    CommandBufferDescriptor cmdBufferDescriptor{};
     CommandBuffer command = commandEncoder.Finish(&cmdBufferDescriptor);
     m_handle.queue.Submit(1, &command);
 

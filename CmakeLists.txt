@@ -20,6 +20,7 @@ add_executable(App
   src/util/handle.cpp
   src/util/util.cpp
   src/util/webgpu-util.cpp
+  src/pipeline/simple.cpp
 )
 target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 

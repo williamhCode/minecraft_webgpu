@@ -26,11 +26,14 @@ void Camera::update() {
   glm::vec3 up = rotation * m_up;
 
   m_view = glm::lookAt(m_position, m_position + forward, up);
+  m_viewProj = m_projection * m_view;
 }
 
 glm::mat4 Camera::getProjection() { return m_projection; }
 
 glm::mat4 Camera::getView() { return m_view; }
+
+glm::mat4 Camera::getViewProj() { return m_viewProj; }
 
 // left-right, vertical
 void Camera::look(glm::vec2 delta) {
