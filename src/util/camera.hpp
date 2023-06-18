@@ -1,6 +1,6 @@
 #pragma once
 
-#include "glm-include.h"
+#include "glm-include.hpp"
 
 namespace util {
 

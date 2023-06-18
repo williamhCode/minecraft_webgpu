@@ -1,10 +1,10 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
-#include "glm-include.h"
+#include "glm-include.hpp"
 
-#include "util/camera.h"
-#include "util/handle.h"
+#include "util/camera.hpp"
+#include "util/handle.hpp"
 
 class Game {
 private:

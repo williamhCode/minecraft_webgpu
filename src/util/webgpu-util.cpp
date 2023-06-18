@@ -1,4 +1,4 @@
-#include "webgpu-util.h"
+#include "webgpu-util.hpp"
 #include <iostream>
 #include <map>
 #include <ostream>

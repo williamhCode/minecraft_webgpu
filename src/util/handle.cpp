@@ -1,7 +1,7 @@
-#include "handle.h"
+#include "handle.hpp"
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
-#include "util/webgpu-util.h"
+#include "util/webgpu-util.hpp"
 
 #include <iostream>
 #include <sstream>

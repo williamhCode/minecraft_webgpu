@@ -1,10 +1,10 @@
-#include "game.h"
+#include "game.hpp"
 
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 
-#include "util/webgpu-util.h"
-#include "util/util.h"
+#include "util/webgpu-util.hpp"
+#include "util/util.hpp"
 
 #include <array>
 #include <fstream>
@@ -357,7 +357,7 @@ void Game::cursorPosCallback(double xpos, double ypos) {
   glm::vec2 currMousePos(xpos, ypos);
   glm::vec2 delta = currMousePos - m_lastMousePos;
   m_lastMousePos = currMousePos;
-  m_camera.look(delta * 0.005f);
+  m_camera.look(delta * 0.003f);
 }
 
 void Game::run() {}
