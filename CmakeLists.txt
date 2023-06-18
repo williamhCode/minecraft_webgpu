@@ -10,19 +10,26 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
 
 add_subdirectory(deps/glfw)
 add_subdirectory(deps/webgpu)
+add_subdirectory(deps/glm)
 
 # sources
 add_executable(App
 	src/main.cpp
-	src/webgpu-utils.cpp
+	src/game.cpp
+  src/util/camera.cpp
+  src/util/handle.cpp
+  src/util/util.cpp
+  src/util/webgpu-util.cpp
 )
 target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_compile_definitions(App PRIVATE
     RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src/resources"
+    GLM_FORCE_DEPTH_ZERO_TO_ONE
+    GLM_FORCE_LEFT_HANDED
 )
 
-target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp)
+target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp glm)
 
 # options
 set_target_properties(App PROPERTIES

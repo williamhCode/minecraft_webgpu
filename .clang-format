@@ -1,7 +1,12 @@
 ---
 Language:        Cpp
 ColumnLimit:     88
+# AlignAfterOpenBracket: AlwaysBreak
 AlignAfterOpenBracket: BlockIndent
 ContinuationIndentWidth: 2
+SortIncludes: false
+
+BinPackArguments: false
+BinPackParameters: false
 ...
 

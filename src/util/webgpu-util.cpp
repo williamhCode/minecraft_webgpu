@@ -1,20 +1,25 @@
-#include "webgpu-utils.h"
+#include "webgpu-util.h"
 #include <iostream>
+#include <map>
 #include <ostream>
 
-namespace wgpu_utils {
+namespace util {
 
 using namespace wgpu;
 
-Adapter RequestAdapter(Instance instance, RequestAdapterOptions const *options) {
+Adapter requestAdapter(Instance instance, RequestAdapterOptions const *options) {
   struct UserData {
     WGPUAdapter adapter = nullptr;
     bool requestEnded = false;
   };
   UserData userData;
 
-  auto onAdapterRequestEnded = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
-                                  char const *message, void *pUserData) {
+  auto onAdapterRequestEnded = [](
+                                 WGPURequestAdapterStatus status,
+                                 WGPUAdapter adapter,
+                                 char const *message,
+                                 void *pUserData
+                               ) {
     UserData &userData = *reinterpret_cast<UserData *>(pUserData);
     if (status == WGPURequestAdapterStatus_Success) {
       userData.adapter = adapter;
@@ -31,15 +36,19 @@ Adapter RequestAdapter(Instance instance, RequestAdapterOptions const *options) 
   return userData.adapter;
 }
 
-Device RequestDevice(Adapter instance, DeviceDescriptor const *descriptor) {
+Device requestDevice(Adapter instance, DeviceDescriptor const *descriptor) {
   struct UserData {
     WGPUDevice device = nullptr;
     bool requestEnded = false;
   };
   UserData userData;
 
-  auto onDeviceRequestEnded = [](WGPURequestDeviceStatus status, WGPUDevice device,
-                                 char const *message, void *pUserData) {
+  auto onDeviceRequestEnded = [](
+                                WGPURequestDeviceStatus status,
+                                WGPUDevice device,
+                                char const *message,
+                                void *pUserData
+                              ) {
     UserData &userData = *reinterpret_cast<UserData *>(pUserData);
     if (status == WGPURequestDeviceStatus_Success) {
       userData.device = device;
@@ -56,7 +65,7 @@ Device RequestDevice(Adapter instance, DeviceDescriptor const *descriptor) {
   return userData.device;
 }
 
-void SetUncapturedErrorCallback(Device device) {
+void setUncapturedErrorCallback(Device device) {
   auto onUncapturedError = [](WGPUErrorType type, char const *message, void *userdata) {
     std::cout << "Device error: type " << type;
     if (message)
@@ -67,4 +76,22 @@ void SetUncapturedErrorCallback(Device device) {
   device.SetUncapturedErrorCallback(onUncapturedError, nullptr);
 }
 
-} // namespace wgpu_utils
+ShaderModule loadShaderModule(const fs::path &path, Device device) {
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    return nullptr;
+  }
+  file.seekg(0, std::ios::end);
+  size_t size = file.tellg();
+  std::string shaderSource(size, ' ');
+  file.seekg(0);
+  file.read(shaderSource.data(), size);
+
+  ShaderModuleWGSLDescriptor shaderCodeDesc{};
+  shaderCodeDesc.nextInChain = nullptr;
+  shaderCodeDesc.code = shaderSource.c_str();
+  ShaderModuleDescriptor shaderDesc{.nextInChain = &shaderCodeDesc};
+  return device.CreateShaderModule(&shaderDesc);
+}
+
+} // namespace util
