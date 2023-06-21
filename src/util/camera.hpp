@@ -17,14 +17,16 @@ private:
 public:
   Camera() = default;
   Camera(glm::vec3 position, glm::vec3 orientation, float fov, float aspect, float near, float far);
-  void rotate(glm::vec3 delta);
-  void translate(glm::vec3 delta);
-  void update();
-  glm::mat4 getProjection();
-  glm::mat4 getView();
-  glm::mat4 getViewProj();
-  void look(glm::vec2 delta);
-  void move(glm::vec3 move_direction);
+  void Rotate(glm::vec3 delta);
+  void Translate(glm::vec3 delta);
+  void Update();
+  glm::vec3 GetPosition();
+  glm::vec3 GetOrientation();
+  glm::mat4 GetProjection();
+  glm::mat4 GetView();
+  glm::mat4 GetViewProj();
+  void Look(glm::vec2 delta);
+  void Move(glm::vec3 move_direction);
 };
 
 } // namespace util

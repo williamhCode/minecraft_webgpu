@@ -7,12 +7,12 @@ namespace util {
 
 namespace fs = std::filesystem;
 
-wgpu::Adapter requestAdapter(wgpu::Instance &instance, wgpu::RequestAdapterOptions const *options);
+wgpu::Adapter RequestAdapter(wgpu::Instance &instance, wgpu::RequestAdapterOptions const *options);
 
-wgpu::Device requestDevice(wgpu::Adapter &instance, wgpu::DeviceDescriptor const *options);
+wgpu::Device RequestDevice(wgpu::Adapter &instance, wgpu::DeviceDescriptor const *options);
 
-void setUncapturedErrorCallback(wgpu::Device &device);
+void SetUncapturedErrorCallback(wgpu::Device &device);
 
-wgpu::ShaderModule loadShaderModule(const fs::path &path, wgpu::Device &device);
+wgpu::ShaderModule LoadShaderModule(const fs::path &path, wgpu::Device &device);
 
 } // namespace util

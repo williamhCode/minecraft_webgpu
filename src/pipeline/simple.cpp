@@ -1,17 +1,25 @@
 #include "simple.hpp"
 #include "util/webgpu-util.hpp"
 #include "glm-include.hpp"
+#include <vector>
 
 using namespace wgpu;
 
+struct VertexAttributes {
+  glm::vec3 position;
+  glm::vec3 normal;
+  glm::vec3 color;
+  glm::vec2 uv;
+};
+
 RenderPipeline createPipeline_simple(util::Handle &handle) {
   ShaderModule shaderModule =
-    util::loadShaderModule(RESOURCE_DIR "/shader.wgsl", handle.device);
+    util::LoadShaderModule(SRC_DIR "/shaders/simple.wgsl", handle.device);
 
   // bind group layout
-  BindGroupLayout bindGroupLayouts[2];
+  std::vector<BindGroupLayout> bindGroupLayouts;
   {
-    BindGroupLayoutEntry bindingLayout{
+    BindGroupLayoutEntry entry{
       .binding = 0,
       .visibility = ShaderStage::Vertex,
       .buffer{
@@ -19,36 +27,47 @@ RenderPipeline createPipeline_simple(util::Handle &handle) {
         .minBindingSize = sizeof(glm::mat4),
       },
     };
-    BindGroupLayoutDescriptor bindGroupLayoutDesc{
+    BindGroupLayoutDescriptor desc{
       .entryCount = 1,
-      .entries = &bindingLayout,
+      .entries = &entry,
     };
-    bindGroupLayouts[0] = handle.device.CreateBindGroupLayout(&bindGroupLayoutDesc);
+    bindGroupLayouts.push_back(handle.device.CreateBindGroupLayout(&desc));
   }
   {
-    BindGroupLayoutEntry bindingLayout{
-      .binding = 0,
-      .visibility = ShaderStage::Vertex,
-      .buffer{
-        .type = BufferBindingType::Uniform,
-        .minBindingSize = sizeof(glm::mat4),
+    std::vector<BindGroupLayoutEntry> entries{
+      {
+        .binding = 0,
+        .visibility = ShaderStage::Vertex,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(glm::mat4),
+        },
+      },
+      {
+        .binding = 1,
+        .visibility = ShaderStage::Fragment,
+        .texture{
+          .sampleType = TextureSampleType::Float,
+          .viewDimension = TextureViewDimension::e2D,
+        },
       },
     };
-    BindGroupLayoutDescriptor bindGroupLayoutDesc{
-      .entryCount = 1,
-      .entries = &bindingLayout,
+    BindGroupLayoutDescriptor desc{
+      .entryCount = entries.size(),
+      .entries = entries.data(),
     };
-    bindGroupLayouts[1] = handle.device.CreateBindGroupLayout(&bindGroupLayoutDesc);
+    bindGroupLayouts.push_back(handle.device.CreateBindGroupLayout(&desc)
+    );
   }
 
   PipelineLayoutDescriptor layoutDesc{
-    .bindGroupLayoutCount = 2,
-    .bindGroupLayouts = bindGroupLayouts,
+    .bindGroupLayoutCount = bindGroupLayouts.size(),
+    .bindGroupLayouts = bindGroupLayouts.data(),
   };
   PipelineLayout pipelineLayout = handle.device.CreatePipelineLayout(&layoutDesc);
 
   // Vertex State ---------------------------------
-  VertexAttribute vertexAttribs[] = {
+  std::vector<VertexAttribute> vertexAttributes = {
     {
       .format = VertexFormat::Float32x3,
       .offset = 0,
@@ -56,15 +75,25 @@ RenderPipeline createPipeline_simple(util::Handle &handle) {
     },
     {
       .format = VertexFormat::Float32x3,
-      .offset = 3 * sizeof(float),
+      .offset = offsetof(VertexAttributes, normal),
       .shaderLocation = 1,
+    },
+    {
+      .format = VertexFormat::Float32x3,
+      .offset = offsetof(VertexAttributes, color),
+      .shaderLocation = 2,
+    },
+    {
+      .format = VertexFormat::Float32x2,
+      .offset = offsetof(VertexAttributes, uv),
+      .shaderLocation = 3,
     },
   };
   VertexBufferLayout vertexBufferLayout{
-    .arrayStride = 6 * sizeof(float),
+    .arrayStride = sizeof(VertexAttributes),
     .stepMode = VertexStepMode::Vertex,
-    .attributeCount = 2,
-    .attributes = vertexAttribs,
+    .attributeCount = vertexAttributes.size(),
+    .attributes = vertexAttributes.data(),
   };
   VertexState vertexState{
     .module = shaderModule,
@@ -86,8 +115,6 @@ RenderPipeline createPipeline_simple(util::Handle &handle) {
     .format = TextureFormat::Depth24Plus,
     .depthWriteEnabled = true,
     .depthCompare = CompareFunction::Less,
-    .stencilReadMask = 0,
-    .stencilWriteMask = 0,
   };
 
   // Fragment State --------------------------------

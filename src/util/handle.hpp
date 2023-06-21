@@ -15,7 +15,7 @@ struct Handle {
   wgpu::TextureFormat swapChainFormat;
   wgpu::Limits deviceLimits;
 
-  static Handle init(GLFWwindow *window);
+  static Handle Init(GLFWwindow *window);
 };
 
 } // namespace util

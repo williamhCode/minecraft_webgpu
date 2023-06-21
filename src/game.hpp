@@ -13,17 +13,17 @@ private:
   int m_height;
   int m_FBWidth;
   int m_FBHeight;
-  float m_dt;
 
   util::Handle m_handle;
-
   util::Camera m_camera;
   glm::vec2 m_lastMousePos;
+  float m_dt;
 
 public:
   Game();
   ~Game();
-  void keyCallback(int key, int scancode, int action, int mods);
-  void cursorPosCallback(double xpos, double ypos);
-  void run();
+  void KeyCallback(int key, int scancode, int action, int mods);
+  void CursorPosCallback(double xpos, double ypos);
+  void Run();
+  bool KeyPressed(int key);
 };

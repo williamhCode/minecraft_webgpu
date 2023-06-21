@@ -9,14 +9,14 @@ Camera::Camera(
 )
     : m_position(position), m_orientation(orientation) {
   m_projection = glm::perspective(fov, aspect, near, far);
-  update();
+  Update();
 }
 
-void Camera::rotate(glm::vec3 delta) { m_orientation += delta; }
+void Camera::Rotate(glm::vec3 delta) { m_orientation += delta; }
 
-void Camera::translate(glm::vec3 delta) { m_position += delta; }
+void Camera::Translate(glm::vec3 delta) { m_position += delta; }
 
-void Camera::update() {
+void Camera::Update() {
   glm::mat4 pitch = glm::rotate(m_orientation.x, glm::vec3(1.0f, 0.0f, 0.0f));
   glm::mat4 roll = glm::rotate(m_orientation.y, glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 yaw = glm::rotate(m_orientation.z, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -29,23 +29,27 @@ void Camera::update() {
   m_viewProj = m_projection * m_view;
 }
 
-glm::mat4 Camera::getProjection() { return m_projection; }
+glm::vec3 Camera::GetPosition() { return m_position; }
 
-glm::mat4 Camera::getView() { return m_view; }
+glm::vec3 Camera::GetOrientation() { return m_orientation; }
 
-glm::mat4 Camera::getViewProj() { return m_viewProj; }
+glm::mat4 Camera::GetProjection() { return m_projection; }
+
+glm::mat4 Camera::GetView() { return m_view; }
+
+glm::mat4 Camera::GetViewProj() { return m_viewProj; }
 
 // left-right, vertical
-void Camera::look(glm::vec2 delta) {
-  rotate(glm::vec3(-delta.y, 0, delta.x));
+void Camera::Look(glm::vec2 delta) {
+  Rotate(glm::vec3(-delta.y, 0, -delta.x));
   float pi_4 = glm::radians(90.0f);
   m_orientation.x = std::max(-pi_4, std::min(m_orientation.x, pi_4));
 }
 
 // sideways, forwards, vertical
-void Camera::move(glm::vec3 move_direction) {
+void Camera::Move(glm::vec3 move_direction) {
   move_direction = glm::rotateZ(move_direction, m_orientation.z);
-  translate(move_direction);
+  Translate(move_direction);
 }
 
 } // namespace util

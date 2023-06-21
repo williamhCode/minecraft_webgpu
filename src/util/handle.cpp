@@ -10,7 +10,7 @@ namespace util {
 
 using namespace wgpu;
 
-Handle Handle::init(GLFWwindow *window) {
+Handle Handle::Init(GLFWwindow *window) {
   // instance
   Instance instance = CreateInstance();
   if (!instance) {
@@ -23,7 +23,7 @@ Handle Handle::init(GLFWwindow *window) {
 
   // adapter
   RequestAdapterOptions adapterOpts{};
-  Adapter adapter = util::requestAdapter(instance, &adapterOpts);
+  Adapter adapter = util::RequestAdapter(instance, &adapterOpts);
 
   // device limits
   SupportedLimits supportedLimits;
@@ -37,8 +37,8 @@ Handle Handle::init(GLFWwindow *window) {
     .requiredLimits = nullptr,
     .defaultQueue{.label = "The default queue"},
   };
-  Device device = util::requestDevice(adapter, &deviceDesc);
-  util::setUncapturedErrorCallback(device);
+  Device device = util::RequestDevice(adapter, &deviceDesc);
+  util::SetUncapturedErrorCallback(device);
 
   // queue
   Queue queue = device.GetQueue();

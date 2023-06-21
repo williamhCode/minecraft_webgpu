@@ -7,7 +7,7 @@ namespace util {
 
 using namespace wgpu;
 
-Adapter requestAdapter(Instance &instance, RequestAdapterOptions const *options) {
+Adapter RequestAdapter(Instance &instance, RequestAdapterOptions const *options) {
   struct UserData {
     WGPUAdapter adapter = nullptr;
     bool requestEnded = false;
@@ -36,7 +36,7 @@ Adapter requestAdapter(Instance &instance, RequestAdapterOptions const *options)
   return userData.adapter;
 }
 
-Device requestDevice(Adapter &instance, DeviceDescriptor const *descriptor) {
+Device RequestDevice(Adapter &instance, DeviceDescriptor const *descriptor) {
   struct UserData {
     WGPUDevice device = nullptr;
     bool requestEnded = false;
@@ -65,7 +65,7 @@ Device requestDevice(Adapter &instance, DeviceDescriptor const *descriptor) {
   return userData.device;
 }
 
-void setUncapturedErrorCallback(Device &device) {
+void SetUncapturedErrorCallback(Device &device) {
   auto onUncapturedError = [](WGPUErrorType type, char const *message, void *userdata) {
     std::cout << "Device error: type " << type;
     if (message)
@@ -76,7 +76,7 @@ void setUncapturedErrorCallback(Device &device) {
   device.SetUncapturedErrorCallback(onUncapturedError, nullptr);
 }
 
-ShaderModule loadShaderModule(const fs::path &path, Device &device) {
+ShaderModule LoadShaderModule(const fs::path &path, Device &device) {
   std::ifstream file(path);
   if (!file.is_open()) {
     return nullptr;
