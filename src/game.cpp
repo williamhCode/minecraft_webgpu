@@ -3,6 +3,8 @@
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 
+#include "game/chunk.hpp"
+#include "game/mesh.hpp"
 #include "util/webgpu-util.hpp"
 #include "util/load.hpp"
 #include "pipeline/simple.hpp"
@@ -33,7 +35,7 @@ Game::Game() {
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   m_width = 1024;
   m_height = 640;
   m_window = glfwCreateWindow(m_width, m_height, "Learn WebGPU", NULL, NULL);
@@ -58,85 +60,29 @@ Game::Game() {
   // init wgpu
   m_handle = util::Handle::Init(m_window);
 
-  auto pipeline = createPipeline_simple(m_handle);
-
-  // Camera
+  // init objects
   m_camera = util::Camera(
-    glm::vec3(0, -3.0, 2.0),
-    glm::vec3(glm::radians(-30.0f), 0, 0),
+    &m_handle,
+    glm::vec3(0, -20.0, 20.0),
+    glm::vec3(glm::radians(0.0f), 0, 0),
     glm::radians(45.0f),
     (float)m_width / m_height,
     0.1,
     100
   );
 
-  std::vector<util::ModelVertex> vertexData =
-    util::LoadObj(SRC_DIR "/resources/cube.obj");
+  game::InitFaces();  // init mesh faces
+  game::Chunk chunk(&m_handle);
 
-  Buffer vertexBuffer;
-  {
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
-      .size = vertexData.size() * sizeof(util::ModelVertex),
-    };
-    vertexBuffer = m_handle.device.CreateBuffer(&bufferDesc);
-    m_handle.queue.WriteBuffer(vertexBuffer, 0, vertexData.data(), bufferDesc.size);
-  }
-
-  // Create uniform buffers
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
-    .size = sizeof(glm::mat4),
-  };
-  Buffer uniformBuffer0 = m_handle.device.CreateBuffer(&bufferDesc);
-
-  Buffer uniformBuffer1 = m_handle.device.CreateBuffer(&bufferDesc);
-  glm::mat4 model(1.0);
-  m_handle.queue.WriteBuffer(uniformBuffer1, 0, &model, sizeof(model));
-
-  // Create texture
-  TextureDescriptor textureDesc{
-    .usage = TextureUsage::TextureBinding | TextureUsage::CopyDst,
-    .size = {256, 256, 1},
-    .format = TextureFormat::RGBA8Unorm,
-  };
-  Texture texture = m_handle.device.CreateTexture(&textureDesc);
-
-  std::vector<uint8_t> pixels(4 * textureDesc.size.width * textureDesc.size.height);
-  for (uint32_t i = 0; i < textureDesc.size.width; ++i) {
-    for (uint32_t j = 0; j < textureDesc.size.height; ++j) {
-      uint8_t *p = &pixels[4 * (j * textureDesc.size.width + i)];
-      p[0] = (uint8_t)i; // r
-      p[1] = (uint8_t)j; // g
-      p[2] = 128;        // b
-      p[3] = 255;        // a
-    }
-  }
-
-  ImageCopyTexture destination{.texture = texture};
-  TextureDataLayout source{
-    .bytesPerRow = 4 * textureDesc.size.width,
-    .rowsPerImage = textureDesc.size.height,
-  };
-  m_handle.queue.WriteTexture(
-    &destination, pixels.data(), pixels.size(), &source, &textureDesc.size
-  );
-
-  // Create texture view for the shader.
-  TextureViewDescriptor textureViewDesc{
-    .format = TextureFormat::RGBA8Unorm,
-    .dimension = TextureViewDimension::e2D,
-    .mipLevelCount = 1,
-    .arrayLayerCount = 1,
-  };
-  TextureView textureView = texture.CreateView(&textureViewDesc);
+  // init pipeline
+  RenderPipeline pipeline = CreatePipeline_simple(m_handle);
 
   // Create bindings
   BindGroup bindGroup0;
   {
     BindGroupEntry entry{
       .binding = 0,
-      .buffer = uniformBuffer0,
+      .buffer = m_camera.GetBuffer(),
       .size = sizeof(glm::mat4),
     };
     BindGroupDescriptor bindGroupDesc{
@@ -146,27 +92,30 @@ Game::Game() {
     };
     bindGroup0 = m_handle.device.CreateBindGroup(&bindGroupDesc);
   }
+
+  glm::mat4 modelMatix(1.0);
+  BufferDescriptor bufferDesc{
+    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
+    .size = sizeof(glm::mat4),
+  };
+  Buffer buffer = m_handle.device.CreateBuffer(&bufferDesc);
+  m_handle.queue.WriteBuffer(buffer, 0, &modelMatix, sizeof(modelMatix));
+
   BindGroup bindGroup1;
   {
-    std::vector<BindGroupEntry> entries{
-      {
-        .binding = 0,
-        .buffer = uniformBuffer1,
-        .size = sizeof(glm::mat4),
-      },
-      {
-        .binding = 1,
-        .textureView = textureView,
-      },
+    BindGroupEntry entry{
+      .binding = 0,
+      .buffer = buffer,
+      .size = sizeof(glm::mat4),
     };
-
     BindGroupDescriptor bindGroupDesc{
       .layout = pipeline.GetBindGroupLayout(1),
-      .entryCount = entries.size(),
-      .entries = entries.data(),
+      .entryCount = 1,
+      .entries = &entry,
     };
     bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
   }
+
 
   // Create the depth texture
   TextureDescriptor depthTextureDesc{
@@ -191,29 +140,27 @@ Game::Game() {
 
     m_handle.device.Tick();
 
-    std::cout << "Position: " << glm::to_string(m_camera.GetPosition()) << "\n";
-    std::cout << "Orentation: " << glm::to_string(m_camera.GetOrientation()) << "\n\n";
+    // std::cout << "Position: " << glm::to_string(m_camera.GetPosition()) << "\n";
+    // std::cout << "Orentation: " << glm::to_string(m_camera.GetOrientation()) << "\n\n";
 
     glfwPollEvents();
 
     glm::vec3 move_dir(0);
+    float speed = 10;
     if (KeyPressed(GLFW_KEY_W))
-      move_dir.y += 5;
+      move_dir.y += speed;
     if (KeyPressed(GLFW_KEY_S))
-      move_dir.y -= 5;
+      move_dir.y -= speed;
     if (KeyPressed(GLFW_KEY_A))
-      move_dir.x -= 5;
+      move_dir.x -= speed;
     if (KeyPressed(GLFW_KEY_D))
-      move_dir.x += 5;
+      move_dir.x += speed;
     if (KeyPressed(GLFW_KEY_SPACE))
-      move_dir.z += 5;
+      move_dir.z += speed;
     if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
-      move_dir.z -= 5;
+      move_dir.z -= speed;
     m_camera.Move(move_dir * m_dt);
     m_camera.Update();
-
-    auto viewProj = m_camera.GetViewProj();
-    m_handle.queue.WriteBuffer(uniformBuffer0, 0, &viewProj, sizeof(viewProj));
 
     TextureView nextTexture = m_handle.swapChain.GetCurrentTextureView();
     if (!nextTexture) {
@@ -250,9 +197,7 @@ Game::Game() {
     passEncoder.SetBindGroup(0, bindGroup0);
     passEncoder.SetBindGroup(1, bindGroup1);
 
-    passEncoder.SetVertexBuffer(0, vertexBuffer, 0, vertexBuffer.GetSize());
-
-    passEncoder.Draw(vertexData.size());
+    chunk.Render(passEncoder);
 
     passEncoder.End();
 

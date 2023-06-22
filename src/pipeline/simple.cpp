@@ -1,38 +1,19 @@
 #include "simple.hpp"
 #include "util/webgpu-util.hpp"
 #include "glm-include.hpp"
+#include "game/mesh.hpp"
 #include <vector>
 
 using namespace wgpu;
+using game::Vertex;
 
-struct VertexAttributes {
-  glm::vec3 position;
-  glm::vec3 normal;
-  glm::vec3 color;
-  glm::vec2 uv;
-};
-
-RenderPipeline createPipeline_simple(util::Handle &handle) {
+RenderPipeline CreatePipeline_simple(util::Handle &handle) {
   ShaderModule shaderModule =
     util::LoadShaderModule(SRC_DIR "/shaders/simple.wgsl", handle.device);
 
   // bind group layout
   std::vector<BindGroupLayout> bindGroupLayouts;
-  {
-    BindGroupLayoutEntry entry{
-      .binding = 0,
-      .visibility = ShaderStage::Vertex,
-      .buffer{
-        .type = BufferBindingType::Uniform,
-        .minBindingSize = sizeof(glm::mat4),
-      },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = 1,
-      .entries = &entry,
-    };
-    bindGroupLayouts.push_back(handle.device.CreateBindGroupLayout(&desc));
-  }
+  // group 1
   {
     std::vector<BindGroupLayoutEntry> entries{
       {
@@ -43,12 +24,22 @@ RenderPipeline createPipeline_simple(util::Handle &handle) {
           .minBindingSize = sizeof(glm::mat4),
         },
       },
+    };
+    BindGroupLayoutDescriptor desc{
+      .entryCount = entries.size(),
+      .entries = entries.data(),
+    };
+    bindGroupLayouts.push_back(handle.device.CreateBindGroupLayout(&desc));
+  }
+  // group 2
+  {
+    std::vector<BindGroupLayoutEntry> entries{
       {
-        .binding = 1,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::Float,
-          .viewDimension = TextureViewDimension::e2D,
+        .binding = 0,
+        .visibility = ShaderStage::Vertex,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(glm::mat4),
         },
       },
     };
@@ -56,8 +47,7 @@ RenderPipeline createPipeline_simple(util::Handle &handle) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bindGroupLayouts.push_back(handle.device.CreateBindGroupLayout(&desc)
-    );
+    bindGroupLayouts.push_back(handle.device.CreateBindGroupLayout(&desc));
   }
 
   PipelineLayoutDescriptor layoutDesc{
@@ -75,22 +65,17 @@ RenderPipeline createPipeline_simple(util::Handle &handle) {
     },
     {
       .format = VertexFormat::Float32x3,
-      .offset = offsetof(VertexAttributes, normal),
+      .offset = offsetof(Vertex, normal),
       .shaderLocation = 1,
     },
     {
-      .format = VertexFormat::Float32x3,
-      .offset = offsetof(VertexAttributes, color),
-      .shaderLocation = 2,
-    },
-    {
       .format = VertexFormat::Float32x2,
-      .offset = offsetof(VertexAttributes, uv),
-      .shaderLocation = 3,
+      .offset = offsetof(Vertex, texCoord),
+      .shaderLocation = 2,
     },
   };
   VertexBufferLayout vertexBufferLayout{
-    .arrayStride = sizeof(VertexAttributes),
+    .arrayStride = sizeof(Vertex),
     .stepMode = VertexStepMode::Vertex,
     .attributeCount = vertexAttributes.size(),
     .attributes = vertexAttributes.data(),

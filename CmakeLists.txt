@@ -23,6 +23,8 @@ add_executable(App
   src/util/webgpu-util.cpp
   src/pipeline/simple.cpp
   src/game/chunk.cpp
+  src/game/block.cpp
+  src/game/mesh.cpp
 )
 target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 

@@ -3,11 +3,24 @@
 
 namespace util {
 
+using namespace wgpu;
+
 Camera::Camera(
-  glm::vec3 position, glm::vec3 orientation, float fov, float aspect, float near,
+  Handle *handle,
+  glm::vec3 position,
+  glm::vec3 orientation,
+  float fov,
+  float aspect,
+  float near,
   float far
 )
-    : m_position(position), m_orientation(orientation) {
+    : m_handle(handle), m_position(position), m_orientation(orientation) {
+  BufferDescriptor bufferDesc{
+    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
+    .size = sizeof(glm::mat4),
+  };
+  m_uniformBuffer = m_handle->device.CreateBuffer(&bufferDesc);
+
   m_projection = glm::perspective(fov, aspect, near, far);
   Update();
 }
@@ -27,6 +40,8 @@ void Camera::Update() {
 
   m_view = glm::lookAt(m_position, m_position + forward, up);
   m_viewProj = m_projection * m_view;
+
+  m_handle->queue.WriteBuffer(m_uniformBuffer, 0, &m_viewProj, sizeof(m_viewProj));
 }
 
 glm::vec3 Camera::GetPosition() { return m_position; }
@@ -38,6 +53,8 @@ glm::mat4 Camera::GetProjection() { return m_projection; }
 glm::mat4 Camera::GetView() { return m_view; }
 
 glm::mat4 Camera::GetViewProj() { return m_viewProj; }
+
+Buffer Camera::GetBuffer() { return m_uniformBuffer; }
 
 // left-right, vertical
 void Camera::Look(glm::vec2 delta) {
