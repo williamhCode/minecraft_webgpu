@@ -88,7 +88,7 @@ Buffer Chunk::GetIndexBuffer() { return m_indexBuffer; }
 void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
   passEncoder.SetVertexBuffer(0, m_vertexBuffer, 0, m_faces.size() * sizeof(Face));
   passEncoder.SetIndexBuffer(
-    m_indexBuffer, IndexFormat::Uint16, 0, m_indices.size() * sizeof(FaceIndex)
+    m_indexBuffer, IndexFormat::Uint32, 0, m_indices.size() * sizeof(FaceIndex)
   );
   passEncoder.DrawIndexed(m_indices.size() * 6);
 }

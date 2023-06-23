@@ -41,7 +41,7 @@ const glm::vec2 TEX_COORDS[] = {
 // clang-format on
 
 std::array<Face, 6> g_MESH_FACES;
-const std::array<uint16_t, 6> g_FACE_INDICES = {0, 1, 3, 2, 3, 1};
+const std::array<uint32_t, 6> g_FACE_INDICES = {0, 1, 3, 2, 3, 1};
 
 void InitFaces() {
   for (size_t i = 0; i < g_MESH_FACES.size(); i++) {

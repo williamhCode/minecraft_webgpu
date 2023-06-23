@@ -16,11 +16,11 @@ struct Face {
 };
 
 struct FaceIndex {
-  std::array<uint16_t, 6> indices;
+  std::array<uint32_t, 6> indices;
 };
 
 extern std::array<Face, 6> g_MESH_FACES;
-extern const std::array<uint16_t, 6> g_FACE_INDICES;
+extern const std::array<uint32_t, 6> g_FACE_INDICES;
 
 void InitFaces();
 

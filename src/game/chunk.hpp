@@ -22,7 +22,7 @@ public:
 
 private:
   util::Handle *m_handle;
-  static constexpr const glm::ivec3 SIZE = glm::ivec3(16, 16, 20);
+  static constexpr const glm::ivec3 SIZE = glm::ivec3(16, 16, 128);
   static constexpr const size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
   bool m_dirty;
 

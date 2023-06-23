@@ -8,6 +8,7 @@ struct VertexOutput {
 	@builtin(position) position: vec4f,
 	@location(0) normal: vec3f,
 	@location(1) uv: vec2f,
+	@location(2) org_position: vec3f,
 };
 
 @group(0) @binding(0) var<uniform> viewProjMatrix: mat4x4f;
@@ -17,6 +18,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
 	var out: VertexOutput;
+  out.org_position = in.position;
 	out.position = viewProjMatrix * modelMatrix * vec4f(in.position, 1.0);
   out.normal = in.normal;
   out.uv = in.uv;
