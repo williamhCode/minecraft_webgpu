@@ -47,12 +47,15 @@ std::vector<ModelVertex> LoadObj(const std::string &path) {
         -attrib.normals[3 * idx.normal_index + 2],
         attrib.normals[3 * idx.normal_index + 1],
       };
+      // vertexData[offset + i].normal = {
+      //   0, 0, 0
+      // };
 
-      vertexData[offset + i].color = {
-        attrib.colors[3 * idx.vertex_index + 0],
-        attrib.colors[3 * idx.vertex_index + 1],
-        attrib.colors[3 * idx.vertex_index + 2],
-      };
+      // vertexData[offset + i].color = {
+      //   attrib.colors[3 * idx.vertex_index + 0],
+      //   attrib.colors[3 * idx.vertex_index + 1],
+      //   attrib.colors[3 * idx.vertex_index + 2],
+      // };
 
       vertexData[offset + i].uv = {
         attrib.texcoords[2 * idx.texcoord_index + 0],

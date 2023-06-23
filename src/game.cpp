@@ -71,7 +71,18 @@ Game::Game() {
     100
   );
 
-  game::InitFaces();  // init mesh faces
+  // auto bunnyModel = util::LoadObj(SRC_DIR "/resources/bunny/bunny.obj");
+  // Buffer bunnyBuffer;
+  // {
+  //   BufferDescriptor bufferDesc{
+  //     .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
+  //     .size = bunnyModel.size() * sizeof(util::ModelVertex),
+  //   };
+  //   bunnyBuffer = m_handle.device.CreateBuffer(&bufferDesc);
+  //   m_handle.queue.WriteBuffer(bunnyBuffer, 0, bunnyModel.data(), bufferDesc.size);
+  // }
+
+  game::InitFaces(); // init mesh faces
   game::Chunk chunk(&m_handle);
 
   // init pipeline
@@ -117,7 +128,6 @@ Game::Game() {
     bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
   }
 
-
   // Create the depth texture
   TextureDescriptor depthTextureDesc{
     .usage = TextureUsage::RenderAttachment,
@@ -142,7 +152,8 @@ Game::Game() {
     m_handle.device.Tick();
 
     // std::cout << "Position: " << glm::to_string(m_camera.GetPosition()) << "\n";
-    // std::cout << "Orentation: " << glm::to_string(m_camera.GetOrientation()) << "\n\n";
+    // std::cout << "Orentation: " << glm::to_string(m_camera.GetOrientation()) <<
+    // "\n\n";
 
     glfwPollEvents();
 
@@ -199,6 +210,8 @@ Game::Game() {
     passEncoder.SetBindGroup(1, bindGroup1);
 
     chunk.Render(passEncoder);
+    // passEncoder.SetVertexBuffer(0, bunnyBuffer, 0, bunnyBuffer.GetSize());
+    // passEncoder.Draw(bunnyModel.size());
 
     passEncoder.End();
 
