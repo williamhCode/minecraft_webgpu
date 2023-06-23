@@ -1,7 +1,6 @@
 #include "chunk.hpp"
 #include "game/mesh.hpp"
 #include <iostream>
-#include <vector>
 
 namespace game {
 

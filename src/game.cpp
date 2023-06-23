@@ -7,7 +7,7 @@
 #include "game/mesh.hpp"
 #include "util/webgpu-util.hpp"
 #include "util/load.hpp"
-#include "pipeline/simple.hpp"
+#include "util/pipeline.hpp"
 
 #include <array>
 #include <fstream>
@@ -75,7 +75,8 @@ Game::Game() {
   game::Chunk chunk(&m_handle);
 
   // init pipeline
-  RenderPipeline pipeline = CreatePipeline_simple(m_handle);
+  auto pipelines = util::CreatePipelines(m_handle);
+  auto pipeline = pipelines[0];
 
   // Create bindings
   BindGroup bindGroup0;

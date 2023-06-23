@@ -21,7 +21,8 @@ add_executable(App
   src/util/handle.cpp
   src/util/load.cpp
   src/util/webgpu-util.cpp
-  src/pipeline/simple.cpp
+  src/util/pipeline.cpp
+  src/util/pipeline/simple.cpp
   src/game/chunk.cpp
   src/game/block.cpp
   src/game/mesh.cpp

@@ -4,10 +4,12 @@
 #include "game/mesh.hpp"
 #include <vector>
 
+namespace util {
+
 using namespace wgpu;
 using game::Vertex;
 
-RenderPipeline CreatePipeline_simple(util::Handle &handle) {
+RenderPipeline CreatePipelineSimple(util::Handle &handle) {
   ShaderModule shaderModule =
     util::LoadShaderModule(SRC_DIR "/shaders/simple.wgsl", handle.device);
 
@@ -16,7 +18,7 @@ RenderPipeline CreatePipeline_simple(util::Handle &handle) {
   // group 1
   {
     std::vector<BindGroupLayoutEntry> entries{
-      {
+      BindGroupLayoutEntry{
         .binding = 0,
         .visibility = ShaderStage::Vertex,
         .buffer{
@@ -34,7 +36,7 @@ RenderPipeline CreatePipeline_simple(util::Handle &handle) {
   // group 2
   {
     std::vector<BindGroupLayoutEntry> entries{
-      {
+      BindGroupLayoutEntry{
         .binding = 0,
         .visibility = ShaderStage::Vertex,
         .buffer{
@@ -58,17 +60,17 @@ RenderPipeline CreatePipeline_simple(util::Handle &handle) {
 
   // Vertex State ---------------------------------
   std::vector<VertexAttribute> vertexAttributes = {
-    {
+    VertexAttribute{
       .format = VertexFormat::Float32x3,
-      .offset = 0,
+      .offset = offsetof(Vertex, position),
       .shaderLocation = 0,
     },
-    {
+    VertexAttribute{
       .format = VertexFormat::Float32x3,
       .offset = offsetof(Vertex, normal),
       .shaderLocation = 1,
     },
-    {
+    VertexAttribute{
       .format = VertexFormat::Float32x2,
       .offset = offsetof(Vertex, texCoord),
       .shaderLocation = 2,
@@ -138,3 +140,5 @@ RenderPipeline CreatePipeline_simple(util::Handle &handle) {
 
   return handle.device.CreateRenderPipeline(&pipelineDesc);
 }
+
+} // namespace util
