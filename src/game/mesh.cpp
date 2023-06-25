@@ -35,13 +35,14 @@ const glm::vec3 NORMALS[] = {
 const glm::vec2 TEX_COORDS[] = {
   {0, 1},
   {1, 1},
-  {0, 0},
   {1, 0},
+  {0, 0},
 };
 // clang-format on
 
 std::array<Face, 6> g_MESH_FACES;
 const std::array<uint32_t, 6> g_FACE_INDICES = {0, 1, 3, 2, 3, 1};
+// const wgpu::Texture g_TEXTURE_
 
 void InitFaces() {
   for (size_t i = 0; i < g_MESH_FACES.size(); i++) {
@@ -52,7 +53,7 @@ void InitFaces() {
       Vertex &vertex = face.vertices[j];
       vertex.position = CUBE_VERTICES[CUBE_INDICES[i][j]];
       vertex.normal = normal;
-      vertex.texCoord = TEX_COORDS[j];
+      vertex.uv = TEX_COORDS[j];
     }
   }
 }

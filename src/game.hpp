@@ -9,10 +9,8 @@
 class Game {
 private:
   GLFWwindow *m_window;
-  int m_width;
-  int m_height;
-  int m_FBWidth;
-  int m_FBHeight;
+  glm::uvec2 m_size;
+  glm::uvec2 m_FBSize;
 
   util::Handle m_handle;
   util::Camera m_camera;

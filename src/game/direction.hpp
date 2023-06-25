@@ -5,6 +5,8 @@ enum Direction {
   SOUTH,
   EAST,
   WEST,
-  UP,
-  DOWN,
+  TOP,
+  BOTTOM,
 };
+
+

@@ -3,8 +3,10 @@
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 
+#include "game/block.hpp"
 #include "game/chunk.hpp"
 #include "game/mesh.hpp"
+#include "util/pipeline/simple.hpp"
 #include "util/webgpu-util.hpp"
 #include "util/load.hpp"
 #include "util/pipeline.hpp"
@@ -36,13 +38,14 @@ Game::Game() {
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  m_width = 1024;
-  m_height = 640;
-  m_window = glfwCreateWindow(m_width, m_height, "Learn WebGPU", NULL, NULL);
+  glfwSwapInterval(0);
+  m_size = {1024, 640};
+  m_window = glfwCreateWindow(m_size.x, m_size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
   }
+  glfwSwapInterval(0);
 
   glfwSetWindowUserPointer(m_window, this);
 
@@ -51,7 +54,10 @@ Game::Game() {
 
   glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  glfwGetFramebufferSize(m_window, &m_FBWidth, &m_FBHeight);
+  int FBWidth, FBHeight;
+  glfwGetFramebufferSize(m_window, &FBWidth, &FBHeight);
+  m_FBSize = {FBWidth, FBHeight};
+
   double xpos, ypos;
   glfwGetCursorPos(m_window, &xpos, &ypos);
   m_lastMousePos = glm::vec2(xpos, ypos);
@@ -62,34 +68,18 @@ Game::Game() {
 
   // init objects
   m_camera = util::Camera(
-    &m_handle,
-    glm::vec3(0, -20.0, 20.0),
-    glm::vec3(glm::radians(0.0f), 0, 0),
-    glm::radians(45.0f),
-    (float)m_width / m_height,
-    0.1,
-    100
+    &m_handle, glm::vec3(0, -20.0, 20.0), glm::vec3(glm::radians(0.0f), 0, 0),
+    glm::radians(45.0f), (float)m_size.x / m_size.y, 0.1, 500
   );
 
-  // auto bunnyModel = util::LoadObj(SRC_DIR "/resources/bunny/bunny.obj");
-  // Buffer bunnyBuffer;
-  // {
-  //   BufferDescriptor bufferDesc{
-  //     .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
-  //     .size = bunnyModel.size() * sizeof(util::ModelVertex),
-  //   };
-  //   bunnyBuffer = m_handle.device.CreateBuffer(&bufferDesc);
-  //   m_handle.queue.WriteBuffer(bunnyBuffer, 0, bunnyModel.data(), bufferDesc.size);
-  // }
-
   game::InitFaces(); // init mesh faces
+  game::InitTextures(m_handle);
   game::Chunk chunk(&m_handle);
 
   // init pipeline
-  auto pipelines = util::CreatePipelines(m_handle);
-  auto pipeline = pipelines[0];
+  auto pipeline = util::CreatePipelineSimple(m_handle);
 
-  // Create bindings
+  // Create bindings -------------------------------------------
   BindGroup bindGroup0;
   {
     BindGroupEntry entry{
@@ -128,10 +118,30 @@ Game::Game() {
     bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
   }
 
-  // Create the depth texture
+  BindGroup bindGroup2;
+  {
+    std::vector<BindGroupEntry> entries{
+      BindGroupEntry{
+        .binding = 0,
+        .textureView = game::g_blocksTextureView,
+      },
+      BindGroupEntry{
+        .binding = 1,
+        .sampler = game::g_blocksSampler,
+      },
+    };
+    BindGroupDescriptor bindGroupDesc{
+      .layout = pipeline.GetBindGroupLayout(2),
+      .entryCount = entries.size(),
+      .entries = entries.data(),
+    };
+    bindGroup2 = m_handle.device.CreateBindGroup(&bindGroupDesc);
+  }
+
+  // Create the depth texture -----------------------------------------
   TextureDescriptor depthTextureDesc{
     .usage = TextureUsage::RenderAttachment,
-    .size = {static_cast<uint32_t>(m_FBWidth), static_cast<uint32_t>(m_FBHeight)},
+    .size = {m_FBSize.x, m_FBSize.y},
     .format = TextureFormat::Depth24Plus,
   };
   Texture depthTexture = m_handle.device.CreateTexture(&depthTextureDesc);
@@ -147,7 +157,7 @@ Game::Game() {
     time = glfwGetTime();
     m_dt = time - prev_time;
     prev_time = time;
-    // std::cout << dt << std::endl;
+    // std::cout << m_dt << std::endl;
 
     m_handle.device.Tick();
 
@@ -158,20 +168,19 @@ Game::Game() {
     glfwPollEvents();
 
     glm::vec3 move_dir(0);
-    float speed = 10;
     if (KeyPressed(GLFW_KEY_W))
-      move_dir.y += speed;
+      move_dir.y += 1;
     if (KeyPressed(GLFW_KEY_S))
-      move_dir.y -= speed;
+      move_dir.y -= 1;
     if (KeyPressed(GLFW_KEY_A))
-      move_dir.x -= speed;
+      move_dir.x -= 1;
     if (KeyPressed(GLFW_KEY_D))
-      move_dir.x += speed;
+      move_dir.x += 1;
     if (KeyPressed(GLFW_KEY_SPACE))
-      move_dir.z += speed;
+      move_dir.z += 1;
     if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
-      move_dir.z -= speed;
-    m_camera.Move(move_dir * m_dt);
+      move_dir.z -= 1;
+    m_camera.Move(move_dir * 50.0f * m_dt);
     m_camera.Update();
 
     TextureView nextTexture = m_handle.swapChain.GetCurrentTextureView();
@@ -208,10 +217,9 @@ Game::Game() {
 
     passEncoder.SetBindGroup(0, bindGroup0);
     passEncoder.SetBindGroup(1, bindGroup1);
+    passEncoder.SetBindGroup(2, bindGroup2);
 
     chunk.Render(passEncoder);
-    // passEncoder.SetVertexBuffer(0, bunnyBuffer, 0, bunnyBuffer.GetSize());
-    // passEncoder.Draw(bunnyModel.size());
 
     passEncoder.End();
 

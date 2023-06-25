@@ -12,17 +12,21 @@ add_subdirectory(deps/glfw)
 add_subdirectory(deps/webgpu)
 add_subdirectory(deps/glm)
 add_subdirectory(deps/tinyobjloader)
+add_subdirectory(deps/stb)
 
 # sources
 add_executable(App
 	src/main.cpp
 	src/game.cpp
+
   src/util/camera.cpp
   src/util/handle.cpp
   src/util/load.cpp
   src/util/webgpu-util.cpp
   src/util/pipeline.cpp
   src/util/pipeline/simple.cpp
+  src/util/texture.cpp
+
   src/game/chunk.cpp
   src/game/block.cpp
   src/game/mesh.cpp
@@ -30,11 +34,11 @@ add_executable(App
 target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_compile_definitions(App PRIVATE
-  SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src"
+  ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
   GLM_FORCE_DEPTH_ZERO_TO_ONE
 )
 
-target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp glm tinyobjloader)
+target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp glm tinyobjloader stb)
 
 # options
 set_target_properties(App PROPERTIES

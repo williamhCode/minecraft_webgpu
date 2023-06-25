@@ -11,10 +11,28 @@ using game::Vertex;
 
 RenderPipeline CreatePipelineSimple(util::Handle &handle) {
   ShaderModule shaderModule =
-    util::LoadShaderModule(SRC_DIR "/shaders/simple.wgsl", handle.device);
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/simple.wgsl", handle.device);
 
   // bind group layout
   std::vector<BindGroupLayout> bindGroupLayouts;
+  // group 0
+  {
+    std::vector<BindGroupLayoutEntry> entries{
+      BindGroupLayoutEntry{
+        .binding = 0,
+        .visibility = ShaderStage::Vertex,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(glm::mat4),
+        },
+      },
+    };
+    BindGroupLayoutDescriptor desc{
+      .entryCount = entries.size(),
+      .entries = entries.data(),
+    };
+    bindGroupLayouts.push_back(handle.device.CreateBindGroupLayout(&desc));
+  }
   // group 1
   {
     std::vector<BindGroupLayoutEntry> entries{
@@ -38,11 +56,18 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     std::vector<BindGroupLayoutEntry> entries{
       BindGroupLayoutEntry{
         .binding = 0,
-        .visibility = ShaderStage::Vertex,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::mat4),
-        },
+        .visibility = ShaderStage::Fragment,
+        .texture{
+          .sampleType = TextureSampleType::Float,
+          .viewDimension = TextureViewDimension::e2D,
+        }
+      },
+      BindGroupLayoutEntry{
+        .binding = 1,
+        .visibility = ShaderStage::Fragment,
+        .sampler{
+          .type = SamplerBindingType::Filtering,
+        }
       },
     };
     BindGroupLayoutDescriptor desc{
@@ -72,8 +97,13 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     },
     VertexAttribute{
       .format = VertexFormat::Float32x2,
-      .offset = offsetof(Vertex, texCoord),
+      .offset = offsetof(Vertex, uv),
       .shaderLocation = 2,
+    },
+    VertexAttribute{
+      .format = VertexFormat::Float32x2,
+      .offset = offsetof(Vertex, texLoc),
+      .shaderLocation = 3,
     },
   };
   VertexBufferLayout vertexBufferLayout{
@@ -94,7 +124,8 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     .topology = PrimitiveTopology::TriangleList,
     .stripIndexFormat = IndexFormat::Undefined,
     .frontFace = FrontFace::CCW,
-    .cullMode = CullMode::None,
+    .cullMode = CullMode::Back,
+    // .cullMode = CullMode::None,
   };
 
   // Depth Stencil State ---------------------------

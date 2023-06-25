@@ -1,23 +1,30 @@
 #pragma once
 
 #include "glm/vec2.hpp"
-#include <array>
+#include <webgpu/webgpu_glfw.h>
 
+#include <array>
 #include "direction.hpp"
+#include "util/handle.hpp"
 
 namespace game {
 
-enum BlockType {
+enum BlockId {
   AIR = 0,
   DIRT = 1,
   GRASS = 2,
 };
 
-struct Block {
-  BlockType type;
+struct BlockType {
+  BlockId id;
   glm::vec2 (*GetTextureLoc)(Direction dir);
 };
 
-extern std::array<Block, 3> BLOCKS;
+const extern std::array<BlockType, 3> g_BLOCK_TYPES;
+extern wgpu::Texture g_blocksTexture;
+extern wgpu::TextureView g_blocksTextureView;
+extern wgpu::Sampler g_blocksSampler;
+
+void InitTextures(util::Handle &handle);
 
 }; // namespace game
