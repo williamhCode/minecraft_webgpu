@@ -68,12 +68,18 @@ Game::Game() {
 
   // init objects
   m_camera = util::Camera(
-    &m_handle, glm::vec3(0, -20.0, 20.0), glm::vec3(glm::radians(0.0f), 0, 0),
-    glm::radians(45.0f), (float)m_size.x / m_size.y, 0.1, 500
+    &m_handle,
+    glm::vec3(0, -20.0, 20.0),
+    glm::vec3(glm::radians(0.0f), 0, 0),
+    glm::radians(45.0f),
+    (float)m_size.x / m_size.y,
+    0.1,
+    500
   );
 
-  game::InitFaces(); // init mesh faces
+  game::InitMesh(); // init mesh faces
   game::InitTextures(m_handle);
+  game::Chunk::InitSharedData();
   game::Chunk chunk(&m_handle);
 
   // init pipeline
@@ -105,21 +111,6 @@ Game::Game() {
 
   BindGroup bindGroup1;
   {
-    BindGroupEntry entry{
-      .binding = 0,
-      .buffer = buffer,
-      .size = sizeof(glm::mat4),
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = pipeline.GetBindGroupLayout(1),
-      .entryCount = 1,
-      .entries = &entry,
-    };
-    bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
-  }
-
-  BindGroup bindGroup2;
-  {
     std::vector<BindGroupEntry> entries{
       BindGroupEntry{
         .binding = 0,
@@ -131,9 +122,24 @@ Game::Game() {
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = pipeline.GetBindGroupLayout(2),
+      .layout = pipeline.GetBindGroupLayout(1),
       .entryCount = entries.size(),
       .entries = entries.data(),
+    };
+    bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
+  }
+
+  BindGroup bindGroup2;
+  {
+    BindGroupEntry entry{
+      .binding = 0,
+      .buffer = buffer,
+      .size = sizeof(glm::mat4),
+    };
+    BindGroupDescriptor bindGroupDesc{
+      .layout = pipeline.GetBindGroupLayout(2),
+      .entryCount = 1,
+      .entries = &entry,
     };
     bindGroup2 = m_handle.device.CreateBindGroup(&bindGroupDesc);
   }
@@ -197,7 +203,7 @@ Game::Game() {
       .view = nextTexture,
       .loadOp = LoadOp::Clear,
       .storeOp = StoreOp::Store,
-      .clearValue = Color{0.1, 0.1, 0.1, 1.0},
+      .clearValue = Color{0.5, 0.8, 0.9, 1.0},
     };
     RenderPassDepthStencilAttachment depthStencilAttachment{
       .view = depthTextureView,

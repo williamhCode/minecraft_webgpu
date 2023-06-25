@@ -17,6 +17,10 @@ struct Face {
   std::array<Vertex, 4> vertices;
 };
 
+struct Cube{
+  std::array<Face, 6> faces;
+};
+
 struct FaceIndex {
   std::array<uint32_t, 6> indices;
 };
@@ -24,6 +28,6 @@ struct FaceIndex {
 extern std::array<Face, 6> g_MESH_FACES;
 extern const std::array<uint32_t, 6> g_FACE_INDICES;
 
-void InitFaces();
+void InitMesh();
 
 }

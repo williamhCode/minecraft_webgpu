@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bitset>
 #include <vector>
 #include <array>
 #include <webgpu/webgpu_cpp.h>
@@ -15,7 +16,8 @@ namespace game {
 class Chunk {
 public:
   Chunk(util::Handle *handle);
-  void SetBlock(glm::vec3, BlockId blockID);
+  static void InitSharedData();
+  void SetBlock(glm::vec3 position, BlockId blockID);
   void Render(const wgpu::RenderPassEncoder& passEncoder);
   wgpu::Buffer GetVertexBuffer();
   wgpu::Buffer GetIndexBuffer();
@@ -32,9 +34,13 @@ private:
     {0,  0,  1},
     {0,  0, -1},
   };
-  bool m_dirty;
 
-  std::array<BlockId, VOLUME> m_blockData;
+  static std::array<Cube, VOLUME> m_cubeData; // shared chunk data, precomputed positions, normals, and uv
+
+  bool m_dirty;
+  std::array<BlockId, VOLUME> m_blockIdData;  // block data
+  std::array<std::bitset<6>, VOLUME> m_faceRenderData; // records if faces should be rendered
+
   std::vector<Face> m_faces;
   std::vector<FaceIndex> m_indices;
 
@@ -43,9 +49,10 @@ private:
 
   void InitializeChunkData();
   void CreateBuffers();
-  void GenerateMesh();
-  size_t PosToIndex(glm::ivec3 pos);
-  glm::ivec3 IndexToPos(size_t index);
+  void InitFaceData();
+  void UpdateMesh();
+  static size_t PosToIndex(glm::ivec3 pos);
+  static glm::ivec3 IndexToPos(size_t index);
 };
 
 }; // namespace game

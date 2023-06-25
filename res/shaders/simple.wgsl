@@ -13,9 +13,9 @@ struct VertexOutput {
 };
 
 @group(0) @binding(0) var<uniform> viewProjMatrix: mat4x4f;
-@group(1) @binding(0) var<uniform> modelMatrix: mat4x4f;
-@group(2) @binding(0) var texture: texture_2d<f32>;
-@group(2) @binding(1) var textureSampler: sampler;
+@group(1) @binding(0) var texture: texture_2d<f32>;
+@group(1) @binding(1) var textureSampler: sampler;
+@group(2) @binding(0) var<uniform> modelMatrix: mat4x4f;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -30,7 +30,6 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   let uv = (in.uv + in.texLoc) / 16.0;
-  // let uv = in.uv;
   let color = textureSample(texture, textureSampler, uv).rgb;
 	return vec4f(color, 1.0);
 }

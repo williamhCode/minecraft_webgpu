@@ -12,62 +12,101 @@ using namespace wgpu;
 
 Chunk::Chunk(util::Handle *handle) : m_handle(handle), m_dirty(false) {
   InitializeChunkData();
-  CreateBuffers();
-  GenerateMesh();
+  InitFaceData();
+  UpdateMesh();
+}
+
+std::array<Cube, Chunk::VOLUME> Chunk::m_cubeData;
+void Chunk::InitSharedData() {
+  for (size_t i_block = 0; i_block < VOLUME; i_block++) {
+    Cube &cube = m_cubeData[i_block];
+    glm::vec3 posOffset = IndexToPos(i_block);
+
+    for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
+      Face face = g_MESH_FACES[i_face];
+      for (size_t i_vertex = 0; i_vertex < face.vertices.size(); i_vertex++) {
+        face.vertices[i_vertex].position += posOffset;
+      }
+      cube.faces[i_face] = face;
+    }
+  }
 }
 
 void Chunk::InitializeChunkData() {
   for (size_t i = 0; i < VOLUME; i++) {
-    m_blockData[i] = BlockId::GRASS;
+    auto pos = IndexToPos(i);
+    if (pos.z > 100) {
+      m_blockIdData[i] = BlockId::AIR;
+    } else if (pos.z == 100) {
+      m_blockIdData[i] = BlockId::GRASS;
+    } else {
+      m_blockIdData[i] = BlockId::DIRT;
+    }
   }
 }
 
 void Chunk::CreateBuffers() {
-  uint64_t max_faces = VOLUME * 6;
   {
     BufferDescriptor bufferDesc{
       .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
-      .size = max_faces * sizeof(Face),
+      .size = m_faces.size() * sizeof(Face),
     };
     m_vertexBuffer = m_handle->device.CreateBuffer(&bufferDesc);
   }
   {
     BufferDescriptor bufferDesc{
       .usage = BufferUsage::CopyDst | BufferUsage::Index,
-      .size = max_faces * sizeof(FaceIndex),
+      .size = m_indices.size() * sizeof(FaceIndex),
     };
     m_indexBuffer = m_handle->device.CreateBuffer(&bufferDesc);
   }
 }
 
-void Chunk::GenerateMesh() {
-  // brute force impl
-  size_t numFace = 0;
+void Chunk::InitFaceData() {
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
-    BlockId id = m_blockData[i_block];
-    if (id == BlockId::AIR) continue;
-    BlockType blockType = g_BLOCK_TYPES[id];
-    glm::vec3 posOffset = IndexToPos(i_block);
+    BlockId id = m_blockIdData[i_block];
+    if (id == BlockId::AIR)
+      continue;
 
-    for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
-      // don't generate face if there's block in that direction
+    auto &faceRender = m_faceRenderData[i_block];
+    glm::vec3 posOffset = IndexToPos(i_block);
+    for (size_t i_face = 0; i_face < 6; i_face++) {
       glm::vec3 neighborPos = posOffset + POS_OFFSETS[i_face];
-      if (!(
-        neighborPos.x < 0 || neighborPos.x >= SIZE.x ||
-        neighborPos.y < 0 || neighborPos.y >= SIZE.y ||
-        neighborPos.z < 0 || neighborPos.z >= SIZE.z
-      )) {
+      // clang-format off
+      if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
+          neighborPos.y < 0 || neighborPos.y >= SIZE.y || 
+          neighborPos.z < 0 || neighborPos.z >= SIZE.z) { // clang-format on
+        faceRender[i_face] = true;
+      } else {
         auto index = PosToIndex(neighborPos);
-        if (m_blockData[index] != BlockId::AIR) {
-          continue;
+        if (m_blockIdData[index] == BlockId::AIR) {
+          faceRender[i_face] = true;
         }
       }
+    }
+  }
+}
 
-      Face face = g_MESH_FACES[i_face];
-      glm::vec2 texLoc = blockType.GetTextureLoc((Direction)i_face);
+void Chunk::UpdateMesh() {
+  m_faces.clear();
+  m_indices.clear();
+
+  size_t numFace = 0;
+  for (size_t i_block = 0; i_block < VOLUME; i_block++) {
+    BlockId id = m_blockIdData[i_block];
+    if (id == BlockId::AIR)
+      continue;
+    BlockType blockType = g_BLOCK_TYPES[id];
+
+    auto &faceRender = m_faceRenderData[i_block];
+    Cube &cube = m_cubeData[i_block];
+    for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
+      if (faceRender[i_face] == false)
+        continue;
+
+      Face face = cube.faces[i_face];
       for (size_t i_vertex = 0; i_vertex < face.vertices.size(); i_vertex++) {
-        face.vertices[i_vertex].position += posOffset;
-        face.vertices[i_vertex].texLoc = texLoc;
+        face.vertices[i_vertex].texLoc = blockType.GetTextureLoc((Direction)i_face);
       }
       m_faces.push_back(face);
 
@@ -79,6 +118,9 @@ void Chunk::GenerateMesh() {
       numFace++;
     }
   }
+
+  CreateBuffers();
+
   // upload data
   m_handle->queue.WriteBuffer(
     m_vertexBuffer, 0, m_faces.data(), m_faces.size() * sizeof(Face)
@@ -98,7 +140,7 @@ glm::ivec3 Chunk::IndexToPos(size_t index) {
   );
 }
 
-void Chunk::SetBlock(glm::vec3, BlockId blockID) {}
+void Chunk::SetBlock(glm::vec3 position, BlockId blockID) {}
 
 Buffer Chunk::GetVertexBuffer() { return m_vertexBuffer; }
 

@@ -42,9 +42,8 @@ const glm::vec2 TEX_COORDS[] = {
 
 std::array<Face, 6> g_MESH_FACES;
 const std::array<uint32_t, 6> g_FACE_INDICES = {0, 1, 3, 2, 3, 1};
-// const wgpu::Texture g_TEXTURE_
 
-void InitFaces() {
+void InitMesh() {
   for (size_t i = 0; i < g_MESH_FACES.size(); i++) {
     Face &face = g_MESH_FACES[i];
     glm::vec3 normal = NORMALS[i];

@@ -38,11 +38,18 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     std::vector<BindGroupLayoutEntry> entries{
       BindGroupLayoutEntry{
         .binding = 0,
-        .visibility = ShaderStage::Vertex,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::mat4),
-        },
+        .visibility = ShaderStage::Fragment,
+        .texture{
+          .sampleType = TextureSampleType::Float,
+          .viewDimension = TextureViewDimension::e2D,
+        }
+      },
+      BindGroupLayoutEntry{
+        .binding = 1,
+        .visibility = ShaderStage::Fragment,
+        .sampler{
+          .type = SamplerBindingType::Filtering,
+        }
       },
     };
     BindGroupLayoutDescriptor desc{
@@ -56,18 +63,11 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     std::vector<BindGroupLayoutEntry> entries{
       BindGroupLayoutEntry{
         .binding = 0,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::Float,
-          .viewDimension = TextureViewDimension::e2D,
-        }
-      },
-      BindGroupLayoutEntry{
-        .binding = 1,
-        .visibility = ShaderStage::Fragment,
-        .sampler{
-          .type = SamplerBindingType::Filtering,
-        }
+        .visibility = ShaderStage::Vertex,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(glm::mat4),
+        },
       },
     };
     BindGroupLayoutDescriptor desc{
@@ -124,8 +124,8 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     .topology = PrimitiveTopology::TriangleList,
     .stripIndexFormat = IndexFormat::Undefined,
     .frontFace = FrontFace::CCW,
-    .cullMode = CullMode::Back,
-    // .cullMode = CullMode::None,
+    // .cullMode = CullMode::Back,
+    .cullMode = CullMode::None,
   };
 
   // Depth Stencil State ---------------------------

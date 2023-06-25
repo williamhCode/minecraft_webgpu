@@ -1,4 +1,5 @@
 #include "texture.hpp"
+#include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -42,6 +43,7 @@ Texture LoadTexture(Handle &handle, std::filesystem::path path) {
   return texture;
 }
 
+// TODO: Segfaults!
 Texture LoadTextureMipmap(Handle &handle, std::filesystem::path path) {
   int width, height, channels;
   uint8_t *pixelData = stbi_load(path.string().c_str(), &width, &height, &channels, 4);
@@ -67,6 +69,7 @@ Texture LoadTextureMipmap(Handle &handle, std::filesystem::path path) {
         .width = std::max(1u, currSize.width / 2),
         .height = std::max(1u, currSize.height / 2),
       };
+      resizedData = new uint8_t[resizedSize.width * resizedSize.height * 4];
       stbir_resize_uint8(
         currData, currSize.width, currSize.height, 0,
         resizedData, resizedSize.width, resizedSize.height, 0, 4

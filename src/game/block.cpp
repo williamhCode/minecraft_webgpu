@@ -37,11 +37,14 @@ wgpu::TextureView g_blocksTextureView;
 wgpu::Sampler g_blocksSampler;
 
 void InitTextures(util::Handle &handle) {
-  g_blocksTexture = util::LoadTexture(handle, ROOT_DIR "/res/blocks.png");
+  // g_blocksTexture = util::LoadTexture(handle, ROOT_DIR "/res/blocks.png");
+  g_blocksTexture = util::LoadTextureMipmap(handle, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
     .format = g_blocksTexture.GetFormat(),
     .dimension = TextureViewDimension::e2D,
-    .mipLevelCount = g_blocksTexture.GetMipLevelCount(),
+    // anything after 5th mipmap blurs the different face textures
+    // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5
+    .mipLevelCount = 5, 
     .arrayLayerCount = g_blocksTexture.GetDepthOrArrayLayers(),
   };
   g_blocksTextureView = g_blocksTexture.CreateView(&viewDesc);
