@@ -26,10 +26,15 @@ add_executable(App
   src/util/pipeline.cpp
   src/util/pipeline/simple.cpp
   src/util/texture.cpp
+  src/util/renderer.cpp
+  src/util/timer.cpp
 
   src/game/chunk.cpp
+  src/game/chunk_manager.cpp
   src/game/block.cpp
   src/game/mesh.cpp
+  src/game/player.cpp
+  src/game/direction.cpp
 )
 target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 

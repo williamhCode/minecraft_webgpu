@@ -1,5 +1,8 @@
 #pragma once
 
+#include "glm/ext/vector_int3.hpp"
+namespace game {
+
 enum Direction {
   NORTH,
   SOUTH,
@@ -9,4 +12,6 @@ enum Direction {
   BOTTOM,
 };
 
+extern const glm::ivec3 g_DIR_OFFSETS[6];
 
+} // namespace game

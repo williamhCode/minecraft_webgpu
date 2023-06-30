@@ -15,12 +15,12 @@ struct VertexOutput {
 @group(0) @binding(0) var<uniform> viewProjMatrix: mat4x4f;
 @group(1) @binding(0) var texture: texture_2d<f32>;
 @group(1) @binding(1) var textureSampler: sampler;
-@group(2) @binding(0) var<uniform> modelMatrix: mat4x4f;
+@group(2) @binding(0) var<uniform> offset: vec3f;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
 	var out: VertexOutput;
-	out.position = viewProjMatrix * modelMatrix * vec4f(in.position, 1.0);
+	out.position = viewProjMatrix * vec4f(in.position + offset, 1.0);
   out.normal = in.normal;
   out.uv = in.uv;
   out.texLoc = in.texLoc;

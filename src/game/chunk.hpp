@@ -4,6 +4,8 @@
 #include <vector>
 #include <array>
 #include <webgpu/webgpu_cpp.h>
+#include "game/direction.hpp"
+#include "glm/ext/vector_int2.hpp"
 #include "glm/vec3.hpp"
 
 #include "util/handle.hpp"
@@ -13,33 +15,38 @@
 
 namespace game {
 
+class ChunkManager; // forward dec
+
 class Chunk {
 public:
-  Chunk(util::Handle *handle);
+  Chunk(
+    util::Handle *handle,
+    ChunkManager *chunkManager,
+    glm::ivec2 offset,
+    wgpu::BindGroupLayout &layout
+  );
   static void InitSharedData();
-  void SetBlock(glm::vec3 position, BlockId blockID);
+  void SetBlock(glm::ivec3 position, BlockId blockID);
+  BlockId GetBlock(glm::ivec3 position);
   void Render(const wgpu::RenderPassEncoder& passEncoder);
   wgpu::Buffer GetVertexBuffer();
   wgpu::Buffer GetIndexBuffer();
 
+  static constexpr glm::ivec3 SIZE = glm::ivec3(16, 16, 128);
+  static constexpr size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
+
 private:
   util::Handle *m_handle;
-  static constexpr const glm::ivec3 SIZE = glm::ivec3(16, 16, 128);
-  static constexpr const size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
-  static constexpr const glm::vec3 POS_OFFSETS[6] = {
-    {0,  1,  0},
-    {0, -1,  0},
-    {1,  0,  0},
-    {-1, 0,  0},
-    {0,  0,  1},
-    {0,  0, -1},
-  };
+  ChunkManager *m_chunkManager;
+  glm::ivec2 m_offset;
 
-  static std::array<Cube, VOLUME> m_cubeData; // shared chunk data, precomputed positions, normals, and uv
+  // shared chunk data, precomputed positions, normals, and uv
+  static std::array<Cube, VOLUME> m_cubeData;
 
   bool m_dirty;
   std::array<BlockId, VOLUME> m_blockIdData;  // block data
-  std::array<std::bitset<6>, VOLUME> m_faceRenderData; // records if faces should be rendered
+  // records if faces should be rendered
+  std::array<std::bitset<6>, VOLUME> m_faceRenderData;
 
   std::vector<Face> m_faces;
   std::vector<FaceIndex> m_indices;
@@ -47,8 +54,13 @@ private:
   wgpu::Buffer m_vertexBuffer;
   wgpu::Buffer m_indexBuffer;
 
+  wgpu::Buffer m_offsetBuffer;
+  wgpu::BindGroup m_bindGroup;
+
+public:
   void InitializeChunkData();
   void CreateBuffers();
+  bool HasNeighbor(glm::ivec3 position, Direction direction);
   void InitFaceData();
   void UpdateMesh();
   static size_t PosToIndex(glm::ivec3 pos);

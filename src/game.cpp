@@ -1,12 +1,16 @@
 #include "game.hpp"
 
+#include <numeric>
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 
 #include "game/block.hpp"
 #include "game/chunk.hpp"
+#include "game/chunk_manager.hpp"
 #include "game/mesh.hpp"
 #include "util/pipeline/simple.hpp"
+#include "util/renderer.hpp"
+#include "util/timer.hpp"
 #include "util/webgpu-util.hpp"
 #include "util/load.hpp"
 #include "util/pipeline.hpp"
@@ -24,6 +28,11 @@ void _KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod
   game->KeyCallback(key, scancode, action, mods);
 }
 
+void _MouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+  Game *game = reinterpret_cast<Game *>(glfwGetWindowUserPointer(window));
+  game->MouseButtonCallback(button, action, mods);
+}
+
 void _CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
   Game *game = reinterpret_cast<Game *>(glfwGetWindowUserPointer(window));
   game->CursorPosCallback(xpos, ypos);
@@ -38,15 +47,12 @@ Game::Game() {
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  glfwSwapInterval(0);
-  m_size = {1024, 640};
+  m_size = {1100, 800};
   m_window = glfwCreateWindow(m_size.x, m_size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
   }
-  glfwSwapInterval(0);
-
   glfwSetWindowUserPointer(m_window, this);
 
   glfwSetKeyCallback(m_window, _KeyCallback);
@@ -66,31 +72,35 @@ Game::Game() {
   // init wgpu
   m_handle = util::Handle::Init(m_window);
 
+  // init pipeline
+  auto pipeline = util::CreatePipelineSimple(m_handle);
+
   // init objects
-  m_camera = util::Camera(
+  util::Camera camera(
     &m_handle,
-    glm::vec3(0, -20.0, 20.0),
+    glm::vec3(0, 0.0, 120.0),
     glm::vec3(glm::radians(0.0f), 0, 0),
     glm::radians(45.0f),
     (float)m_size.x / m_size.y,
     0.1,
-    500
+    2000
   );
 
-  game::InitMesh(); // init mesh faces
+  m_player = game::Player(camera);
+
+  game::InitMesh();
   game::InitTextures(m_handle);
   game::Chunk::InitSharedData();
-  game::Chunk chunk(&m_handle);
 
-  // init pipeline
-  auto pipeline = util::CreatePipelineSimple(m_handle);
+  BindGroupLayout layout2 = pipeline.GetBindGroupLayout(2);
+  game::ChunkManager chunkManager(&m_handle, layout2);
 
   // Create bindings -------------------------------------------
   BindGroup bindGroup0;
   {
     BindGroupEntry entry{
       .binding = 0,
-      .buffer = m_camera.GetBuffer(),
+      .buffer = m_player.camera.uniformBuffer,
       .size = sizeof(glm::mat4),
     };
     BindGroupDescriptor bindGroupDesc{
@@ -129,111 +139,54 @@ Game::Game() {
     bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
   }
 
-  BindGroup bindGroup2;
-  {
-    BindGroupEntry entry{
-      .binding = 0,
-      .buffer = buffer,
-      .size = sizeof(glm::mat4),
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = pipeline.GetBindGroupLayout(2),
-      .entryCount = 1,
-      .entries = &entry,
-    };
-    bindGroup2 = m_handle.device.CreateBindGroup(&bindGroupDesc);
-  }
-
-  // Create the depth texture -----------------------------------------
-  TextureDescriptor depthTextureDesc{
-    .usage = TextureUsage::RenderAttachment,
-    .size = {m_FBSize.x, m_FBSize.y},
-    .format = TextureFormat::Depth24Plus,
-  };
-  Texture depthTexture = m_handle.device.CreateTexture(&depthTextureDesc);
-
-  TextureViewDescriptor depthTextureViewDesc{};
-  TextureView depthTextureView = depthTexture.CreateView(&depthTextureViewDesc);
+  // setup rendering
+  util::Renderer renderer(&m_handle, m_FBSize);
 
   // game loop
-  double time = glfwGetTime();
-  double prev_time = time;
+  util::Timer timer;
 
   while (!glfwWindowShouldClose(m_window)) {
-    time = glfwGetTime();
-    m_dt = time - prev_time;
-    prev_time = time;
-    // std::cout << m_dt << std::endl;
+    m_dt = timer.Tick();
+    double fps = timer.GetFps();
+    // print fps to cout
+    std::cout << "FPS: " << fps << "\r" << std::flush;
 
+    // error callback
     m_handle.device.Tick();
-
-    // std::cout << "Position: " << glm::to_string(m_camera.GetPosition()) << "\n";
-    // std::cout << "Orentation: " << glm::to_string(m_camera.GetOrientation()) <<
-    // "\n\n";
 
     glfwPollEvents();
 
-    glm::vec3 move_dir(0);
+    // update --------------------------------------------------------
+    glm::vec3 moveDir(0);
     if (KeyPressed(GLFW_KEY_W))
-      move_dir.y += 1;
+      moveDir.y += 1;
     if (KeyPressed(GLFW_KEY_S))
-      move_dir.y -= 1;
-    if (KeyPressed(GLFW_KEY_A))
-      move_dir.x -= 1;
+      moveDir.y -= 1;
     if (KeyPressed(GLFW_KEY_D))
-      move_dir.x += 1;
+      moveDir.x += 1;
+    if (KeyPressed(GLFW_KEY_A))
+      moveDir.x -= 1;
     if (KeyPressed(GLFW_KEY_SPACE))
-      move_dir.z += 1;
+      moveDir.z += 1;
     if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
-      move_dir.z -= 1;
-    m_camera.Move(move_dir * 50.0f * m_dt);
-    m_camera.Update();
+      moveDir.z -= 1;
+    m_player.Move(moveDir * m_dt);
+    m_player.Update();
 
-    TextureView nextTexture = m_handle.swapChain.GetCurrentTextureView();
-    if (!nextTexture) {
-      std::cerr << "Cannot acquire next swap chain texture" << std::endl;
-      std::exit(1);
-    }
+    // chunkManager.Update(glm::vec2(m_player.GetPosition()));
 
-    CommandEncoderDescriptor commandEncoderDesc{};
-    CommandEncoder commandEncoder =
-      m_handle.device.CreateCommandEncoder(&commandEncoderDesc);
-
-    RenderPassColorAttachment colorAttachment{
-      .view = nextTexture,
-      .loadOp = LoadOp::Clear,
-      .storeOp = StoreOp::Store,
-      .clearValue = Color{0.5, 0.8, 0.9, 1.0},
-    };
-    RenderPassDepthStencilAttachment depthStencilAttachment{
-      .view = depthTextureView,
-      .depthLoadOp = LoadOp::Clear,
-      .depthStoreOp = StoreOp::Store,
-      .depthClearValue = 1.0f,
-      .depthReadOnly = false,
-    };
-    RenderPassDescriptor renderPassDesc{
-      .colorAttachmentCount = 1,
-      .colorAttachments = &colorAttachment,
-      .depthStencilAttachment = &depthStencilAttachment,
-    };
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&renderPassDesc);
-
+    // begin render --------------------------------------------------------
+    RenderPassEncoder passEncoder = renderer.Begin({0.5, 0.8, 0.9, 1.0});
     passEncoder.SetPipeline(pipeline);
 
     passEncoder.SetBindGroup(0, bindGroup0);
     passEncoder.SetBindGroup(1, bindGroup1);
-    passEncoder.SetBindGroup(2, bindGroup2);
 
-    chunk.Render(passEncoder);
+    chunkManager.Render(passEncoder);
 
-    passEncoder.End();
-
-    CommandBufferDescriptor cmdBufferDescriptor{};
-    CommandBuffer command = commandEncoder.Finish(&cmdBufferDescriptor);
-    m_handle.queue.Submit(1, &command);
-
-    m_handle.swapChain.Present();
+    // end render -----------------------------------------------------------
+    renderer.End();
+    renderer.Present();
   }
 }
 
@@ -248,13 +201,19 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
   }
 }
 
+void Game::MouseButtonCallback(int button, int action, int mods) {
+}
+
 void Game::CursorPosCallback(double xpos, double ypos) {
   glm::vec2 currMousePos(xpos, ypos);
   glm::vec2 delta = currMousePos - m_lastMousePos;
   m_lastMousePos = currMousePos;
-  m_camera.Look(delta * 0.003f);
+  m_player.Look(delta * 0.003f);
 }
 
-bool Game::KeyPressed(int key) { return glfwGetKey(m_window, key) == GLFW_PRESS; }
+bool Game::KeyPressed(int key) {
+  return glfwGetKey(m_window, key) == GLFW_PRESS;
+}
 
-void Game::Run() {}
+void Game::Run() {
+}

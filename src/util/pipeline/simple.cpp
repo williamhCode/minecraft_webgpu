@@ -66,7 +66,7 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
         .visibility = ShaderStage::Vertex,
         .buffer{
           .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::mat4),
+          .minBindingSize = sizeof(glm::vec3),
         },
       },
     };
@@ -124,8 +124,8 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     .topology = PrimitiveTopology::TriangleList,
     .stripIndexFormat = IndexFormat::Undefined,
     .frontFace = FrontFace::CCW,
-    // .cullMode = CullMode::Back,
-    .cullMode = CullMode::None,
+    .cullMode = CullMode::Back,
+    // .cullMode = CullMode::None,
   };
 
   // Depth Stencil State ---------------------------
