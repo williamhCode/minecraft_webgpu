@@ -35,12 +35,14 @@ add_executable(App
   src/game/mesh.cpp
   src/game/player.cpp
   src/game/direction.cpp
+  src/game/ray.cpp
 )
 target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_compile_definitions(App PRIVATE
   ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
   GLM_FORCE_DEPTH_ZERO_TO_ONE
+  GLM_FORCE_XYZW_ONLY
 )
 
 target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp glm tinyobjloader stb)

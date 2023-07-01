@@ -124,8 +124,8 @@ RenderPipeline CreatePipelineSimple(util::Handle &handle) {
     .topology = PrimitiveTopology::TriangleList,
     .stripIndexFormat = IndexFormat::Undefined,
     .frontFace = FrontFace::CCW,
-    .cullMode = CullMode::Back,
-    // .cullMode = CullMode::None,
+    // .cullMode = CullMode::Back,
+    .cullMode = CullMode::None,
   };
 
   // Depth Stencil State ---------------------------

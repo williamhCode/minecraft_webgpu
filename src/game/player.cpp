@@ -25,4 +25,7 @@ glm::vec3 Player::GetPosition() {
   return camera.position;
 }
 
+glm::vec3 Player::GetDirection() {
+  return camera.direction;
+}
 } // namespace game

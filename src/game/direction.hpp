@@ -14,4 +14,6 @@ enum Direction {
 
 extern const glm::ivec3 g_DIR_OFFSETS[6];
 
+Direction DirOpposite(Direction direction);
+
 } // namespace game

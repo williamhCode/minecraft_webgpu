@@ -56,4 +56,51 @@ void ChunkManager::Render(wgpu::RenderPassEncoder &passEncoder) {
   }
 }
 
+std::optional<std::tuple<Chunk *, glm::ivec3>>
+ChunkManager::GetChunk(glm::ivec3 position) {
+  if (position.z < 0 || position.z >= Chunk::SIZE.z) {
+    return std::nullopt;
+  }
+  const glm::ivec2 offset = glm::floor(glm::vec2(position) / glm::vec2(Chunk::SIZE));
+  const glm::ivec3 localPos = glm::mod(glm::vec3(position), glm::vec3(Chunk::SIZE));
+  const auto it = chunks.find(offset);
+  if (it == chunks.end()) {
+    return std::nullopt;
+  }
+  return std::make_tuple(it->second.get(), localPos);
+}
+
+bool ChunkManager::HasBlock(glm::ivec3 position) {
+  auto chunk = GetChunk(position);
+  if (!chunk.has_value()) {
+    return false;
+  }
+  const auto &[chunkPtr, localPos] = chunk.value();
+  return chunkPtr->HasBlock(localPos);
+}
+
+void ChunkManager::SetBlock(glm::ivec3 position, BlockId blockId) {
+  auto chunk = GetChunk(position);
+  if (!chunk.has_value()) {
+    return;
+  }
+  const auto &[chunkPtr, localPos] = chunk.value();
+  chunkPtr->SetBlock(localPos, blockId);
+}
+
+void ChunkManager::UpdateFace(
+  glm::ivec3 position, Direction direction, bool shouldRender
+) {
+  auto chunk = GetChunk(position);
+  if (!chunk.has_value()) {
+    return;
+  }
+  const auto &[chunkPtr, localPos] = chunk.value();
+  if (!chunkPtr->HasBlock(localPos)) {
+    return;
+  }
+  chunkPtr->UpdateFace(localPos, direction, shouldRender);
+  chunkPtr->UpdateMesh();
+}
+
 } // namespace game

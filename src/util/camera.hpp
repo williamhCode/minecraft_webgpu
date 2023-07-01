@@ -15,6 +15,7 @@ private:
 public:
   wgpu::Buffer uniformBuffer;
   glm::vec3 position;
+  glm::vec3 direction;
   glm::vec3 orientation; // yaw, pitch, roll
   glm::mat4 projection;
   glm::mat4 viewProj;

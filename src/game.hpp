@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include "game/chunk_manager.hpp"
 #include "glm-include.hpp"
 
 #include "game/player.hpp"
@@ -14,6 +15,7 @@ private:
 
   util::Handle m_handle;
   game::Player m_player;
+  std::unique_ptr<game::ChunkManager> m_chunkManager;
   glm::vec2 m_lastMousePos;
   float m_dt;
 

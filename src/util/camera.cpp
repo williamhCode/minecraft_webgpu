@@ -31,10 +31,10 @@ void Camera::Update() {
   glm::mat4 yaw = glm::rotate(orientation.z, glm::vec3(0.0f, 0.0f, 1.0f));
   glm::mat4 rotation = yaw * pitch * roll;
 
-  glm::vec3 forward = rotation * m_forward;
+  direction = rotation * m_forward;
   glm::vec3 up = rotation * m_up;
 
-  view = glm::lookAt(position, position + forward, up);
+  view = glm::lookAt(position, position + direction, up);
   viewProj = projection * view;
 
   m_handle->queue.WriteBuffer(uniformBuffer, 0, &viewProj, sizeof(viewProj));

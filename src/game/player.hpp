@@ -17,6 +17,7 @@ public:
   void Move(glm::vec3 moveDir);
   void Update();
   glm::vec3 GetPosition();
+  glm::vec3 GetDirection();
 };
 
 } // namespace game
