@@ -24,7 +24,6 @@ add_executable(App
   src/util/load.cpp
   src/util/webgpu-util.cpp
   src/util/pipeline.cpp
-  src/util/pipeline/simple.cpp
   src/util/texture.cpp
   src/util/renderer.cpp
   src/util/timer.cpp

@@ -20,7 +20,7 @@ public:
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
   ChunkManager() = default;
-  ChunkManager(util::Handle *handle, wgpu::BindGroupLayout &layout);
+  ChunkManager(util::Handle *handle);
   void Update(glm::vec2 position);
   void Render(wgpu::RenderPassEncoder &passEncoder);
 

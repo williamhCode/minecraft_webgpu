@@ -13,7 +13,7 @@
 #include "game/mesh.hpp"
 #include "game/ray.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "util/pipeline/simple.hpp"
+#include "util/handle.hpp"
 #include "util/renderer.hpp"
 #include "util/timer.hpp"
 #include "util/webgpu-util.hpp"
@@ -53,6 +53,7 @@ Game::Game() {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   m_size = {1100, 800};
+  // m_size = {1500, 1000};
   m_window = glfwCreateWindow(m_size.x, m_size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
@@ -76,17 +77,14 @@ Game::Game() {
   // end window ----------------------------------
 
   // init wgpu
-  m_handle = util::Handle::Init(m_window);
-
-  // init pipeline
-  auto pipeline = util::CreatePipelineSimple(m_handle);
+  m_handle = util::Handle(m_window);
 
   // init objects
   util::Camera camera(
     &m_handle,
     glm::vec3(0, 0.0, 105.0),
     glm::vec3(glm::radians(0.0f), 0, 0),
-    glm::radians(45.0f),
+    glm::radians(50.0f),
     (float)m_size.x / m_size.y,
     0.1,
     2000
@@ -94,56 +92,11 @@ Game::Game() {
 
   m_player = game::Player(camera);
 
+  // chunkManager setup
+  auto textureBindGroup = game::InitTextures(m_handle);
   game::InitMesh();
-  game::InitTextures(m_handle);
   game::Chunk::InitSharedData();
-
-  BindGroupLayout layout2 = pipeline.GetBindGroupLayout(2);
-  m_chunkManager = std::make_unique<game::ChunkManager>(&m_handle, layout2);
-
-  // Create bindings -------------------------------------------
-  BindGroup bindGroup0;
-  {
-    BindGroupEntry entry{
-      .binding = 0,
-      .buffer = m_player.camera.uniformBuffer,
-      .size = sizeof(glm::mat4),
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = pipeline.GetBindGroupLayout(0),
-      .entryCount = 1,
-      .entries = &entry,
-    };
-    bindGroup0 = m_handle.device.CreateBindGroup(&bindGroupDesc);
-  }
-
-  glm::mat4 modelMatix(1.0);
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
-    .size = sizeof(glm::mat4),
-  };
-  Buffer buffer = m_handle.device.CreateBuffer(&bufferDesc);
-  m_handle.queue.WriteBuffer(buffer, 0, &modelMatix, sizeof(modelMatix));
-
-  BindGroup bindGroup1;
-  {
-    std::vector<BindGroupEntry> entries{
-      BindGroupEntry{
-        .binding = 0,
-        .textureView = game::g_blocksTextureView,
-      },
-      BindGroupEntry{
-        .binding = 1,
-        .sampler = game::g_blocksSampler,
-      },
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = pipeline.GetBindGroupLayout(1),
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    bindGroup1 = m_handle.device.CreateBindGroup(&bindGroupDesc);
-  }
+  m_chunkManager = std::make_unique<game::ChunkManager>(&m_handle);
 
   // setup rendering
   util::Renderer renderer(&m_handle, m_FBSize);
@@ -155,7 +108,7 @@ Game::Game() {
     m_dt = timer.Tick();
     double fps = timer.GetFps();
     // print fps to cout
-    // std::cout << "FPS: " << fps << "\r" << std::flush;
+    std::cout << "FPS: " << fps << "\r" << std::flush;
 
     // error callback
     m_handle.device.Tick();
@@ -183,10 +136,10 @@ Game::Game() {
 
     // begin render --------------------------------------------------------
     RenderPassEncoder passEncoder = renderer.Begin({0.5, 0.8, 0.9, 1.0});
-    passEncoder.SetPipeline(pipeline);
+    passEncoder.SetPipeline(m_handle.pipeline.rpl_simple);
 
-    passEncoder.SetBindGroup(0, bindGroup0);
-    passEncoder.SetBindGroup(1, bindGroup1);
+    passEncoder.SetBindGroup(0, camera.bindGroup);
+    passEncoder.SetBindGroup(1, textureBindGroup);
 
     m_chunkManager->Render(passEncoder);
 

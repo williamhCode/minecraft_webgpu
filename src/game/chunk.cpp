@@ -14,8 +14,7 @@ using namespace wgpu;
 Chunk::Chunk(
   util::Handle *handle,
   ChunkManager *chunkManager,
-  glm::ivec2 offset,
-  wgpu::BindGroupLayout &layout
+  glm::ivec2 offset
 )
     : m_handle(handle), m_chunkManager(chunkManager), m_dirty(false) {
   m_offsetPos = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
@@ -37,7 +36,7 @@ Chunk::Chunk(
     .buffer = m_offsetBuffer,
   };
   BindGroupDescriptor bindGroupDesc{
-    .layout = layout,
+    .layout = handle->pipeline.bgl_offset,
     .entryCount = 1,
     .entries = &entry,
   };

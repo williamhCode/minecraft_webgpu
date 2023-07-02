@@ -49,8 +49,7 @@ public:
   Chunk(
     util::Handle *handle,
     ChunkManager *chunkManager,
-    glm::ivec2 offset,
-    wgpu::BindGroupLayout &layout
+    glm::ivec2 offset
   );
   static void InitSharedData();
 

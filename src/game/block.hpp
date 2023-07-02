@@ -25,6 +25,6 @@ extern wgpu::Texture g_blocksTexture;
 extern wgpu::TextureView g_blocksTextureView;
 extern wgpu::Sampler g_blocksSampler;
 
-void InitTextures(util::Handle &handle);
+wgpu::BindGroup InitTextures(util::Handle &handle);
 
 }; // namespace game

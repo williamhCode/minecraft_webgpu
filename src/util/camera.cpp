@@ -37,7 +37,22 @@ void Camera::Update() {
   view = glm::lookAt(position, position + direction, up);
   viewProj = projection * view;
 
+  // create bind group
   m_handle->queue.WriteBuffer(uniformBuffer, 0, &viewProj, sizeof(viewProj));
+
+  {
+    BindGroupEntry entry{
+      .binding = 0,
+      .buffer = uniformBuffer,
+      .size = sizeof(glm::mat4),
+    };
+    BindGroupDescriptor bindGroupDesc{
+      .layout = m_handle->pipeline.bgl_viewProj,
+      .entryCount = 1,
+      .entries = &entry,
+    };
+    bindGroup = m_handle->device.CreateBindGroup(&bindGroupDesc);
+  }
 }
 
 } // namespace util

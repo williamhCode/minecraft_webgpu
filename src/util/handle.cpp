@@ -10,25 +10,25 @@ namespace util {
 
 using namespace wgpu;
 
-Handle Handle::Init(GLFWwindow *window) {
+Handle::Handle(GLFWwindow *window) {
   // instance
-  Instance instance = CreateInstance();
+  instance = CreateInstance();
   if (!instance) {
     std::cerr << "Could not initialize WebGPU!" << std::endl;
     std::exit(1);
   }
 
   // surface
-  Surface surface = glfw::CreateSurfaceForWindow(instance, window);
+  surface = glfw::CreateSurfaceForWindow(instance, window);
 
   // adapter
   RequestAdapterOptions adapterOpts{};
-  Adapter adapter = util::RequestAdapter(instance, &adapterOpts);
+  adapter = util::RequestAdapter(instance, &adapterOpts);
 
   // device limits
   SupportedLimits supportedLimits;
   adapter.GetLimits(&supportedLimits);
-  Limits deviceLimits = supportedLimits.limits;
+  deviceLimits = supportedLimits.limits;
 
   // device
   DeviceDescriptor deviceDesc{
@@ -37,14 +37,14 @@ Handle Handle::Init(GLFWwindow *window) {
     .requiredLimits = nullptr,
     .defaultQueue{.label = "The default queue"},
   };
-  Device device = util::RequestDevice(adapter, &deviceDesc);
+  device = util::RequestDevice(adapter, &deviceDesc);
   util::SetUncapturedErrorCallback(device);
 
   // queue
-  Queue queue = device.GetQueue();
+  queue = device.GetQueue();
 
   // swap chain format
-  TextureFormat swapChainFormat = TextureFormat::BGRA8Unorm;
+  swapChainFormat = TextureFormat::BGRA8Unorm;
 
   // swap chain
   int FBWidth, FBHeight;
@@ -56,19 +56,9 @@ Handle Handle::Init(GLFWwindow *window) {
     .height = static_cast<uint32_t>(FBHeight),
     .presentMode = PresentMode::Fifo,
   };
-  SwapChain swapChain = device.CreateSwapChain(surface, &swapChainDesc);
+  swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 
-  // init
-  return Handle{
-    instance,
-    surface,
-    adapter,
-    device,
-    queue,
-    swapChain,
-    swapChainFormat,
-    deviceLimits,
-  };
+  pipeline = Pipeline(*this);
 }
 
 } // namespace util

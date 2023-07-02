@@ -1,9 +1,13 @@
 #pragma once
 
+#include "util/pipeline.hpp"
 #include <webgpu/webgpu_cpp.h>
+
 #include <GLFW/glfw3.h>
 
 namespace util {
+
+struct Pipeline;
 
 struct Handle {
   wgpu::Instance instance;
@@ -15,7 +19,10 @@ struct Handle {
   wgpu::TextureFormat swapChainFormat;
   wgpu::Limits deviceLimits;
 
-  static Handle Init(GLFWwindow *window);
+  util::Pipeline pipeline;
+
+  Handle() = default;
+  Handle(GLFWwindow *window);
 };
 
 } // namespace util

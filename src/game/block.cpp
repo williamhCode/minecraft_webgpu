@@ -36,7 +36,7 @@ wgpu::Texture g_blocksTexture;
 wgpu::TextureView g_blocksTextureView;
 wgpu::Sampler g_blocksSampler;
 
-void InitTextures(util::Handle &handle) {
+BindGroup InitTextures(util::Handle &handle) {
   // g_blocksTexture = util::LoadTexture(handle, ROOT_DIR "/res/blocks.png");
   g_blocksTexture = util::LoadTextureMipmap(handle, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
@@ -44,7 +44,7 @@ void InitTextures(util::Handle &handle) {
     .dimension = TextureViewDimension::e2D,
     // anything after 5th mipmap blurs the different face textures
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5
-    .mipLevelCount = 5, 
+    .mipLevelCount = 5,
     .arrayLayerCount = g_blocksTexture.GetDepthOrArrayLayers(),
   };
   g_blocksTextureView = g_blocksTexture.CreateView(&viewDesc);
@@ -58,6 +58,24 @@ void InitTextures(util::Handle &handle) {
     .mipmapFilter = MipmapFilterMode::Linear,
   };
   g_blocksSampler = handle.device.CreateSampler(&samplerDesc);
+
+  // create bind group
+  std::vector<BindGroupEntry> entries{
+    BindGroupEntry{
+      .binding = 0,
+      .textureView = game::g_blocksTextureView,
+    },
+    BindGroupEntry{
+      .binding = 1,
+      .sampler = game::g_blocksSampler,
+    },
+  };
+  BindGroupDescriptor bindGroupDesc{
+    .layout = handle.pipeline.bgl_texture,
+    .entryCount = entries.size(),
+    .entries = entries.data(),
+  };
+  return handle.device.CreateBindGroup(&bindGroupDesc);
 }
 
 } // namespace game

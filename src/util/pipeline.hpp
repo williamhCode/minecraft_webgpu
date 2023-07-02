@@ -1,11 +1,22 @@
 #pragma once
 
 #include <webgpu/webgpu_cpp.h>
-#include "util/handle.hpp"
 #include <vector>
 
 namespace util {
 
-std::vector<wgpu::RenderPipeline> CreatePipelines(util::Handle &handle);
+struct Handle;
+
+struct Pipeline {
+  wgpu::BindGroupLayout bgl_viewProj;
+  wgpu::BindGroupLayout bgl_texture;
+  wgpu::BindGroupLayout bgl_offset;
+
+  wgpu::RenderPipeline rpl_simple;
+
+  Pipeline() = default;
+  Pipeline(Handle &handle);
+};
+
 
 } // namespace util
