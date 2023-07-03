@@ -136,7 +136,7 @@ Game::Game() {
 
     // begin render --------------------------------------------------------
     RenderPassEncoder passEncoder = renderer.Begin({0.5, 0.8, 0.9, 1.0});
-    passEncoder.SetPipeline(m_handle.pipeline.rpl_simple);
+    passEncoder.SetPipeline(m_handle.pipeline.rpl_gBuffer);
 
     passEncoder.SetBindGroup(0, camera.bindGroup);
     passEncoder.SetBindGroup(1, textureBindGroup);

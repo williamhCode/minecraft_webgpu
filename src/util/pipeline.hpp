@@ -12,7 +12,7 @@ struct Pipeline {
   wgpu::BindGroupLayout bgl_texture;
   wgpu::BindGroupLayout bgl_offset;
 
-  wgpu::RenderPipeline rpl_simple;
+  wgpu::RenderPipeline rpl_gBuffer;
 
   Pipeline() = default;
   Pipeline(Handle &handle);

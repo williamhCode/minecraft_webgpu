@@ -1,21 +1,94 @@
 #include "renderer.hpp"
 #include <iostream>
 #include <ostream>
+#include <vector>
 
 namespace util {
 
 using namespace wgpu;
 
 Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
-  TextureDescriptor depthTextureDesc{
-    .usage = TextureUsage::RenderAttachment,
-    .size = {size.x, size.y},
-    .format = TextureFormat::Depth24Plus,
-  };
-  m_depthTexture = handle->device.CreateTexture(&depthTextureDesc);
+  {
+    TextureDescriptor textureDesc{
+      .usage = TextureUsage::RenderAttachment,
+      .size = {size.x, size.y},
+      .format = TextureFormat::Depth24Plus,
+    };
+    m_depthTexture = m_handle->device.CreateTexture(&textureDesc);
+    m_depthTextureView = m_depthTexture.CreateView();
+  }
 
-  TextureViewDescriptor depthTextureViewDesc{};
-  m_depthTextureView = m_depthTexture.CreateView(&depthTextureViewDesc);
+  // SSAO
+  // Create Textures: position, normal, color
+  {
+    TextureDescriptor textureDesc{
+      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
+      .size = {size.x, size.y},
+      .format = TextureFormat::RGBA16Float,
+    };
+    m_positionTexture = m_handle->device.CreateTexture(&textureDesc);
+  }
+  {
+    TextureDescriptor textureDesc{
+      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
+      .size = {size.x, size.y},
+      .format = TextureFormat::RGBA16Float,
+    };
+    m_normalTexture = m_handle->device.CreateTexture(&textureDesc);
+  }
+  {
+    TextureDescriptor textureDesc{
+      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
+      .size = {size.x, size.y},
+      .format = TextureFormat::BGRA8Unorm,
+    };
+    m_colorTexture = m_handle->device.CreateTexture(&textureDesc);
+  }
+  // Create sampler
+  {
+    SamplerDescriptor samplerDesc{
+      .addressModeU = AddressMode::ClampToEdge,
+      .addressModeV = AddressMode::ClampToEdge,
+      .magFilter = FilterMode::Nearest,
+      .minFilter = FilterMode::Nearest,
+    };
+    m_sampler = m_handle->device.CreateSampler(&samplerDesc);
+  }
+
+  // render pass
+  {
+    m_colorAttachments = {
+      RenderPassColorAttachment{
+        .view = m_positionTexture.CreateView(),
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 1.0},
+      },
+      RenderPassColorAttachment{
+        .view = m_normalTexture.CreateView(),
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 1.0},
+      },
+      RenderPassColorAttachment{
+        .view = m_colorTexture.CreateView(),
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 1.0},
+      },
+    };
+    m_depthStencilAttachment = {
+      .view = m_depthTextureView,
+      .depthLoadOp = LoadOp::Clear,
+      .depthStoreOp = StoreOp::Store,
+      .depthClearValue = 1.0f,
+    };
+    m_gBufferPassDesc = {
+      .colorAttachmentCount = m_colorAttachments.size(),
+      .colorAttachments = m_colorAttachments.data(),
+      .depthStencilAttachment = &m_depthStencilAttachment,
+    };
+  }
 }
 
 RenderPassEncoder Renderer::Begin(Color color) {
@@ -28,25 +101,24 @@ RenderPassEncoder Renderer::Begin(Color color) {
   CommandEncoderDescriptor commandEncoderDesc{};
   m_commandEncoder = m_handle->device.CreateCommandEncoder(&commandEncoderDesc);
 
-  RenderPassColorAttachment colorAttachment{
-    .view = nextTexture,
-    .loadOp = LoadOp::Clear,
-    .storeOp = StoreOp::Store,
-    .clearValue = color,
-  };
-  RenderPassDepthStencilAttachment depthStencilAttachment{
-    .view = m_depthTextureView,
-    .depthLoadOp = LoadOp::Clear,
-    .depthStoreOp = StoreOp::Store,
-    .depthClearValue = 1.0f,
-    .depthReadOnly = false,
-  };
-  RenderPassDescriptor renderPassDesc{
-    .colorAttachmentCount = 1,
-    .colorAttachments = &colorAttachment,
-    .depthStencilAttachment = &depthStencilAttachment,
-  };
-  m_passEncoder = m_commandEncoder.BeginRenderPass(&renderPassDesc);
+  // RenderPassColorAttachment colorAttachment{
+  //   .view = nextTexture,
+  //   .loadOp = LoadOp::Clear,
+  //   .storeOp = StoreOp::Store,
+  //   .clearValue = color,
+  // };
+  // RenderPassDepthStencilAttachment depthStencilAttachment{
+  //   .view = m_depthTextureView,
+  //   .depthLoadOp = LoadOp::Clear,
+  //   .depthStoreOp = StoreOp::Store,
+  //   .depthClearValue = 1.0f,
+  // };
+  // RenderPassDescriptor renderPassDesc{
+  //   .colorAttachmentCount = 1,
+  //   .colorAttachments = &colorAttachment,
+  //   .depthStencilAttachment = &depthStencilAttachment,
+  // };
+  m_passEncoder = m_commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
   return m_passEncoder;
 }
 

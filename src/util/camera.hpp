@@ -11,16 +11,15 @@ private:
   Handle *m_handle;
   glm::vec4 m_forward = glm::vec4(0.0, 1.0, 0.0, 1.0);
   glm::vec4 m_up = glm::vec4(0.0, 0.0, 1.0, 1.0);
+  glm::mat4 m_projection;
+  wgpu::Buffer m_viewBuffer;
+  wgpu::Buffer m_projectionBuffer;
 
 public:
-  wgpu::Buffer uniformBuffer;
   wgpu::BindGroup bindGroup;
   glm::vec3 position;
   glm::vec3 direction;
   glm::vec3 orientation; // yaw, pitch, roll
-  glm::mat4 projection;
-  glm::mat4 viewProj;
-  glm::mat4 view;
 
   Camera() = default;
   Camera(

@@ -9,8 +9,21 @@ namespace util {
 class Renderer {
 private:
   Handle *m_handle;
+
   wgpu::Texture m_depthTexture;
   wgpu::TextureView m_depthTextureView;
+
+  // GBuffer
+  // textures
+  wgpu::Texture m_positionTexture;
+  wgpu::Texture m_normalTexture;
+  wgpu::Texture m_colorTexture;
+  wgpu::Sampler m_sampler;
+  // render pass
+  std::vector<wgpu::RenderPassColorAttachment> m_colorAttachments;
+  wgpu::RenderPassDepthStencilAttachment m_depthStencilAttachment;
+  wgpu::RenderPassDescriptor m_gBufferPassDesc;
+
   wgpu::CommandEncoder m_commandEncoder;
   wgpu::RenderPassEncoder m_passEncoder;
 

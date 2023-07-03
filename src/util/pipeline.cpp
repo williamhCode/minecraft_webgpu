@@ -4,6 +4,7 @@
 #include "game/mesh.hpp"
 #include "glm-include.hpp"
 #include "game/mesh.hpp"
+#include <vector>
 
 namespace util {
 
@@ -12,13 +13,21 @@ using game::Vertex;
 
 Pipeline::Pipeline(Handle &handle) {
   ShaderModule shaderModule =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/simple.wgsl", handle.device);
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", handle.device);
 
-  // viewProj
+  // view, projection
   {
     std::vector<BindGroupLayoutEntry> entries{
       BindGroupLayoutEntry{
         .binding = 0,
+        .visibility = ShaderStage::Vertex,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(glm::mat4),
+        },
+      },
+      BindGroupLayoutEntry{
+        .binding = 1,
         .visibility = ShaderStage::Vertex,
         .buffer{
           .type = BufferBindingType::Uniform,
@@ -138,28 +147,32 @@ Pipeline::Pipeline(Handle &handle) {
   };
 
   // Fragment State --------------------------------
-  BlendState blendState{
-    .color{
-      .operation = BlendOperation::Add,
-      .srcFactor = BlendFactor::SrcAlpha,
-      .dstFactor = BlendFactor::OneMinusSrcAlpha,
+  // BlendState blendState{
+  //   .color{
+  //     .operation = BlendOperation::Add,
+  //     .srcFactor = BlendFactor::SrcAlpha,
+  //     .dstFactor = BlendFactor::OneMinusSrcAlpha,
+  //   },
+  // };
+  std::vector<ColorTargetState> targets{
+    // position
+    ColorTargetState{
+      .format = TextureFormat::RGBA16Float,
     },
-    .alpha{
-      .operation = BlendOperation::Add,
-      .srcFactor = BlendFactor::Zero,
-      .dstFactor = BlendFactor::One,
+    // normal
+    ColorTargetState{
+      .format = TextureFormat::RGBA16Float,
     },
-  };
-  ColorTargetState colorTarget{
-    .format = handle.swapChainFormat,
-    .blend = &blendState,
-    .writeMask = ColorWriteMask::All,
+    // albedo
+    ColorTargetState{
+      .format = TextureFormat::BGRA8Unorm,
+    },
   };
   FragmentState fragmentState{
     .module = shaderModule,
     .entryPoint = "fs_main",
-    .targetCount = 1,
-    .targets = &colorTarget,
+    .targetCount = targets.size(),
+    .targets = targets.data(),
   };
 
   // finally, create Render Pipeline
@@ -171,7 +184,7 @@ Pipeline::Pipeline(Handle &handle) {
     .fragment = &fragmentState,
   };
 
-  rpl_simple = handle.device.CreateRenderPipeline(&pipelineDesc);
+  rpl_gBuffer = handle.device.CreateRenderPipeline(&pipelineDesc);
 }
 
 } // namespace util
