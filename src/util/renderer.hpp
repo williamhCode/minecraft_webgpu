@@ -3,6 +3,7 @@
 #include "glm/ext/vector_uint2.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "handle.hpp"
+#include <array>
 
 namespace util {
 
@@ -10,18 +11,14 @@ class Renderer {
 private:
   Handle *m_handle;
 
-  wgpu::Texture m_depthTexture;
+  // wgpu::Texture m_depthTexture;
   wgpu::TextureView m_depthTextureView;
 
   // GBuffer
   // textures
-  wgpu::Texture m_positionTexture;
-  wgpu::Texture m_normalTexture;
-  wgpu::Texture m_colorTexture;
+  std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
   wgpu::Sampler m_sampler;
   // render pass
-  std::vector<wgpu::RenderPassColorAttachment> m_colorAttachments;
-  wgpu::RenderPassDepthStencilAttachment m_depthStencilAttachment;
   wgpu::RenderPassDescriptor m_gBufferPassDesc;
 
   wgpu::CommandEncoder m_commandEncoder;

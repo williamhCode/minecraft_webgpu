@@ -14,8 +14,8 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .size = {size.x, size.y},
       .format = TextureFormat::Depth24Plus,
     };
-    m_depthTexture = m_handle->device.CreateTexture(&textureDesc);
-    m_depthTextureView = m_depthTexture.CreateView();
+    static auto depthTexture = m_handle->device.CreateTexture(&textureDesc);
+    m_depthTextureView = depthTexture.CreateView();
   }
 
   // SSAO
@@ -26,7 +26,8 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .size = {size.x, size.y},
       .format = TextureFormat::RGBA16Float,
     };
-    m_positionTexture = m_handle->device.CreateTexture(&textureDesc);
+    static auto positionTexture = m_handle->device.CreateTexture(&textureDesc);
+    m_gBufferTextureViews[0] = positionTexture.CreateView();
   }
   {
     TextureDescriptor textureDesc{
@@ -34,7 +35,8 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .size = {size.x, size.y},
       .format = TextureFormat::RGBA16Float,
     };
-    m_normalTexture = m_handle->device.CreateTexture(&textureDesc);
+    static auto normalTexture = m_handle->device.CreateTexture(&textureDesc);
+    m_gBufferTextureViews[1] = normalTexture.CreateView();
   }
   {
     TextureDescriptor textureDesc{
@@ -42,8 +44,45 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .size = {size.x, size.y},
       .format = TextureFormat::BGRA8Unorm,
     };
-    m_colorTexture = m_handle->device.CreateTexture(&textureDesc);
+    static auto colorTexture = m_handle->device.CreateTexture(&textureDesc);
+    m_gBufferTextureViews[2] = colorTexture.CreateView();
   }
+
+  // render pass
+  {
+    static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
+      RenderPassColorAttachment{
+        .view = m_gBufferTextureViews[0],
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 1.0},
+      },
+      RenderPassColorAttachment{
+        .view = m_gBufferTextureViews[1],
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 1.0},
+      },
+      RenderPassColorAttachment{
+        .view = m_gBufferTextureViews[2],
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 1.0},
+      },
+    };
+    static RenderPassDepthStencilAttachment depthStencilAttachment{
+      .view = m_depthTextureView,
+      .depthLoadOp = LoadOp::Clear,
+      .depthStoreOp = StoreOp::Store,
+      .depthClearValue = 1.0f,
+    };
+    m_gBufferPassDesc = {
+      .colorAttachmentCount = colorAttachments.size(),
+      .colorAttachments = colorAttachments.data(),
+      .depthStencilAttachment = &depthStencilAttachment,
+    };
+  }
+
   // Create sampler
   {
     SamplerDescriptor samplerDesc{
@@ -53,41 +92,6 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .minFilter = FilterMode::Nearest,
     };
     m_sampler = m_handle->device.CreateSampler(&samplerDesc);
-  }
-
-  // render pass
-  {
-    m_colorAttachments = {
-      RenderPassColorAttachment{
-        .view = m_positionTexture.CreateView(),
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 1.0},
-      },
-      RenderPassColorAttachment{
-        .view = m_normalTexture.CreateView(),
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 1.0},
-      },
-      RenderPassColorAttachment{
-        .view = m_colorTexture.CreateView(),
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 1.0},
-      },
-    };
-    m_depthStencilAttachment = {
-      .view = m_depthTextureView,
-      .depthLoadOp = LoadOp::Clear,
-      .depthStoreOp = StoreOp::Store,
-      .depthClearValue = 1.0f,
-    };
-    m_gBufferPassDesc = {
-      .colorAttachmentCount = m_colorAttachments.size(),
-      .colorAttachments = m_colorAttachments.data(),
-      .depthStencilAttachment = &m_depthStencilAttachment,
-    };
   }
 }
 
