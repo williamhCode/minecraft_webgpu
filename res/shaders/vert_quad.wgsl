@@ -9,7 +9,7 @@ struct VertexOutput {
 }
 
 @vertex
-fn main(in: VertexInput) -> VertexOutput {
+fn vs_main(in: VertexInput) -> VertexOutput {
   var out: VertexOutput;
   out.position = vec4f(in.position, 0.0, 1.0);
   out.uv = in.uv;

@@ -1,4 +1,4 @@
-#include "handle.hpp"
+#include "context.hpp"
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 #include "util/webgpu-util.hpp"
@@ -10,7 +10,7 @@ namespace util {
 
 using namespace wgpu;
 
-Handle::Handle(GLFWwindow *window) {
+Context::Context(GLFWwindow *window) {
   // instance
   instance = CreateInstance();
   if (!instance) {

@@ -1,4 +1,5 @@
 #include "renderer.hpp"
+#include "game/block.hpp"
 #include <iostream>
 #include <ostream>
 #include <vector>
@@ -7,26 +8,29 @@ namespace util {
 
 using namespace wgpu;
 
-Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
+Renderer::Renderer(Context *ctx, glm::uvec2 size) : m_ctx(ctx) {
+  m_bg_blocksTexture = game::CreateBlocksTexture(*m_ctx);
+
+  // create depth texture
   {
     TextureDescriptor textureDesc{
       .usage = TextureUsage::RenderAttachment,
       .size = {size.x, size.y},
       .format = TextureFormat::Depth24Plus,
     };
-    static auto depthTexture = m_handle->device.CreateTexture(&textureDesc);
+    static Texture depthTexture = m_ctx->device.CreateTexture(&textureDesc);
     m_depthTextureView = depthTexture.CreateView();
   }
 
   // SSAO
-  // Create Textures: position, normal, color
+  // create textures: position, normal, color
   {
     TextureDescriptor textureDesc{
       .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
       .size = {size.x, size.y},
       .format = TextureFormat::RGBA16Float,
     };
-    static auto positionTexture = m_handle->device.CreateTexture(&textureDesc);
+    static Texture positionTexture = m_ctx->device.CreateTexture(&textureDesc);
     m_gBufferTextureViews[0] = positionTexture.CreateView();
   }
   {
@@ -35,7 +39,7 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .size = {size.x, size.y},
       .format = TextureFormat::RGBA16Float,
     };
-    static auto normalTexture = m_handle->device.CreateTexture(&textureDesc);
+    static Texture normalTexture = m_ctx->device.CreateTexture(&textureDesc);
     m_gBufferTextureViews[1] = normalTexture.CreateView();
   }
   {
@@ -44,7 +48,7 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .size = {size.x, size.y},
       .format = TextureFormat::BGRA8Unorm,
     };
-    static auto colorTexture = m_handle->device.CreateTexture(&textureDesc);
+    static Texture colorTexture = m_ctx->device.CreateTexture(&textureDesc);
     m_gBufferTextureViews[2] = colorTexture.CreateView();
   }
 
@@ -91,50 +95,34 @@ Renderer::Renderer(Handle *handle, glm::uvec2 size) : m_handle(handle) {
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
     };
-    m_sampler = m_handle->device.CreateSampler(&samplerDesc);
+    m_sampler = m_ctx->device.CreateSampler(&samplerDesc);
   }
 }
 
-RenderPassEncoder Renderer::Begin(Color color) {
-  TextureView nextTexture = m_handle->swapChain.GetCurrentTextureView();
+void Renderer::Render(GameState &state) {
+  TextureView nextTexture = m_ctx->swapChain.GetCurrentTextureView();
   if (!nextTexture) {
     std::cerr << "Cannot acquire next swap chain texture" << std::endl;
     std::exit(1);
   }
 
-  CommandEncoderDescriptor commandEncoderDesc{};
-  m_commandEncoder = m_handle->device.CreateCommandEncoder(&commandEncoderDesc);
+  CommandEncoder commandEncoder = m_ctx->device.CreateCommandEncoder();
+  {
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
+    passEncoder.SetPipeline(m_ctx->pipeline.rpl_gBuffer);
+    passEncoder.SetBindGroup(0, state.player.camera.bindGroup);
+    passEncoder.SetBindGroup(1, m_bg_blocksTexture);
+    state.chunkManager->Render(passEncoder);
+    passEncoder.End();
+  }
 
-  // RenderPassColorAttachment colorAttachment{
-  //   .view = nextTexture,
-  //   .loadOp = LoadOp::Clear,
-  //   .storeOp = StoreOp::Store,
-  //   .clearValue = color,
-  // };
-  // RenderPassDepthStencilAttachment depthStencilAttachment{
-  //   .view = m_depthTextureView,
-  //   .depthLoadOp = LoadOp::Clear,
-  //   .depthStoreOp = StoreOp::Store,
-  //   .depthClearValue = 1.0f,
-  // };
-  // RenderPassDescriptor renderPassDesc{
-  //   .colorAttachmentCount = 1,
-  //   .colorAttachments = &colorAttachment,
-  //   .depthStencilAttachment = &depthStencilAttachment,
-  // };
-  m_passEncoder = m_commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
-  return m_passEncoder;
-}
-
-void Renderer::End() {
-  m_passEncoder.End();
   CommandBufferDescriptor cmdBufferDescriptor{};
-  CommandBuffer command = m_commandEncoder.Finish(&cmdBufferDescriptor);
-  m_handle->queue.Submit(1, &command);
+  CommandBuffer command = commandEncoder.Finish(&cmdBufferDescriptor);
+  m_ctx->queue.Submit(1, &command);
 }
 
 void Renderer::Present() {
-  m_handle->swapChain.Present();
+  m_ctx->swapChain.Present();
 }
 
 } // namespace util

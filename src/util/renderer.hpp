@@ -1,33 +1,28 @@
 #pragma once
 
+#include "game.hpp"
 #include "glm/ext/vector_uint2.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "handle.hpp"
+#include "context.hpp"
 #include <array>
 
 namespace util {
 
 class Renderer {
 private:
-  Handle *m_handle;
+  Context *m_ctx;
 
-  // wgpu::Texture m_depthTexture;
+  wgpu::BindGroup m_bg_blocksTexture;
   wgpu::TextureView m_depthTextureView;
-
   // GBuffer
-  // textures
   std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
   wgpu::Sampler m_sampler;
-  // render pass
+
   wgpu::RenderPassDescriptor m_gBufferPassDesc;
 
-  wgpu::CommandEncoder m_commandEncoder;
-  wgpu::RenderPassEncoder m_passEncoder;
-
 public:
-  Renderer(Handle *handle, glm::uvec2 size);
-  wgpu::RenderPassEncoder Begin(wgpu::Color color);
-  void End();
+  Renderer(Context *ctx, glm::uvec2 size);
+  void Render(GameState &state);
   void Present();
 };
 

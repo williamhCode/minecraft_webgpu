@@ -20,7 +20,7 @@ add_executable(App
 	src/game.cpp
 
   src/util/camera.cpp
-  src/util/handle.cpp
+  src/util/context.cpp
   src/util/load.cpp
   src/util/webgpu-util.cpp
   src/util/pipeline.cpp

@@ -1,6 +1,6 @@
 #include "block.hpp"
 #include "game/direction.hpp"
-#include "util/handle.hpp"
+#include "util/context.hpp"
 #include "util/texture.hpp"
 
 namespace game {
@@ -32,47 +32,43 @@ const std::array<BlockType, 3> g_BLOCK_TYPES = {
   },
 };
 
-wgpu::Texture g_blocksTexture;
-wgpu::TextureView g_blocksTextureView;
-wgpu::Sampler g_blocksSampler;
-
-BindGroup InitTextures(util::Handle &handle) {
-  // g_blocksTexture = util::LoadTexture(handle, ROOT_DIR "/res/blocks.png");
-  g_blocksTexture = util::LoadTextureMipmap(handle, ROOT_DIR "/res/blocks.png");
+BindGroup CreateBlocksTexture(util::Context &ctx) {
+  // g_blocksTexture = util::LoadTexture(ctx, ROOT_DIR "/res/blocks.png");
+  static Texture blocksTexture =
+    util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
-    // anything after 5th mipmap blurs the different face textures
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5
+    // anything after 5th mipmap blurs the different face textures
     .mipLevelCount = 5,
   };
-  g_blocksTextureView = g_blocksTexture.CreateView(&viewDesc);
+  TextureView blocksTextureView = blocksTexture.CreateView(&viewDesc);
 
   SamplerDescriptor samplerDesc{
     .addressModeU = AddressMode::ClampToEdge,
     .addressModeV = AddressMode::ClampToEdge,
-    .addressModeW = AddressMode::ClampToEdge,
     .magFilter = FilterMode::Nearest,
     .minFilter = FilterMode::Nearest,
     .mipmapFilter = MipmapFilterMode::Linear,
   };
-  g_blocksSampler = handle.device.CreateSampler(&samplerDesc);
+  Sampler blocksSampler = ctx.device.CreateSampler(&samplerDesc);
 
   // create bind group
   std::vector<BindGroupEntry> entries{
     BindGroupEntry{
       .binding = 0,
-      .textureView = game::g_blocksTextureView,
+      .textureView = blocksTextureView,
     },
     BindGroupEntry{
       .binding = 1,
-      .sampler = game::g_blocksSampler,
+      .sampler = blocksSampler,
     },
   };
   BindGroupDescriptor bindGroupDesc{
-    .layout = handle.pipeline.bgl_texture,
+    .layout = ctx.pipeline.bgl_texture,
     .entryCount = entries.size(),
     .entries = entries.data(),
   };
-  return handle.device.CreateBindGroup(&bindGroupDesc);
+  return ctx.device.CreateBindGroup(&bindGroupDesc);
 }
 
 } // namespace game

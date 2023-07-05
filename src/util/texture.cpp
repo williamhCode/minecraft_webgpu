@@ -13,7 +13,7 @@ namespace util {
 
 using namespace wgpu;
 
-Texture LoadTexture(Handle &handle, std::filesystem::path path) {
+Texture LoadTexture(Context &ctx, std::filesystem::path path) {
   int width, height, channels;
   unsigned char *pixelData =
     stbi_load(path.string().c_str(), &width, &height, &channels, 4);
@@ -25,7 +25,7 @@ Texture LoadTexture(Handle &handle, std::filesystem::path path) {
     .size = size,
     .format = TextureFormat::RGBA8Unorm,
   };
-  Texture texture = handle.device.CreateTexture(&textureDesc);
+  Texture texture = ctx.device.CreateTexture(&textureDesc);
 
   ImageCopyTexture destination{
     .texture = texture,
@@ -34,7 +34,7 @@ Texture LoadTexture(Handle &handle, std::filesystem::path path) {
     .bytesPerRow = 4 * size.width,
     .rowsPerImage = size.height,
   };
-  handle.queue.WriteTexture(
+  ctx.queue.WriteTexture(
     &destination, pixelData, width * height * 4, &source, &size
   );
 
@@ -44,7 +44,7 @@ Texture LoadTexture(Handle &handle, std::filesystem::path path) {
 }
 
 // TODO: Segfaults!
-Texture LoadTextureMipmap(Handle &handle, std::filesystem::path path) {
+Texture LoadTextureMipmap(Context &ctx, std::filesystem::path path) {
   int width, height, channels;
   uint8_t *pixelData = stbi_load(path.string().c_str(), &width, &height, &channels, 4);
 
@@ -56,7 +56,7 @@ Texture LoadTextureMipmap(Handle &handle, std::filesystem::path path) {
     .format = TextureFormat::RGBA8Unorm,
     .mipLevelCount = std::bit_width(std::max(size.width, size.height)),
   };
-  Texture texture = handle.device.CreateTexture(&textureDesc);
+  Texture texture = ctx.device.CreateTexture(&textureDesc);
 
   // Create image data
   Extent3D currSize = size;
@@ -88,7 +88,7 @@ Texture LoadTextureMipmap(Handle &handle, std::filesystem::path path) {
       .bytesPerRow = 4 * currSize.width,
       .rowsPerImage = currSize.height,
     };
-    handle.queue.WriteTexture(
+    ctx.queue.WriteTexture(
       &destination, currData, currSize.width * currSize.height * 4, &source, &currSize
     );
   }

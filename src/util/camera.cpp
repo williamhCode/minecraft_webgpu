@@ -7,7 +7,7 @@ namespace util {
 using namespace wgpu;
 
 Camera::Camera(
-  Handle *handle,
+  Context *ctx,
   glm::vec3 position,
   glm::vec3 orientation,
   float fov,
@@ -15,14 +15,14 @@ Camera::Camera(
   float near,
   float far
 )
-    : m_handle(handle), position(position), orientation(orientation) {
+    : m_ctx(ctx), position(position), orientation(orientation) {
   // create bind group
   BufferDescriptor bufferDesc{
     .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
     .size = sizeof(glm::mat4),
   };
-  m_viewBuffer = handle->device.CreateBuffer(&bufferDesc);
-  m_projectionBuffer = handle->device.CreateBuffer(&bufferDesc);
+  m_viewBuffer = ctx->device.CreateBuffer(&bufferDesc);
+  m_projectionBuffer = ctx->device.CreateBuffer(&bufferDesc);
 
   {
     std::vector<BindGroupEntry> entries{
@@ -38,15 +38,15 @@ Camera::Camera(
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = m_handle->pipeline.bgl_viewProj,
+      .layout = m_ctx->pipeline.bgl_viewProj,
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bindGroup = m_handle->device.CreateBindGroup(&bindGroupDesc);
+    bindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
   }
 
   m_projection = glm::perspective(fov, aspect, near, far);
-  m_handle->queue.WriteBuffer(m_projectionBuffer, 0, &m_projection, sizeof(m_projection));
+  m_ctx->queue.WriteBuffer(m_projectionBuffer, 0, &m_projection, sizeof(m_projection));
 
   Update();
 }
@@ -61,7 +61,7 @@ void Camera::Update() {
   glm::vec3 up = rotation * m_up;
   glm::mat4 view = glm::lookAt(position, position + direction, up);
 
-  m_handle->queue.WriteBuffer(m_viewBuffer, 0, &view, sizeof(view));
+  m_ctx->queue.WriteBuffer(m_viewBuffer, 0, &view, sizeof(view));
 }
 
 } // namespace util

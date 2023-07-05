@@ -5,7 +5,7 @@
 
 #include <array>
 #include "direction.hpp"
-#include "util/handle.hpp"
+#include "util/context.hpp"
 
 namespace game {
 
@@ -21,10 +21,7 @@ struct BlockType {
 };
 
 const extern std::array<BlockType, 3> g_BLOCK_TYPES;
-extern wgpu::Texture g_blocksTexture;
-extern wgpu::TextureView g_blocksTextureView;
-extern wgpu::Sampler g_blocksSampler;
 
-wgpu::BindGroup InitTextures(util::Handle &handle);
+wgpu::BindGroup CreateBlocksTexture(util::Context &ctx);
 
 }; // namespace game

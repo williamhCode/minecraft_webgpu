@@ -8,7 +8,7 @@
 @group(2) @binding(0) var<uniform> samples: array<vec3f, 64>;
 
 @fragment
-fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
 
   return vec4f();
 }

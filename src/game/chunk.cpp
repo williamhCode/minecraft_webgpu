@@ -12,11 +12,11 @@ namespace game {
 using namespace wgpu;
 
 Chunk::Chunk(
-  util::Handle *handle,
+  util::Context *ctx,
   ChunkManager *chunkManager,
   glm::ivec2 offset
 )
-    : m_handle(handle), m_chunkManager(chunkManager), m_dirty(false) {
+    : m_ctx(ctx), m_chunkManager(chunkManager), m_dirty(false) {
   m_offsetPos = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
   InitializeChunkData();
   // InitFaceData();
@@ -28,19 +28,19 @@ Chunk::Chunk(
     .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
     .size = sizeof(posOffset),
   };
-  m_offsetBuffer = handle->device.CreateBuffer(&bufferDesc);
-  handle->queue.WriteBuffer(m_offsetBuffer, 0, &posOffset, sizeof(posOffset));
+  m_offsetBuffer = ctx->device.CreateBuffer(&bufferDesc);
+  ctx->queue.WriteBuffer(m_offsetBuffer, 0, &posOffset, sizeof(posOffset));
 
   BindGroupEntry entry{
     .binding = 0,
     .buffer = m_offsetBuffer,
   };
   BindGroupDescriptor bindGroupDesc{
-    .layout = handle->pipeline.bgl_offset,
+    .layout = ctx->pipeline.bgl_offset,
     .entryCount = 1,
     .entries = &entry,
   };
-  this->m_bindGroup = m_handle->device.CreateBindGroup(&bindGroupDesc);
+  this->m_bindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
 }
 
 std::array<Cube, Chunk::VOLUME> Chunk::m_cubeData;
@@ -96,14 +96,14 @@ void Chunk::CreateBuffers() {
       .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
       .size = m_faces.size() * sizeof(Face),
     };
-    m_vertexBuffer = m_handle->device.CreateBuffer(&bufferDesc);
+    m_vertexBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
   }
   {
     BufferDescriptor bufferDesc{
       .usage = BufferUsage::CopyDst | BufferUsage::Index,
       .size = m_indices.size() * sizeof(FaceIndex),
     };
-    m_indexBuffer = m_handle->device.CreateBuffer(&bufferDesc);
+    m_indexBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
   }
 }
 
@@ -142,10 +142,10 @@ void Chunk::UpdateMesh() {
   CreateBuffers();
 
   // upload data
-  m_handle->queue.WriteBuffer(
+  m_ctx->queue.WriteBuffer(
     m_vertexBuffer, 0, m_faces.data(), m_faces.size() * sizeof(Face)
   );
-  m_handle->queue.WriteBuffer(
+  m_ctx->queue.WriteBuffer(
     m_indexBuffer, 0, m_indices.data(), m_indices.size() * sizeof(FaceIndex)
   );
 }

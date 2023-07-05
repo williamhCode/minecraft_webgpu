@@ -13,7 +13,7 @@
 #include "game/mesh.hpp"
 #include "game/ray.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "util/handle.hpp"
+#include "util/context.hpp"
 #include "util/renderer.hpp"
 #include "util/timer.hpp"
 #include "util/webgpu-util.hpp"
@@ -77,11 +77,11 @@ Game::Game() {
   // end window ----------------------------------
 
   // init wgpu
-  m_handle = util::Handle(m_window);
+  m_ctx = util::Context(m_window);
 
-  // init objects
+  // setup game state
   util::Camera camera(
-    &m_handle,
+    &m_ctx,
     glm::vec3(0, 0.0, 105.0),
     glm::vec3(glm::radians(0.0f), 0, 0),
     glm::radians(50.0f),
@@ -89,17 +89,14 @@ Game::Game() {
     0.1,
     2000
   );
+  m_state.player = game::Player(camera);
 
-  m_player = game::Player(camera);
-
-  // chunkManager setup
-  auto textureBindGroup = game::InitTextures(m_handle);
   game::InitMesh();
   game::Chunk::InitSharedData();
-  m_chunkManager = std::make_unique<game::ChunkManager>(&m_handle);
+  m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx);
 
   // setup rendering
-  util::Renderer renderer(&m_handle, m_FBSize);
+  util::Renderer renderer(&m_ctx, m_FBSize);
 
   // game loop
   util::Timer timer;
@@ -111,7 +108,7 @@ Game::Game() {
     std::cout << "FPS: " << fps << "\r" << std::flush;
 
     // error callback
-    m_handle.device.Tick();
+    m_ctx.device.Tick();
 
     glfwPollEvents();
 
@@ -129,22 +126,13 @@ Game::Game() {
       moveDir.z += 1;
     if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
       moveDir.z -= 1;
-    m_player.Move(moveDir * m_dt);
-    m_player.Update();
+    m_state.player.Move(moveDir * m_dt);
+    m_state.player.Update();
 
-    // m_chunkManager.Update(glm::vec2(m_player.GetPosition()));
+    // m_state.chunkManager.Update(glm::vec2(m_state.player.GetPosition()));
 
-    // begin render --------------------------------------------------------
-    RenderPassEncoder passEncoder = renderer.Begin({0.5, 0.8, 0.9, 1.0});
-    passEncoder.SetPipeline(m_handle.pipeline.rpl_gBuffer);
-
-    passEncoder.SetBindGroup(0, camera.bindGroup);
-    passEncoder.SetBindGroup(1, textureBindGroup);
-
-    m_chunkManager->Render(passEncoder);
-
-    // end render -----------------------------------------------------------
-    renderer.End();
+    // render
+    renderer.Render(m_state);
     renderer.Present();
   }
 }
@@ -164,20 +152,26 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
   if (action == GLFW_PRESS) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
       auto castData = game::Raycast(
-        m_player.GetPosition(), m_player.GetDirection(), 10, *m_chunkManager
+        m_state.player.GetPosition(),
+        m_state.player.GetDirection(),
+        10,
+        *m_state.chunkManager
       );
       if (castData.has_value()) {
         auto [pos, dir] = castData.value();
-        m_chunkManager->SetBlock(pos, game::BlockId::AIR);
+        m_state.chunkManager->SetBlock(pos, game::BlockId::AIR);
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
       auto castData = game::Raycast(
-        m_player.GetPosition(), m_player.GetDirection(), 10, *m_chunkManager
+        m_state.player.GetPosition(),
+        m_state.player.GetDirection(),
+        10,
+        *m_state.chunkManager
       );
       if (castData.has_value()) {
         auto [pos, dir] = castData.value();
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_chunkManager->SetBlock(placePos, game::BlockId::DIRT);
+        m_state.chunkManager->SetBlock(placePos, game::BlockId::DIRT);
       }
     }
   }
@@ -187,7 +181,7 @@ void Game::CursorPosCallback(double xpos, double ypos) {
   glm::vec2 currMousePos(xpos, ypos);
   glm::vec2 delta = currMousePos - m_lastMousePos;
   m_lastMousePos = currMousePos;
-  m_player.Look(delta * 0.003f);
+  m_state.player.Look(delta * 0.003f);
 }
 
 bool Game::KeyPressed(int key) {

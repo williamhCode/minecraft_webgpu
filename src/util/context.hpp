@@ -9,7 +9,7 @@ namespace util {
 
 struct Pipeline;
 
-struct Handle {
+struct Context {
   wgpu::Instance instance;
   wgpu::Surface surface;
   wgpu::Adapter adapter;
@@ -21,8 +21,8 @@ struct Handle {
 
   util::Pipeline pipeline;
 
-  Handle() = default;
-  Handle(GLFWwindow *window);
+  Context() = default;
+  Context(GLFWwindow *window);
 };
 
 } // namespace util

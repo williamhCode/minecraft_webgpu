@@ -3,7 +3,7 @@
 #include "game/chunk.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include <glm/gtx/hash.hpp>
-#include "util/handle.hpp"
+#include "util/context.hpp"
 #include <unordered_map>
 #include <vector>
 
@@ -11,7 +11,7 @@ namespace game {
 
 class ChunkManager {
 private:
-  util::Handle *m_handle;
+  util::Context *m_ctx;
   static const int RADIUS = 2;
   static const int MAX_GENS = 2;
   wgpu::BindGroupLayout m_offsetLayout;
@@ -20,7 +20,7 @@ public:
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
   ChunkManager() = default;
-  ChunkManager(util::Handle *handle);
+  ChunkManager(util::Context *ctx);
   void Update(glm::vec2 position);
   void Render(wgpu::RenderPassEncoder &passEncoder);
 

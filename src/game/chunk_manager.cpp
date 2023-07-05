@@ -1,14 +1,14 @@
 #include "chunk_manager.hpp"
 #include "glm/common.hpp"
-#include "util/handle.hpp"
+#include "util/context.hpp"
 #include <unordered_map>
 
 namespace game {
 
 using namespace wgpu;
 
-ChunkManager::ChunkManager(util::Handle *handle)
-    : m_handle(handle) {
+ChunkManager::ChunkManager(util::Context *ctx)
+    : m_ctx(ctx) {
   const glm::ivec2 centerPos = glm::floor(glm::vec2(0, 0) / glm::vec2(Chunk::SIZE)),
                    minOffset = centerPos - glm::ivec2(RADIUS, RADIUS),
                    maxOffset = centerPos + glm::ivec2(RADIUS, RADIUS);
@@ -16,7 +16,7 @@ ChunkManager::ChunkManager(util::Handle *handle)
   for (int x = minOffset.x; x <= maxOffset.x; x++) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
       const auto offset = glm::ivec2(x, y);
-      chunks.emplace(offset, new Chunk(m_handle, this, offset));
+      chunks.emplace(offset, new Chunk(m_ctx, this, offset));
     }
   }
 
@@ -43,7 +43,7 @@ void ChunkManager::Update(glm::vec2 position) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
       const auto offset = glm::ivec2(x, y);
       if (!chunks.contains(offset) && gens < MAX_GENS) {
-        chunks.emplace(offset, new Chunk(m_handle, this, offset));
+        chunks.emplace(offset, new Chunk(m_ctx, this, offset));
         gens++;
       }
     }

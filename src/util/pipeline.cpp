@@ -1,5 +1,5 @@
 #include "pipeline.hpp"
-#include "util/handle.hpp"
+#include "util/context.hpp"
 #include "util/webgpu-util.hpp"
 #include "game/mesh.hpp"
 #include "glm-include.hpp"
@@ -11,9 +11,9 @@ namespace util {
 using namespace wgpu;
 using game::Vertex;
 
-Pipeline::Pipeline(Handle &handle) {
+Pipeline::Pipeline(Context &ctx) {
   ShaderModule shaderGBuffer =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", handle.device);
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", ctx.device);
 
   // view, projection
   {
@@ -39,7 +39,7 @@ Pipeline::Pipeline(Handle &handle) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_viewProj = handle.device.CreateBindGroupLayout(&desc);
+    bgl_viewProj = ctx.device.CreateBindGroupLayout(&desc);
   }
   // texture
   {
@@ -64,7 +64,7 @@ Pipeline::Pipeline(Handle &handle) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_texture = handle.device.CreateBindGroupLayout(&desc);
+    bgl_texture = ctx.device.CreateBindGroupLayout(&desc);
   }
   // offset
   {
@@ -82,7 +82,7 @@ Pipeline::Pipeline(Handle &handle) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_offset = handle.device.CreateBindGroupLayout(&desc);
+    bgl_offset = ctx.device.CreateBindGroupLayout(&desc);
   }
 
   {
@@ -95,7 +95,7 @@ Pipeline::Pipeline(Handle &handle) {
       .bindGroupLayoutCount = bindGroupLayouts.size(),
       .bindGroupLayouts = bindGroupLayouts.data(),
     };
-    PipelineLayout pipelineLayout = handle.device.CreatePipelineLayout(&layoutDesc);
+    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
 
     // Vertex State ---------------------------------
     std::vector<VertexAttribute> vertexAttributes = {
@@ -179,16 +179,14 @@ Pipeline::Pipeline(Handle &handle) {
       .fragment = &fragmentState,
     };
 
-    rpl_gBuffer = handle.device.CreateRenderPipeline(&pipelineDesc);
+    rpl_gBuffer = ctx.device.CreateRenderPipeline(&pipelineDesc);
   }
 
   // ssao pipeline
   ShaderModule shaderVertQuad =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/vert_quad.wgsl", handle.device);
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/vert_quad.wgsl", ctx.device);
   ShaderModule shaderFragSsao =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_ssao.wgsl", handle.device);
-  ShaderModule shaderFragBlur =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_blur.wgsl", handle.device);
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_ssao.wgsl", ctx.device);
 
   // GBuffer
   {
@@ -217,20 +215,12 @@ Pipeline::Pipeline(Handle &handle) {
           .viewDimension = TextureViewDimension::e2D,
         },
       },
-      BindGroupLayoutEntry{
-        .binding = 3,
-        .visibility = ShaderStage::Fragment,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::mat4),
-        },
-      },
     };
     BindGroupLayoutDescriptor desc{
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_gBuffer = handle.device.CreateBindGroupLayout(&desc);
+    bgl_gBuffer = ctx.device.CreateBindGroupLayout(&desc);
   }
   // ssao samples
   {
@@ -248,9 +238,81 @@ Pipeline::Pipeline(Handle &handle) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_ssaoSamples = handle.device.CreateBindGroupLayout(&desc);
+    bgl_ssaoSamples = ctx.device.CreateBindGroupLayout(&desc);
   }
 
+  {
+    std::vector<BindGroupLayout> bindGroupLayouts{
+      bgl_viewProj,
+      bgl_gBuffer,
+      bgl_ssaoSamples,
+    };
+    PipelineLayoutDescriptor layoutDesc{
+      .bindGroupLayoutCount = bindGroupLayouts.size(),
+      .bindGroupLayouts = bindGroupLayouts.data(),
+    };
+    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
+    
+    // Vertex State ---------------------------------
+    std::vector<VertexAttribute> vertexAttributes = {
+      VertexAttribute{
+        .format = VertexFormat::Float32x2,
+        .offset = 0,
+        .shaderLocation = 0,
+      },
+      VertexAttribute{
+        .format = VertexFormat::Float32x2,
+        .offset = sizeof(glm::vec2),
+        .shaderLocation = 1,
+      },
+    };
+    VertexBufferLayout vertexBufferLayout{
+      .arrayStride = sizeof(glm::vec2) * 2,
+      .stepMode = VertexStepMode::Vertex,
+      .attributeCount = vertexAttributes.size(),
+      .attributes = vertexAttributes.data(),
+    };
+    VertexState vertexState{
+      .module = shaderVertQuad,
+      .entryPoint = "vs_main",
+      .bufferCount = 1,
+      .buffers = &vertexBufferLayout,
+    };
+
+    // Primitve State --------------------------------
+    PrimitiveState primitiveState{
+      .topology = PrimitiveTopology::TriangleList,
+      .frontFace = FrontFace::CCW,
+      .cullMode = CullMode::None,
+    };
+
+    // Fragment State --------------------------------
+    std::vector<ColorTargetState> targets{
+      // ssao texture
+      ColorTargetState{
+        .format = TextureFormat::R8Unorm,
+      },
+    };
+    FragmentState fragmentState{
+      .module = shaderFragSsao,
+      .entryPoint = "fs_main",
+      .targetCount = targets.size(),
+      .targets = targets.data(),
+    };
+
+    RenderPipelineDescriptor pipelineDesc{
+      .layout = pipelineLayout,
+      .vertex = vertexState,
+      .primitive = primitiveState,
+      .fragment = &fragmentState,
+    };
+
+    rpl_ssao = ctx.device.CreateRenderPipeline(&pipelineDesc);
+  }
+
+  // blur pipeline
+  ShaderModule shaderFragBlur =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_blur.wgsl", ctx.device);
 }
 
 } // namespace util

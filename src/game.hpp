@@ -5,7 +5,12 @@
 #include "glm-include.hpp"
 
 #include "game/player.hpp"
-#include "util/handle.hpp"
+#include "util/context.hpp"
+
+struct GameState {
+  game::Player player;
+  std::unique_ptr<game::ChunkManager> chunkManager;
+};
 
 class Game {
 private:
@@ -13,9 +18,9 @@ private:
   glm::uvec2 m_size;
   glm::uvec2 m_FBSize;
 
-  util::Handle m_handle;
-  game::Player m_player;
-  std::unique_ptr<game::ChunkManager> m_chunkManager;
+  util::Context m_ctx;
+  GameState m_state;
+
   glm::vec2 m_lastMousePos;
   float m_dt;
 

@@ -8,7 +8,7 @@
 #include "glm/ext/vector_int2.hpp"
 #include "glm/vec3.hpp"
 
-#include "util/handle.hpp"
+#include "util/context.hpp"
 #include "game/block.hpp"
 #include "mesh.hpp"
 #include <inttypes.h>
@@ -23,7 +23,7 @@ public:
   static constexpr size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
 
 private:
-  util::Handle *m_handle;
+  util::Context *m_ctx;
   ChunkManager *m_chunkManager;
   // glm::ivec2 m_offset;
   glm::ivec3 m_offsetPos;
@@ -47,7 +47,7 @@ private:
 
 public:
   Chunk(
-    util::Handle *handle,
+    util::Context *ctx,
     ChunkManager *chunkManager,
     glm::ivec2 offset
   );

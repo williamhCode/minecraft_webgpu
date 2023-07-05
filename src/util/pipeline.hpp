@@ -5,7 +5,7 @@
 
 namespace util {
 
-struct Handle;
+struct Context;
 
 struct Pipeline {
   wgpu::BindGroupLayout bgl_viewProj;
@@ -19,7 +19,7 @@ struct Pipeline {
   wgpu::RenderPipeline rpl_ssao;
 
   Pipeline() = default;
-  Pipeline(Handle &handle);
+  Pipeline(Context &ctx);
 };
 
 
