@@ -28,7 +28,7 @@ Pipeline::Pipeline(Context &ctx) {
       },
       BindGroupLayoutEntry{
         .binding = 1,
-        .visibility = ShaderStage::Vertex,
+        .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
         .buffer{
           .type = BufferBindingType::Uniform,
           .minBindingSize = sizeof(glm::mat4),
@@ -215,22 +215,11 @@ Pipeline::Pipeline(Context &ctx) {
           .viewDimension = TextureViewDimension::e2D,
         },
       },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    bgl_gBuffer = ctx.device.CreateBindGroupLayout(&desc);
-  }
-  // ssao samples
-  {
-    std::vector<BindGroupLayoutEntry> entries{
       BindGroupLayoutEntry{
-        .binding = 0,
+        .binding = 3,
         .visibility = ShaderStage::Fragment,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::vec3) * 64,
+        .sampler{
+          .type = SamplerBindingType::NonFiltering,
         },
       },
     };
@@ -238,21 +227,54 @@ Pipeline::Pipeline(Context &ctx) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_ssaoSamples = ctx.device.CreateBindGroupLayout(&desc);
+    bgl_gBuffer = ctx.device.CreateBindGroupLayout(&desc);
+  }
+  // ssao specific
+  {
+    std::vector<BindGroupLayoutEntry> entries{
+      BindGroupLayoutEntry{
+        .binding = 0,
+        .visibility = ShaderStage::Fragment,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(glm::vec4) * 45,
+        },
+      },
+      BindGroupLayoutEntry{
+        .binding = 1,
+        .visibility = ShaderStage::Fragment,
+        .texture{
+          .sampleType = TextureSampleType::UnfilterableFloat,
+          .viewDimension = TextureViewDimension::e2D,
+        },
+      },
+      BindGroupLayoutEntry{
+        .binding = 2,
+        .visibility = ShaderStage::Fragment,
+        .sampler{
+          .type = SamplerBindingType::NonFiltering,
+        },
+      },
+    };
+    BindGroupLayoutDescriptor desc{
+      .entryCount = entries.size(),
+      .entries = entries.data(),
+    };
+    bgl_ssao = ctx.device.CreateBindGroupLayout(&desc);
   }
 
   {
     std::vector<BindGroupLayout> bindGroupLayouts{
       bgl_viewProj,
       bgl_gBuffer,
-      bgl_ssaoSamples,
+      bgl_ssao,
     };
     PipelineLayoutDescriptor layoutDesc{
       .bindGroupLayoutCount = bindGroupLayouts.size(),
       .bindGroupLayouts = bindGroupLayouts.data(),
     };
     PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
-    
+
     // Vertex State ---------------------------------
     std::vector<VertexAttribute> vertexAttributes = {
       VertexAttribute{
@@ -290,7 +312,8 @@ Pipeline::Pipeline(Context &ctx) {
     std::vector<ColorTargetState> targets{
       // ssao texture
       ColorTargetState{
-        .format = TextureFormat::R8Unorm,
+        .format = TextureFormat::BGRA8Unorm,
+        // .format = TextureFormat::R8Unorm,
       },
     };
     FragmentState fragmentState{

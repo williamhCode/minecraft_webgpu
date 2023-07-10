@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/ext/vector_uint2.hpp"
 #include "util/pipeline.hpp"
 #include <webgpu/webgpu_cpp.h>
 
@@ -22,7 +23,7 @@ struct Context {
   util::Pipeline pipeline;
 
   Context() = default;
-  Context(GLFWwindow *window);
+  Context(GLFWwindow *window, glm::uvec2 size);
 };
 
 } // namespace util

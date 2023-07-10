@@ -21,15 +21,17 @@ struct GBufferOutput {
 
 @group(0) @binding(0) var<uniform> view: mat4x4f;
 @group(0) @binding(1) var<uniform> projection: mat4x4f;
+
 @group(1) @binding(0) var texture: texture_2d<f32>;
 @group(1) @binding(1) var textureSampler: sampler;
+
 @group(2) @binding(0) var<uniform> offset: vec3f;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-	let viewPos = view * vec4f(in.position + offset, 1.0);
+  let viewPos = view * vec4f(in.position + offset, 1.0);
 
-	var out: VertexOutput;
+  var out: VertexOutput;
   out.position = projection * viewPos;
   out.fragPos = viewPos.xyz;
   out.normal = in.normal;
@@ -45,7 +47,7 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
 
   var out: GBufferOutput;
   out.position = vec4f(in.fragPos, 1.0);
-  out.normal = vec4f(in.normal, 1.0);
+  out.normal = vec4f(normalize(in.normal), 1.0);
   out.albedo = vec4f(textureSample(texture, textureSampler, uv).rgb, 1.0);
 
   return out;

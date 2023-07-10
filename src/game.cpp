@@ -53,7 +53,7 @@ Game::Game() {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   m_size = {1100, 800};
-  // m_size = {1500, 1000};
+  // m_size = {600, 400};
   m_window = glfwCreateWindow(m_size.x, m_size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
@@ -76,8 +76,8 @@ Game::Game() {
   m_lastMousePos = glm::vec2(xpos, ypos);
   // end window ----------------------------------
 
-  // init wgpu
-  m_ctx = util::Context(m_window);
+  // init wgpu context
+  m_ctx = util::Context(m_window, m_FBSize);
 
   // setup game state
   util::Camera camera(

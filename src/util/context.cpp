@@ -10,7 +10,7 @@ namespace util {
 
 using namespace wgpu;
 
-Context::Context(GLFWwindow *window) {
+Context::Context(GLFWwindow *window, glm::uvec2 size) {
   // instance
   instance = CreateInstance();
   if (!instance) {
@@ -47,14 +47,12 @@ Context::Context(GLFWwindow *window) {
   swapChainFormat = TextureFormat::BGRA8Unorm;
 
   // swap chain
-  int FBWidth, FBHeight;
-  glfwGetFramebufferSize(window, &FBWidth, &FBHeight);
   SwapChainDescriptor swapChainDesc{
     .usage = TextureUsage::RenderAttachment,
     .format = swapChainFormat,
-    .width = static_cast<uint32_t>(FBWidth),
-    .height = static_cast<uint32_t>(FBHeight),
-    .presentMode = PresentMode::Fifo,
+    .width = size.x,
+    .height = size.y,
+    .presentMode = PresentMode::Immediate,
   };
   swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 

@@ -34,7 +34,7 @@ const std::array<BlockType, 3> g_BLOCK_TYPES = {
 
 BindGroup CreateBlocksTexture(util::Context &ctx) {
   // g_blocksTexture = util::LoadTexture(ctx, ROOT_DIR "/res/blocks.png");
-  static Texture blocksTexture =
+  Texture blocksTexture =
     util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5

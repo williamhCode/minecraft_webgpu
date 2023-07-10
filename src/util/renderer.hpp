@@ -8,17 +8,28 @@
 
 namespace util {
 
+struct QuadVertex {
+  glm::vec2 position;
+  glm::vec2 uv;
+};
+
 class Renderer {
 private:
   Context *m_ctx;
 
-  wgpu::BindGroup m_bg_blocksTexture;
+  wgpu::BindGroup m_blocksTextureBindGroup;
   wgpu::TextureView m_depthTextureView;
-  // GBuffer
-  std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
-  wgpu::Sampler m_sampler;
+  wgpu::Buffer m_quadBuffer;
 
+  // gbuffer
+  std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
   wgpu::RenderPassDescriptor m_gBufferPassDesc;
+
+  // ssao
+  wgpu::Sampler m_sampler;
+  wgpu::BindGroup m_gBufferBindGroup;
+  wgpu::BindGroup m_ssaoBindGroup;
+  wgpu::RenderPassDescriptor m_ssaoPassDesc;
 
 public:
   Renderer(Context *ctx, glm::uvec2 size);

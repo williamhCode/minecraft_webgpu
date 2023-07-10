@@ -6,7 +6,7 @@
 
 namespace util {
 
-struct Camera {
+class Camera {
 private:
   Context *m_ctx;
   glm::vec4 m_forward = glm::vec4(0.0, 1.0, 0.0, 1.0);

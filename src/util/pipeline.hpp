@@ -13,7 +13,7 @@ struct Pipeline {
   wgpu::BindGroupLayout bgl_offset;
 
   wgpu::BindGroupLayout bgl_gBuffer;
-  wgpu::BindGroupLayout bgl_ssaoSamples;
+  wgpu::BindGroupLayout bgl_ssao;
 
   wgpu::RenderPipeline rpl_gBuffer;
   wgpu::RenderPipeline rpl_ssao;
