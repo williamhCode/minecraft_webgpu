@@ -1,7 +1,7 @@
 .PHONY: build
 
 BACKEND = dawn
-TYPE = debug
+TYPE = release
 
 build:
 	-cmake --build build/$(BACKEND)/$(TYPE)

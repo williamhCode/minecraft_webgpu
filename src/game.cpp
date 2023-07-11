@@ -87,7 +87,7 @@ Game::Game() {
     glm::radians(50.0f),
     (float)m_size.x / m_size.y,
     0.1,
-    2000
+    200
   );
   m_state.player = game::Player(camera);
 
@@ -171,7 +171,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       if (castData.has_value()) {
         auto [pos, dir] = castData.value();
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_state.chunkManager->SetBlock(placePos, game::BlockId::DIRT);
+        m_state.chunkManager->SetBlock(placePos, game::BlockId::GRASS);
       }
     }
   }

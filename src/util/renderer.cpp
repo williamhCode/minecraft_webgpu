@@ -120,23 +120,22 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
 
   // ssao pass ---------------------------------------------------
   // kernel uniform
+  std::default_random_engine gen;
   std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
-  std::default_random_engine generator;
-  std::vector<glm::vec4> ssaoKernel;
-  size_t kSize = 45;
-  for (size_t i = 0; i < kSize; ++i) {
-    glm::vec3 sample(
-      randomFloats(generator) * 2.0 - 1.0,
-      randomFloats(generator) * 2.0 - 1.0,
-      randomFloats(generator)
-    );
-    sample = glm::normalize(sample);
-    sample *= randomFloats(generator);
-    float scale = float(i) / kSize;
 
+  size_t kSize = 64;
+  std::vector<glm::vec4> ssaoKernel(kSize);
+  for (size_t i = 0; i < kSize; ++i) {
+    auto sample = glm::normalize(glm::vec3(
+      randomFloats(gen) * 2.0 - 1.0,
+      randomFloats(gen) * 2.0 - 1.0,
+      randomFloats(gen)
+    )) * randomFloats(gen);
+
+    float scale = float(i) / kSize;
     scale = glm::lerp(0.1f, 1.0f, scale * scale);
     sample *= scale;
-    ssaoKernel.push_back({sample, 0.0});
+    ssaoKernel[i] = {sample, 0.0};
   }
   auto kernelSize = sizeof(glm::vec4) * ssaoKernel.size();
 
@@ -153,9 +152,13 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
   // noise texture
   std::vector<glm::vec4> ssaoNoise;
   for (unsigned int i = 0; i < 16; i++) {
-    auto noise = glm::normalize(glm::vec3(
-      randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, 0.0
-    ));
+    // auto noise = glm::normalize(glm::vec3(
+    //   randomFloats(gen) * 2.0 - 1.0,
+    //   randomFloats(gen) * 2.0 - 1.0,
+    //   0.0
+    // ));
+    glm::mat3 rmat = glm::rotate(randomFloats(gen) * glm::pi<float>() * 2.0f, glm::vec3(0, 0, 1));
+    glm::vec3 noise = rmat * glm::vec3(1, 0, 0);
     ssaoNoise.push_back({noise, 0.0});
   }
 
@@ -188,7 +191,7 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
   }
 
   // samplers
-  Sampler gBufferSampler;
+  Sampler nearestClampSampler;
   {
     SamplerDescriptor samplerDesc{
       .addressModeU = AddressMode::ClampToEdge,
@@ -196,7 +199,7 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
     };
-    gBufferSampler = m_ctx->device.CreateSampler(&samplerDesc);
+    nearestClampSampler = m_ctx->device.CreateSampler(&samplerDesc);
   }
   Sampler noiseSampler;
   {
@@ -226,7 +229,7 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
       },
       BindGroupEntry{
         .binding = 3,
-        .sampler = gBufferSampler,
+        .sampler = nearestClampSampler,
       },
     };
     BindGroupDescriptor bindGroupDesc{
@@ -237,7 +240,7 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
     m_gBufferBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
   }
 
-  // ssao bind group
+  // ssao sampling bind group
   {
     std::vector<BindGroupEntry> entries{
       BindGroupEntry{
@@ -255,11 +258,11 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.bgl_ssao,
+      .layout = m_ctx->pipeline.bgl_ssaoSampling,
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    m_ssaoBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
+    m_ssaoSamplingBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
   }
 
   // ssao render texture
@@ -281,12 +284,88 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
         .view = ssaoTextureView,
         .loadOp = LoadOp::Clear,
         .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 1.0},
+        .clearValue = {0.0, 0.0, 0.0, 0.0},
       },
     };
     m_ssaoPassDesc = {
       .colorAttachmentCount = colorAttachments.size(),
       .colorAttachments = colorAttachments.data(),
+    };
+  }
+
+  // blur pass ---------------------------------------------------
+  // ssao texture bindgroup
+  {
+    std::vector<BindGroupEntry> entries{
+      BindGroupEntry{
+        .binding = 0,
+        .textureView = ssaoTextureView,
+      },
+      BindGroupEntry{
+        .binding = 1,
+        .sampler = nearestClampSampler,
+      },
+    };
+    BindGroupDescriptor bindGroupDesc{
+      .layout = m_ctx->pipeline.bgl_ssaoTexture,
+      .entryCount = entries.size(),
+      .entries = entries.data(),
+    };
+    m_ssaoTexureBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
+  }
+
+  // blur texture
+  TextureView blurTextureView;
+  {
+    TextureDescriptor textureDesc{
+      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
+      .size = textureSize,
+      .format = TextureFormat::R8Unorm,
+    };
+    Texture blurTexture = m_ctx->device.CreateTexture(&textureDesc);
+    blurTextureView = blurTexture.CreateView();
+  }
+
+  {
+    static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
+      RenderPassColorAttachment{
+        .view = blurTextureView,
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 0.0},
+      },
+    };
+    m_blurPassDesc = {
+      .colorAttachmentCount = colorAttachments.size(),
+      .colorAttachments = colorAttachments.data(),
+    };
+  }
+
+  // final pass ---------------------------------------------------
+  // blur texture bindgroup
+  {
+    std::vector<BindGroupEntry> entries{
+      BindGroupEntry{
+        .binding = 0,
+        .textureView = blurTextureView,
+      },
+      BindGroupEntry{
+        .binding = 1,
+        .sampler = nearestClampSampler,
+      },
+    };
+    BindGroupDescriptor bindGroupDesc{
+      .layout = m_ctx->pipeline.bgl_ssaoTexture,
+      .entryCount = entries.size(),
+      .entries = entries.data(),
+    };
+    m_ssaoFinalTexureBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
+  }
+
+  {
+    m_finalPassDesc = {
+      .colorAttachmentCount = 1,
+      .colorAttachments = nullptr,
     };
   }
 }
@@ -304,7 +383,7 @@ void Renderer::Render(GameState &state) {
     .storeOp = StoreOp::Store,
     .clearValue = {0.0, 0.0, 0.0, 1.0},
   };
-  m_ssaoPassDesc.colorAttachments = &colorAttachment;
+  m_finalPassDesc.colorAttachments = &colorAttachment;
 
   CommandEncoder commandEncoder = m_ctx->device.CreateCommandEncoder();
   // gbuffer pass
@@ -322,7 +401,26 @@ void Renderer::Render(GameState &state) {
     passEncoder.SetPipeline(m_ctx->pipeline.rpl_ssao);
     passEncoder.SetBindGroup(0, state.player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_gBufferBindGroup);
-    passEncoder.SetBindGroup(2, m_ssaoBindGroup);
+    passEncoder.SetBindGroup(2, m_ssaoSamplingBindGroup);
+    passEncoder.SetVertexBuffer(0, m_quadBuffer);
+    passEncoder.Draw(6);
+    passEncoder.End();
+  }
+  // ssao-blur pass
+  {
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_blurPassDesc);
+    passEncoder.SetPipeline(m_ctx->pipeline.rpl_blur);
+    passEncoder.SetBindGroup(0, m_ssaoTexureBindGroup);
+    passEncoder.SetVertexBuffer(0, m_quadBuffer);
+    passEncoder.Draw(6);
+    passEncoder.End();
+  }
+  // final pass
+  {
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_finalPassDesc);
+    passEncoder.SetPipeline(m_ctx->pipeline.rpl_final);
+    passEncoder.SetBindGroup(0, m_gBufferBindGroup);
+    passEncoder.SetBindGroup(1, m_ssaoFinalTexureBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
     passEncoder.End();

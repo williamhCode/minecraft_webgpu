@@ -26,10 +26,17 @@ private:
   wgpu::RenderPassDescriptor m_gBufferPassDesc;
 
   // ssao
-  wgpu::Sampler m_sampler;
   wgpu::BindGroup m_gBufferBindGroup;
-  wgpu::BindGroup m_ssaoBindGroup;
+  wgpu::BindGroup m_ssaoSamplingBindGroup;
   wgpu::RenderPassDescriptor m_ssaoPassDesc;
+
+  // blur
+  wgpu::BindGroup m_ssaoTexureBindGroup;
+  wgpu::RenderPassDescriptor m_blurPassDesc;
+
+  // final
+  wgpu::BindGroup m_ssaoFinalTexureBindGroup;
+  wgpu::RenderPassDescriptor m_finalPassDesc;
 
 public:
   Renderer(Context *ctx, glm::uvec2 size);
