@@ -90,7 +90,7 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
         .view = m_gBufferTextureViews[0],
         .loadOp = LoadOp::Clear,
         .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 0.0},
+        .clearValue = {0.0, 0.0, -10000, 0.0},
       },
       RenderPassColorAttachment{
         .view = m_gBufferTextureViews[1],
@@ -152,13 +152,13 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
   // noise texture
   std::vector<glm::vec4> ssaoNoise;
   for (unsigned int i = 0; i < 16; i++) {
-    // auto noise = glm::normalize(glm::vec3(
-    //   randomFloats(gen) * 2.0 - 1.0,
-    //   randomFloats(gen) * 2.0 - 1.0,
-    //   0.0
-    // ));
-    glm::mat3 rmat = glm::rotate(randomFloats(gen) * glm::pi<float>() * 2.0f, glm::vec3(0, 0, 1));
-    glm::vec3 noise = rmat * glm::vec3(1, 0, 0);
+    auto noise = glm::normalize(glm::vec3(
+      randomFloats(gen) * 2.0 - 1.0,
+      randomFloats(gen) * 2.0 - 1.0,
+      0.0
+    ));
+    // glm::mat3 rmat = glm::rotate(randomFloats(gen) * glm::pi<float>() * 2.0f, glm::vec3(0, 0, 1));
+    // glm::vec3 noise = rmat * glm::vec3(1, 0, 0);
     ssaoNoise.push_back({noise, 0.0});
   }
 

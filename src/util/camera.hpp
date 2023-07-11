@@ -14,6 +14,7 @@ private:
   glm::mat4 m_projection;
   wgpu::Buffer m_viewBuffer;
   wgpu::Buffer m_projectionBuffer;
+  wgpu::Buffer m_inverseViewBuffer;
 
 public:
   wgpu::BindGroup bindGroup;

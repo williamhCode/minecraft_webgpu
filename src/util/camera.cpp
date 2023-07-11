@@ -23,6 +23,7 @@ Camera::Camera(
   };
   m_viewBuffer = ctx->device.CreateBuffer(&bufferDesc);
   m_projectionBuffer = ctx->device.CreateBuffer(&bufferDesc);
+  m_inverseViewBuffer = ctx->device.CreateBuffer(&bufferDesc);
 
   {
     std::vector<BindGroupEntry> entries{
@@ -34,6 +35,11 @@ Camera::Camera(
       BindGroupEntry{
         .binding = 1,
         .buffer = m_projectionBuffer,
+        .size = sizeof(glm::mat4),
+      },
+      BindGroupEntry{
+        .binding = 2,
+        .buffer = m_inverseViewBuffer,
         .size = sizeof(glm::mat4),
       },
     };
@@ -60,8 +66,10 @@ void Camera::Update() {
   direction = rotation * m_forward;
   glm::vec3 up = rotation * m_up;
   glm::mat4 view = glm::lookAt(position, position + direction, up);
+  glm::mat4 inverseView = glm::inverse(view);
 
   m_ctx->queue.WriteBuffer(m_viewBuffer, 0, &view, sizeof(view));
+  m_ctx->queue.WriteBuffer(m_inverseViewBuffer, 0, &inverseView, sizeof(inverseView));
 }
 
 } // namespace util

@@ -16,7 +16,5 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
       }
   }
 
-  // let color = result / (4.0 * 4.0);
-  // return vec4f(color, color, color, 1.0);
   return result / (4.0 * 4.0);
 }

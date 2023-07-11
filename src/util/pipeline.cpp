@@ -21,7 +21,7 @@ Pipeline::Pipeline(Context &ctx) {
     std::vector<BindGroupLayoutEntry> entries{
       BindGroupLayoutEntry{
         .binding = 0,
-        .visibility = ShaderStage::Vertex,
+        .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
         .buffer{
           .type = BufferBindingType::Uniform,
           .minBindingSize = sizeof(glm::mat4),
@@ -29,6 +29,14 @@ Pipeline::Pipeline(Context &ctx) {
       },
       BindGroupLayoutEntry{
         .binding = 1,
+        .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(glm::mat4),
+        },
+      },
+      BindGroupLayoutEntry{
+        .binding = 2,
         .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
         .buffer{
           .type = BufferBindingType::Uniform,
