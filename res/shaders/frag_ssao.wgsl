@@ -12,7 +12,7 @@
 @group(2) @binding(2) var noiseSampler: sampler;
 
 const kernelSize = 20;
-const radius = 10f;
+const radius = 5f;
 const bias = 0.01f;
 
 @fragment

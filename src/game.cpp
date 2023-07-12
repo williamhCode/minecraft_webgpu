@@ -66,6 +66,7 @@ Game::Game() {
   glfwSetCursorPosCallback(m_window, _CursorPosCallback);
 
   glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  m_focused = true;
 
   int FBWidth, FBHeight;
   glfwGetFramebufferSize(m_window, &FBWidth, &FBHeight);
@@ -113,20 +114,22 @@ Game::Game() {
     glfwPollEvents();
 
     // update --------------------------------------------------------
-    glm::vec3 moveDir(0);
-    if (KeyPressed(GLFW_KEY_W))
-      moveDir.y += 1;
-    if (KeyPressed(GLFW_KEY_S))
-      moveDir.y -= 1;
-    if (KeyPressed(GLFW_KEY_D))
-      moveDir.x += 1;
-    if (KeyPressed(GLFW_KEY_A))
-      moveDir.x -= 1;
-    if (KeyPressed(GLFW_KEY_SPACE))
-      moveDir.z += 1;
-    if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
-      moveDir.z -= 1;
-    m_state.player.Move(moveDir * m_dt);
+    if (m_focused) {
+      glm::vec3 moveDir(0);
+      if (KeyPressed(GLFW_KEY_W))
+        moveDir.y += 1;
+      if (KeyPressed(GLFW_KEY_S))
+        moveDir.y -= 1;
+      if (KeyPressed(GLFW_KEY_D))
+        moveDir.x += 1;
+      if (KeyPressed(GLFW_KEY_A))
+        moveDir.x -= 1;
+      if (KeyPressed(GLFW_KEY_SPACE))
+        moveDir.z += 1;
+      if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
+        moveDir.z -= 1;
+      m_state.player.Move(moveDir * m_dt);
+    }
     m_state.player.Update();
 
     // m_state.chunkManager.Update(glm::vec2(m_state.player.GetPosition()));
@@ -143,8 +146,19 @@ Game::~Game() {
 }
 
 void Game::KeyCallback(int key, int scancode, int action, int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    glfwSetWindowShouldClose(m_window, GLFW_TRUE);
+  if (action == GLFW_PRESS) {
+    if (key == GLFW_KEY_ESCAPE) {
+      if (m_focused) {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        m_focused = false;
+      } else {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        m_focused = true;
+      }
+    }
+    if (key == GLFW_KEY_Q) {
+      glfwSetWindowShouldClose(m_window, GLFW_TRUE);
+    }
   }
 }
 
@@ -181,6 +195,8 @@ void Game::CursorPosCallback(double xpos, double ypos) {
   glm::vec2 currMousePos(xpos, ypos);
   glm::vec2 delta = currMousePos - m_lastMousePos;
   m_lastMousePos = currMousePos;
+  if (!m_focused)
+    return;
   m_state.player.Look(delta * 0.003f);
 }
 

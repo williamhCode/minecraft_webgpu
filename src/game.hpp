@@ -21,6 +21,7 @@ private:
   util::Context m_ctx;
   GameState m_state;
 
+  bool m_focused;
   glm::vec2 m_lastMousePos;
   float m_dt;
 

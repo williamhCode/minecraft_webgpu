@@ -126,11 +126,11 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
   size_t kSize = 64;
   std::vector<glm::vec4> ssaoKernel(kSize);
   for (size_t i = 0; i < kSize; ++i) {
-    auto sample = glm::normalize(glm::vec3(
-      randomFloats(gen) * 2.0 - 1.0,
-      randomFloats(gen) * 2.0 - 1.0,
-      randomFloats(gen)
-    )) * randomFloats(gen);
+    auto sample =
+      glm::normalize(glm::vec3(
+        randomFloats(gen) * 2.0 - 1.0, randomFloats(gen) * 2.0 - 1.0, randomFloats(gen)
+      )) *
+      randomFloats(gen);
 
     float scale = float(i) / kSize;
     scale = glm::lerp(0.1f, 1.0f, scale * scale);
@@ -152,13 +152,12 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
   // noise texture
   std::vector<glm::vec4> ssaoNoise;
   for (unsigned int i = 0; i < 16; i++) {
-    auto noise = glm::normalize(glm::vec3(
-      randomFloats(gen) * 2.0 - 1.0,
-      randomFloats(gen) * 2.0 - 1.0,
-      0.0
-    ));
-    // glm::mat3 rmat = glm::rotate(randomFloats(gen) * glm::pi<float>() * 2.0f, glm::vec3(0, 0, 1));
-    // glm::vec3 noise = rmat * glm::vec3(1, 0, 0);
+    // auto noise = glm::normalize(
+    //   glm::vec3(randomFloats(gen) * 2.0 - 1.0, randomFloats(gen) * 2.0 - 1.0, 0.0)
+    // );
+    glm::mat3 rmat =
+      glm::rotate(randomFloats(gen) * glm::pi<float>() * 2.0f, glm::vec3(0, 0, 1));
+    glm::vec3 noise = rmat * glm::vec3(1, 0, 0);
     ssaoNoise.push_back({noise, 0.0});
   }
 
