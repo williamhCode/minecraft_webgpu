@@ -5,17 +5,30 @@ project(
     LANGUAGES CXX C # programming languages used by the project
 )
 
+# options
+
+
 # variables
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
 
+# dependencies
 add_subdirectory(deps/glfw)
 add_subdirectory(deps/webgpu)
 add_subdirectory(deps/glm)
 add_subdirectory(deps/tinyobjloader)
 add_subdirectory(deps/stb)
+# imgui
+set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/deps/imgui)
+file(GLOB IMGUI_SRC ${IMGUI_DIR}/*.cpp)
+set(IMGUI_SRC ${IMGUI_SRC}
+  ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+  ${IMGUI_DIR}/backends/imgui_impl_wgpu.cpp
+)
+set(IMGUI_INCLUDE_DIRS ${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
-# sources
-add_executable(App
+
+# app
+set(APP_SRC
 	src/main.cpp
 	src/game.cpp
 
@@ -36,7 +49,12 @@ add_executable(App
   src/game/direction.cpp
   src/game/ray.cpp
 )
-target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+add_executable(App
+  ${APP_SRC}
+  ${IMGUI_SRC}
+)
+target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src ${IMGUI_INCLUDE_DIRS})
 
 target_compile_definitions(App PRIVATE
   ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
@@ -46,10 +64,9 @@ target_compile_definitions(App PRIVATE
 
 target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp glm tinyobjloader stb)
 
-# options
 set_target_properties(App PROPERTIES
-    CXX_STANDARD 20
-    # COMPILE_WARNING_AS_ERROR ON
+  CXX_STANDARD 20
+  # COMPILE_WARNING_AS_ERROR ON
 )
 # set_target_properties(App PROPERTIES VS_DEBUGGER_ENVIRONMENT "DAWN_DEBUG_BREAK_ON_ERROR=1")
 
