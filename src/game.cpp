@@ -163,6 +163,9 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
 }
 
 void Game::MouseButtonCallback(int button, int action, int mods) {
+  if (!m_focused)
+    return;
+
   if (action == GLFW_PRESS) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
       auto castData = game::Raycast(

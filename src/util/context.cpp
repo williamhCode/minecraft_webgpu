@@ -22,7 +22,9 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
   surface = glfw::CreateSurfaceForWindow(instance, window);
 
   // adapter
-  RequestAdapterOptions adapterOpts{};
+  RequestAdapterOptions adapterOpts{
+    .powerPreference = PowerPreference::HighPerformance
+  };
   adapter = util::RequestAdapter(instance, &adapterOpts);
 
   // device limits
