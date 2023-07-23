@@ -11,11 +11,7 @@ namespace game {
 
 using namespace wgpu;
 
-Chunk::Chunk(
-  util::Context *ctx,
-  ChunkManager *chunkManager,
-  glm::ivec2 offset
-)
+Chunk::Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset)
     : m_ctx(ctx), m_chunkManager(chunkManager), m_dirty(false) {
   m_offsetPos = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
   InitializeChunkData();
@@ -63,12 +59,17 @@ void Chunk::InitSharedData() {
 void Chunk::InitializeChunkData() {
   for (size_t i = 0; i < VOLUME; i++) {
     auto pos = IndexToPos(i);
+    // if (pos.z > 100) {
+    //   m_blockIdData[i] = BlockId::Air;
+    // } else {
+    //   m_blockIdData[i] = BlockId::Stone;
+    // }
     if (pos.z > 100) {
-      m_blockIdData[i] = BlockId::AIR;
+      m_blockIdData[i] = BlockId::Air;
     } else if (pos.z == 100) {
-      m_blockIdData[i] = BlockId::GRASS;
+      m_blockIdData[i] = BlockId::Grass;
     } else {
-      m_blockIdData[i] = BlockId::DIRT;
+      m_blockIdData[i] = BlockId::Dirt;
     }
   }
 }
@@ -79,7 +80,7 @@ void Chunk::InitFaceData() {
   // m_faceRenderData = std::array<std::bitset<6>, VOLUME>();
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
     BlockId id = m_blockIdData[i_block];
-    if (id == BlockId::AIR)
+    if (id == BlockId::Air)
       continue;
 
     auto &faceRender = m_faceRenderData[i_block];
@@ -114,7 +115,7 @@ void Chunk::UpdateMesh() {
   size_t numFace = 0;
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
     BlockId id = m_blockIdData[i_block];
-    if (id == BlockId::AIR)
+    if (id == BlockId::Air)
       continue;
     BlockType blockType = g_BLOCK_TYPES[id];
 
@@ -180,7 +181,7 @@ bool Chunk::HasNeighbor(glm::ivec3 position, Direction direction) {
     return m_chunkManager->HasBlock(neighborPos + m_offsetPos);
   } else {
     auto index = PosToIndex(neighborPos);
-    return m_blockIdData[index] != BlockId::AIR;
+    return m_blockIdData[index] != BlockId::Air;
   }
 }
 
@@ -194,14 +195,14 @@ void Chunk::SetBlock(glm::ivec3 position, BlockId blockID) {
   }
   auto index = PosToIndex(position);
   m_blockIdData[index] = blockID;
-  if (blockID != BlockId::AIR) {
+  if (blockID != BlockId::Air) {
     auto &faceRender = m_faceRenderData[index];
     for (size_t i_face = 0; i_face < 6; i_face++) {
       faceRender[i_face] = !HasNeighbor(position, (Direction)i_face);
     }
   }
   // update block faces for neighbors
-  bool shouldRender = blockID == BlockId::AIR;
+  bool shouldRender = blockID == BlockId::Air;
   for (size_t i_face = 0; i_face < 6; i_face++) {
     glm::ivec3 neighborPos = position + g_DIR_OFFSETS[i_face];
     Direction neighborDir = DirOpposite((Direction)i_face);
@@ -219,7 +220,7 @@ void Chunk::SetBlock(glm::ivec3 position, BlockId blockID) {
 }
 
 bool Chunk::HasBlock(glm::ivec3 position) {
-  return GetBlock(position) != BlockId::AIR;
+  return GetBlock(position) != BlockId::Air;
 }
 
 void Chunk::UpdateFace(glm::ivec3 position, Direction direction, bool shouldRender) {

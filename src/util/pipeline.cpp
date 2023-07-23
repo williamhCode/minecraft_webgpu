@@ -1,5 +1,6 @@
 #include "pipeline.hpp"
 #include "util/context.hpp"
+#include "util/renderer.hpp"
 #include "util/webgpu-util.hpp"
 #include "game/mesh.hpp"
 #include "glm-include.hpp"
@@ -153,7 +154,7 @@ Pipeline::Pipeline(Context &ctx) {
 
     // Depth Stencil State
     DepthStencilState depthStencilState{
-      .format = TextureFormat::Depth24Plus,
+      .format = ctx.depthFormat,
       .depthWriteEnabled = true,
       .depthCompare = CompareFunction::Less,
     };
@@ -282,6 +283,14 @@ Pipeline::Pipeline(Context &ctx) {
         .sampler{
           .type = SamplerBindingType::NonFiltering,
         },
+      },
+      BindGroupLayoutEntry{
+        .binding = 3,
+        .visibility = ShaderStage::Fragment,
+        .buffer{
+          .type = BufferBindingType::Uniform,
+          .minBindingSize = sizeof(SSAO),
+        }
       },
     };
     BindGroupLayoutDescriptor desc{

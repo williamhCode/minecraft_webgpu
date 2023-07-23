@@ -17,8 +17,10 @@ struct Context {
   wgpu::Device device;
   wgpu::Queue queue;
   wgpu::SwapChain swapChain;
-  wgpu::TextureFormat swapChainFormat;
   wgpu::Limits deviceLimits;
+
+  wgpu::TextureFormat swapChainFormat;
+  wgpu::TextureFormat depthFormat;
 
   util::Pipeline pipeline;
 

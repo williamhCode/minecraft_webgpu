@@ -1,3 +1,4 @@
+#include "game.hpp"
 #include "renderer.hpp"
 #include "game/block.hpp"
 #include <iostream>
@@ -5,17 +6,15 @@
 #include <random>
 #include <vector>
 #include "glm/gtx/compatibility.hpp"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_wgpu.h"
 
 namespace util {
 
 using namespace wgpu;
 
 std::vector<QuadVertex> GetQuadVertices() {
-  // {{-1.0, -1.0}, {0.0, 1.0}},
-  // {{ 1.0, -1.0}, {1.0, 1.0}},
-  // {{ 1.0,  1.0}, {1.0, 0.0}},
-  // {{-1.0,  1.0}, {0.0, 0.0}},
-
   return {
     {{-1.0, -1.0}, {0.0, 1.0}},
     {{1.0, -1.0}, {1.0, 1.0}},
@@ -27,7 +26,7 @@ std::vector<QuadVertex> GetQuadVertices() {
   };
 }
 
-Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
+Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) {
   m_blocksTextureBindGroup = game::CreateBlocksTexture(*m_ctx);
 
   // init quad buffer
@@ -41,7 +40,7 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
     m_ctx->queue.WriteBuffer(m_quadBuffer, 0, quadVertices.data(), bufferDesc.size);
   }
 
-  Extent3D textureSize = {FBSize.x, FBSize.y, 1};
+  Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
   // gbuffer pass -----------------------------------------------------
   // create textures: position, normal, color
   {
@@ -77,7 +76,7 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
     TextureDescriptor textureDesc{
       .usage = TextureUsage::RenderAttachment,
       .size = textureSize,
-      .format = TextureFormat::Depth24Plus,
+      .format = m_ctx->depthFormat,
     };
     Texture depthTexture = m_ctx->device.CreateTexture(&textureDesc);
     m_depthTextureView = depthTexture.CreateView();
@@ -119,6 +118,15 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
   }
 
   // ssao pass ---------------------------------------------------
+  {
+    BufferDescriptor bufferDesc{
+      .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
+      .size = sizeof(m_ssao),
+    };
+    m_ssaoBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
+    m_ctx->queue.WriteBuffer(m_ssaoBuffer, 0, &m_ssao, sizeof(m_ssao));
+  }
+
   // kernel uniform
   std::default_random_engine gen;
   std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
@@ -255,6 +263,11 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
         .binding = 2,
         .sampler = noiseSampler,
       },
+      BindGroupEntry{
+        .binding = 3,
+        .buffer = m_ssaoBuffer,
+        .size = sizeof(SSAO),
+      },
     };
     BindGroupDescriptor bindGroupDesc{
       .layout = m_ctx->pipeline.bgl_ssaoSampling,
@@ -369,7 +382,51 @@ Renderer::Renderer(Context *ctx, glm::uvec2 FBSize) : m_ctx(ctx) {
   }
 }
 
-void Renderer::Render(GameState &state) {
+void Renderer::Render() {
+  // imgui
+  if (!m_state->focused) {
+    ImGui_ImplWGPU_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    static bool isFirstFrame = true;
+    if (isFirstFrame) {
+      ImGui::SetNextWindowPos(ImVec2(m_state->size.x - 300, 30));
+      ImGui::SetNextWindowSize(ImVec2(270, 200));
+      isFirstFrame = false;
+    }
+    ImGui::Begin("Options");
+    {
+      bool tempEnabled = m_ssao.enabled;
+      if (ImGui::Checkbox("##Hidden", &tempEnabled)) {
+        m_ssao.enabled = tempEnabled;
+        WRITE_SSAO_BUFFER(enabled);
+      }
+      ImGui::SameLine();
+      if (ImGui::CollapsingHeader("SSAO")) {
+        // children so reset button is centered
+        if (ImGui::SliderInt("Sample Size", &m_ssao.sampleSize, 1, 64)) {
+          WRITE_SSAO_BUFFER(sampleSize);
+        }
+        if (ImGui::SliderFloat("Radius", &m_ssao.radius, 0.0, 15.0)) {
+          WRITE_SSAO_BUFFER(radius);
+        }
+        if (ImGui::SliderFloat("Bias", &m_ssao.bias, 0.0, 0.1)) {
+          WRITE_SSAO_BUFFER(bias);
+        }
+        // center the button relative to the sliders
+        if (ImGui::Button("Reset")) {
+          m_ssao.SetDefault();
+          m_ctx->queue.WriteBuffer(m_ssaoBuffer, 0, &m_ssao, sizeof(m_ssao));
+        }
+      }
+    }
+    ImGui::End();
+
+    ImGui::Render();
+  }
+
+  // rendering
   TextureView nextTexture = m_ctx->swapChain.GetCurrentTextureView();
   if (!nextTexture) {
     std::cerr << "Cannot acquire next swap chain texture" << std::endl;
@@ -389,16 +446,16 @@ void Renderer::Render(GameState &state) {
   {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.rpl_gBuffer);
-    passEncoder.SetBindGroup(0, state.player.camera.bindGroup);
+    passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
-    state.chunkManager->Render(passEncoder);
+    m_state->chunkManager->Render(passEncoder);
     passEncoder.End();
   }
   // ssao pass
   {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_ssaoPassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.rpl_ssao);
-    passEncoder.SetBindGroup(0, state.player.camera.bindGroup);
+    passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_gBufferBindGroup);
     passEncoder.SetBindGroup(2, m_ssaoSamplingBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
@@ -422,6 +479,8 @@ void Renderer::Render(GameState &state) {
     passEncoder.SetBindGroup(1, m_ssaoFinalTexureBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
+    if (!m_state->focused)
+      ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), passEncoder.Get());
     passEncoder.End();
   }
 

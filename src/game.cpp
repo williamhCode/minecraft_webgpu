@@ -2,10 +2,14 @@
 
 #include <numeric>
 #include <tuple>
-#include <webgpu/webgpu_cpp.h>
-#include <webgpu/webgpu_glfw.h>
 
 #include "GLFW/glfw3.h"
+#include <webgpu/webgpu_cpp.h>
+#include <webgpu/webgpu_glfw.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_wgpu.h"
+
 #include "game/block.hpp"
 #include "game/chunk.hpp"
 #include "game/chunk_manager.hpp"
@@ -52,9 +56,9 @@ Game::Game() {
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  m_size = {1100, 800};
-  // m_size = {600, 400};
-  m_window = glfwCreateWindow(m_size.x, m_size.y, "Learn WebGPU", NULL, NULL);
+  m_state.size = {1100, 800};
+  // m_state.size = {600, 400};
+  m_window = glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
@@ -66,11 +70,11 @@ Game::Game() {
   glfwSetCursorPosCallback(m_window, _CursorPosCallback);
 
   glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  m_focused = true;
+  m_state.focused = true;
 
   int FBWidth, FBHeight;
   glfwGetFramebufferSize(m_window, &FBWidth, &FBHeight);
-  m_FBSize = {FBWidth, FBHeight};
+  m_state.fbSize = {FBWidth, FBHeight};
 
   double xpos, ypos;
   glfwGetCursorPos(m_window, &xpos, &ypos);
@@ -78,7 +82,24 @@ Game::Game() {
   // end window ----------------------------------
 
   // init wgpu context
-  m_ctx = util::Context(m_window, m_FBSize);
+  m_ctx = util::Context(m_window, m_state.fbSize);
+
+  // setup imgui -----------------------------------------
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+
+  ImGui_ImplGlfw_InitForOther(m_window, true);
+  ImGui_ImplWGPU_Init(
+    m_ctx.device.Get(),
+    1,
+    (WGPUTextureFormat)m_ctx.swapChainFormat,
+    WGPUTextureFormat_Undefined
+  );
+  // end imgui ----------------------------------------------
 
   // setup game state
   util::Camera camera(
@@ -86,7 +107,7 @@ Game::Game() {
     glm::vec3(0, 0.0, 105.0),
     glm::vec3(glm::radians(0.0f), 0, 0),
     glm::radians(50.0f),
-    (float)m_size.x / m_size.y,
+    (float)m_state.size.x / m_state.size.y,
     0.1,
     200
   );
@@ -97,15 +118,21 @@ Game::Game() {
   m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx);
 
   // setup rendering
-  util::Renderer renderer(&m_ctx, m_FBSize);
+  util::Renderer renderer(&m_ctx, &m_state);
 
   // game loop
   util::Timer timer;
+  float time = 0;
 
   while (!glfwWindowShouldClose(m_window)) {
     m_dt = timer.Tick();
     double fps = timer.GetFps();
-    // print fps to cout
+
+    // time += m_dt;
+    // if (time > 1) {
+    //   time = 0;
+    //   std::cout << "FPS: " << fps << "\r" << std::flush;
+    // }
     std::cout << "FPS: " << fps << "\r" << std::flush;
 
     // error callback
@@ -114,7 +141,7 @@ Game::Game() {
     glfwPollEvents();
 
     // update --------------------------------------------------------
-    if (m_focused) {
+    if (m_state.focused) {
       glm::vec3 moveDir(0);
       if (KeyPressed(GLFW_KEY_W))
         moveDir.y += 1;
@@ -135,7 +162,7 @@ Game::Game() {
     // m_state.chunkManager.Update(glm::vec2(m_state.player.GetPosition()));
 
     // render
-    renderer.Render(m_state);
+    renderer.Render();
     renderer.Present();
   }
 }
@@ -148,12 +175,12 @@ Game::~Game() {
 void Game::KeyCallback(int key, int scancode, int action, int mods) {
   if (action == GLFW_PRESS) {
     if (key == GLFW_KEY_ESCAPE) {
-      if (m_focused) {
+      if (m_state.focused) {
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        m_focused = false;
+        m_state.focused = false;
       } else {
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        m_focused = true;
+        m_state.focused = true;
       }
     }
     if (key == GLFW_KEY_Q) {
@@ -163,7 +190,7 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
 }
 
 void Game::MouseButtonCallback(int button, int action, int mods) {
-  if (!m_focused)
+  if (!m_state.focused)
     return;
 
   if (action == GLFW_PRESS) {
@@ -176,7 +203,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       );
       if (castData.has_value()) {
         auto [pos, dir] = castData.value();
-        m_state.chunkManager->SetBlock(pos, game::BlockId::AIR);
+        m_state.chunkManager->SetBlock(pos, game::BlockId::Air);
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
       auto castData = game::Raycast(
@@ -188,7 +215,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       if (castData.has_value()) {
         auto [pos, dir] = castData.value();
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_state.chunkManager->SetBlock(placePos, game::BlockId::GRASS);
+        m_state.chunkManager->SetBlock(placePos, game::BlockId::Grass);
       }
     }
   }
@@ -198,7 +225,7 @@ void Game::CursorPosCallback(double xpos, double ypos) {
   glm::vec2 currMousePos(xpos, ypos);
   glm::vec2 delta = currMousePos - m_lastMousePos;
   m_lastMousePos = currMousePos;
-  if (!m_focused)
+  if (!m_state.focused)
     return;
   m_state.player.Look(delta * 0.003f);
 }

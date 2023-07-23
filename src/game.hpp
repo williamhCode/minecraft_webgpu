@@ -6,8 +6,13 @@
 
 #include "game/player.hpp"
 #include "util/context.hpp"
+#include "util/renderer.hpp"
 
 struct GameState {
+  glm::uvec2 size;
+  glm::uvec2 fbSize;
+  bool focused;
+
   game::Player player;
   std::unique_ptr<game::ChunkManager> chunkManager;
 };
@@ -15,13 +20,10 @@ struct GameState {
 class Game {
 private:
   GLFWwindow *m_window;
-  glm::uvec2 m_size;
-  glm::uvec2 m_FBSize;
 
   util::Context m_ctx;
   GameState m_state;
 
-  bool m_focused;
   glm::vec2 m_lastMousePos;
   float m_dt;
 

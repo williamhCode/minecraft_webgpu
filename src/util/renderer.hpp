@@ -1,10 +1,13 @@
 #pragma once
 
-#include "game.hpp"
 #include "glm/ext/vector_uint2.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "context.hpp"
 #include <array>
+
+// forward declaration
+struct GameState;
 
 namespace util {
 
@@ -13,9 +16,31 @@ struct QuadVertex {
   glm::vec2 uv;
 };
 
+struct SSAO {
+  int enabled;
+  int sampleSize;
+  float radius;
+  float bias;
+
+  SSAO() {
+    SetDefault();
+  }
+  void SetDefault() {
+    enabled = true;
+    sampleSize = 20;
+    radius = 5;
+    bias = 0.01;
+  }
+};
+#define WRITE_SSAO_BUFFER(field)                                                       \
+  m_ctx->queue.WriteBuffer(                                                            \
+    m_ssaoBuffer, offsetof(SSAO, field), &m_ssao.field, sizeof(SSAO::field)            \
+  )
+
 class Renderer {
 private:
   Context *m_ctx;
+  GameState *m_state;
 
   wgpu::BindGroup m_blocksTextureBindGroup;
   wgpu::TextureView m_depthTextureView;
@@ -26,6 +51,9 @@ private:
   wgpu::RenderPassDescriptor m_gBufferPassDesc;
 
   // ssao
+  SSAO m_ssao;
+  wgpu::Buffer m_ssaoBuffer;
+
   wgpu::BindGroup m_gBufferBindGroup;
   wgpu::BindGroup m_ssaoSamplingBindGroup;
   wgpu::RenderPassDescriptor m_ssaoPassDesc;
@@ -39,8 +67,8 @@ private:
   wgpu::RenderPassDescriptor m_finalPassDesc;
 
 public:
-  Renderer(Context *ctx, glm::uvec2 size);
-  void Render(GameState &state);
+  Renderer(Context *ctx, GameState *state);
+  void Render();
   void Present();
 };
 

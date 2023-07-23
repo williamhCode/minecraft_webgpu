@@ -47,6 +47,7 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
 
   // swap chain format
   swapChainFormat = TextureFormat::BGRA8Unorm;
+  depthFormat = TextureFormat::Depth24Plus;
 
   // swap chain
   SwapChainDescriptor swapChainDesc{

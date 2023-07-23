@@ -7,18 +7,14 @@ namespace game {
 
 using namespace wgpu;
 
-const std::array<BlockType, 3> g_BLOCK_TYPES = {
+const std::array<BlockType, 4> g_BLOCK_TYPES = {
+  BlockType{},
   BlockType{
-    .id = BlockId::AIR,
-  },
-  BlockType{
-    .id = BlockId::DIRT,
     .GetTextureLoc = [](Direction dir) -> glm::vec2 {
       return {2, 0};
     },
   },
   BlockType{
-    .id = BlockId::GRASS,
     .GetTextureLoc = [](Direction dir) -> glm::vec2 {
       switch (dir) {
       case Direction::TOP:
@@ -30,12 +26,16 @@ const std::array<BlockType, 3> g_BLOCK_TYPES = {
       }
     },
   },
+  BlockType{
+    .GetTextureLoc = [](Direction dir) -> glm::vec2 {
+      return {3, 0};
+    },
+  },
 };
 
 BindGroup CreateBlocksTexture(util::Context &ctx) {
   // g_blocksTexture = util::LoadTexture(ctx, ROOT_DIR "/res/blocks.png");
-  Texture blocksTexture =
-    util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
+  Texture blocksTexture = util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5
     // anything after 5th mipmap blurs the different face textures
