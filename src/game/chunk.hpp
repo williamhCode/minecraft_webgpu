@@ -22,16 +22,16 @@ public:
   static constexpr glm::ivec3 SIZE = glm::ivec3(16, 16, 128);
   static constexpr size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
 
+  bool dirty;
+
 private:
   util::Context *m_ctx;
   ChunkManager *m_chunkManager;
-  // glm::ivec2 m_offset;
   glm::ivec3 m_offsetPos;
 
   // shared chunk data, precomputed positions, normals, and uv
   static std::array<Cube, VOLUME> m_cubeData;
 
-  bool m_dirty;
   std::array<BlockId, VOLUME> m_blockIdData;  // block data
   // records if faces should be rendered
   std::array<std::bitset<6>, VOLUME> m_faceRenderData;
@@ -53,14 +53,17 @@ public:
   );
   static void InitSharedData();
 
-  void InitializeChunkData();
-  void InitFaceData();
   void CreateBuffers();
+  void UpdateBuffers();
+  void UpdateFaceRenderData();
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder& passEncoder);
 
-  std::array<std::bitset<6>, VOLUME> &GetFaceRenderData() {
-    return m_faceRenderData;
+  std::array<BlockId, VOLUME> &GetBlockIdData() {
+    return m_blockIdData;
+  }
+  glm::ivec3 GetOffsetPos() {
+    return m_offsetPos;
   }
 
   static size_t PosToIndex(glm::ivec3 pos);

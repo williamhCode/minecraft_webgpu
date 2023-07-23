@@ -44,6 +44,7 @@ set(APP_SRC
   src/game/player.cpp
   src/game/direction.cpp
   src/game/ray.cpp
+  src/game/gen.cpp
 )
 
 add_executable(App

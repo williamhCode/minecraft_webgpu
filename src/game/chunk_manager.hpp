@@ -12,8 +12,8 @@ namespace game {
 class ChunkManager {
 private:
   util::Context *m_ctx;
-  static const int RADIUS = 2;
-  static const int MAX_GENS = 2;
+  static const int RADIUS = 12;
+  static const int MAX_GENS = 10;
   wgpu::BindGroupLayout m_offsetLayout;
 
 public:
@@ -23,6 +23,8 @@ public:
   ChunkManager(util::Context *ctx);
   void Update(glm::vec2 position);
   void Render(wgpu::RenderPassEncoder &passEncoder);
+
+  std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);
 
   std::optional<std::tuple<Chunk *, glm::ivec3>> GetChunk(glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);

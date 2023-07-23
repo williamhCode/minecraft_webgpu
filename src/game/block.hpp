@@ -2,6 +2,7 @@
 
 #include "glm/vec2.hpp"
 #include <webgpu/webgpu_glfw.h>
+#include <stdint.h>
 
 #include <array>
 #include "direction.hpp"
@@ -9,7 +10,7 @@
 
 namespace game {
 
-enum BlockId {
+enum BlockId : uint8_t {
   Air = 0,
   Dirt = 1,
   Grass = 2,

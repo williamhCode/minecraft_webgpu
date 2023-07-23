@@ -8,12 +8,15 @@ namespace game {
 using namespace wgpu;
 
 const std::array<BlockType, 4> g_BLOCK_TYPES = {
+  // Air
   BlockType{},
+  // Dirt
   BlockType{
     .GetTextureLoc = [](Direction dir) -> glm::vec2 {
       return {2, 0};
     },
   },
+  // Grass
   BlockType{
     .GetTextureLoc = [](Direction dir) -> glm::vec2 {
       switch (dir) {
@@ -26,6 +29,7 @@ const std::array<BlockType, 4> g_BLOCK_TYPES = {
       }
     },
   },
+  // Stone
   BlockType{
     .GetTextureLoc = [](Direction dir) -> glm::vec2 {
       return {3, 0};

@@ -109,7 +109,7 @@ Game::Game() {
     glm::radians(50.0f),
     (float)m_state.size.x / m_state.size.y,
     0.1,
-    200
+    1000
   );
   m_state.player = game::Player(camera);
 
@@ -159,7 +159,7 @@ Game::Game() {
     }
     m_state.player.Update();
 
-    // m_state.chunkManager.Update(glm::vec2(m_state.player.GetPosition()));
+    m_state.chunkManager->Update(glm::vec2(m_state.player.GetPosition()));
 
     // render
     renderer.Render();

@@ -411,7 +411,7 @@ void Renderer::Render() {
         if (ImGui::SliderFloat("Radius", &m_ssao.radius, 0.0, 15.0)) {
           WRITE_SSAO_BUFFER(radius);
         }
-        if (ImGui::SliderFloat("Bias", &m_ssao.bias, 0.0, 0.1)) {
+        if (ImGui::SliderFloat("Bias", &m_ssao.bias, 0.0, 1.0)) {
           WRITE_SSAO_BUFFER(bias);
         }
         // center the button relative to the sliders

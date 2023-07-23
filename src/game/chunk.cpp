@@ -12,11 +12,8 @@ namespace game {
 using namespace wgpu;
 
 Chunk::Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset)
-    : m_ctx(ctx), m_chunkManager(chunkManager), m_dirty(false) {
+    : dirty(false), m_ctx(ctx), m_chunkManager(chunkManager) {
   m_offsetPos = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
-  InitializeChunkData();
-  // InitFaceData();
-  // UpdateMesh();
 
   // create bind group
   const glm::vec3 posOffset(glm::vec2(offset) * glm::vec2(SIZE), 0);
@@ -56,28 +53,8 @@ void Chunk::InitSharedData() {
   }
 }
 
-void Chunk::InitializeChunkData() {
-  for (size_t i = 0; i < VOLUME; i++) {
-    auto pos = IndexToPos(i);
-    // if (pos.z > 100) {
-    //   m_blockIdData[i] = BlockId::Air;
-    // } else {
-    //   m_blockIdData[i] = BlockId::Stone;
-    // }
-    if (pos.z > 100) {
-      m_blockIdData[i] = BlockId::Air;
-    } else if (pos.z == 100) {
-      m_blockIdData[i] = BlockId::Grass;
-    } else {
-      m_blockIdData[i] = BlockId::Dirt;
-    }
-  }
-}
-
-// void
-
-void Chunk::InitFaceData() {
-  // m_faceRenderData = std::array<std::bitset<6>, VOLUME>();
+void Chunk::UpdateFaceRenderData() {
+  m_faceRenderData = {};
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
     BlockId id = m_blockIdData[i_block];
     if (id == BlockId::Air)
@@ -106,6 +83,15 @@ void Chunk::CreateBuffers() {
     };
     m_indexBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
   }
+}
+
+void Chunk::UpdateBuffers() {
+  m_ctx->queue.WriteBuffer(
+    m_vertexBuffer, 0, m_faces.data(), m_faces.size() * sizeof(Face)
+  );
+  m_ctx->queue.WriteBuffer(
+    m_indexBuffer, 0, m_indices.data(), m_indices.size() * sizeof(FaceIndex)
+  );
 }
 
 void Chunk::UpdateMesh() {
@@ -141,14 +127,7 @@ void Chunk::UpdateMesh() {
   }
 
   CreateBuffers();
-
-  // upload data
-  m_ctx->queue.WriteBuffer(
-    m_vertexBuffer, 0, m_faces.data(), m_faces.size() * sizeof(Face)
-  );
-  m_ctx->queue.WriteBuffer(
-    m_indexBuffer, 0, m_indices.data(), m_indices.size() * sizeof(FaceIndex)
-  );
+  UpdateBuffers();
 }
 
 void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
