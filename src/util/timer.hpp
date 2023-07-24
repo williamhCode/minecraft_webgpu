@@ -6,13 +6,13 @@ namespace util {
 
 class Timer {
 private:
-  double m_currTime;
-  double m_prevTime;
-  std::vector<double> m_dtList;
+  float m_currTime;
+  float m_prevTime;
+  std::vector<float> m_dtList;
 public:
   Timer();
-  double Tick();
-  double GetFps();
+  float Tick();
+  float GetFps();
 };
 
 } // namespace util

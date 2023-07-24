@@ -58,7 +58,8 @@ Game::Game() {
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   m_state.size = {1100, 800};
   // m_state.size = {600, 400};
-  m_window = glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
+  m_window =
+    glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
@@ -122,18 +123,11 @@ Game::Game() {
 
   // game loop
   util::Timer timer;
-  float time = 0;
+  // float time = 0;
 
   while (!glfwWindowShouldClose(m_window)) {
-    m_dt = timer.Tick();
-    double fps = timer.GetFps();
-
-    // time += m_dt;
-    // if (time > 1) {
-    //   time = 0;
-    //   std::cout << "FPS: " << fps << "\r" << std::flush;
-    // }
-    std::cout << "FPS: " << fps << "\r" << std::flush;
+    m_state.dt = timer.Tick();
+    m_state.fps = timer.GetFps();
 
     // error callback
     m_ctx.device.Tick();
@@ -155,7 +149,7 @@ Game::Game() {
         moveDir.z += 1;
       if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
         moveDir.z -= 1;
-      m_state.player.Move(moveDir * m_dt);
+      m_state.player.Move(moveDir * m_state.dt);
     }
     m_state.player.Update();
 
@@ -186,6 +180,9 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_Q) {
       glfwSetWindowShouldClose(m_window, GLFW_TRUE);
     }
+    if (key == GLFW_KEY_G) {
+      m_state.showStats = !m_state.showStats;
+    }
   }
 }
 
@@ -201,8 +198,8 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
         10,
         *m_state.chunkManager
       );
-      if (castData.has_value()) {
-        auto [pos, dir] = castData.value();
+      if (castData) {
+        auto [pos, dir] = *castData;
         m_state.chunkManager->SetBlock(pos, game::BlockId::Air);
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
@@ -212,8 +209,8 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
         10,
         *m_state.chunkManager
       );
-      if (castData.has_value()) {
-        auto [pos, dir] = castData.value();
+      if (castData) {
+        auto [pos, dir] = *castData;
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
         m_state.chunkManager->SetBlock(placePos, game::BlockId::Grass);
       }

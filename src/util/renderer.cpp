@@ -16,13 +16,9 @@ using namespace wgpu;
 
 std::vector<QuadVertex> GetQuadVertices() {
   return {
-    {{-1.0, -1.0}, {0.0, 1.0}},
-    {{1.0, -1.0}, {1.0, 1.0}},
-    {{-1.0, 1.0}, {0.0, 0.0}},
+    {{-1.0, -1.0}, {0.0, 1.0}}, {{1.0, -1.0}, {1.0, 1.0}}, {{-1.0, 1.0}, {0.0, 0.0}},
 
-    {{1.0, -1.0}, {1.0, 1.0}},
-    {{1.0, 1.0}, {1.0, 0.0}},
-    {{-1.0, 1.0}, {0.0, 0.0}},
+    {{1.0, -1.0}, {1.0, 1.0}},  {{1.0, 1.0}, {1.0, 0.0}},  {{-1.0, 1.0}, {0.0, 0.0}},
   };
 }
 
@@ -187,10 +183,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       .rowsPerImage = size.height,
     };
     m_ctx->queue.WriteTexture(
-      &destination,
-      ssaoNoise.data(),
-      sizeof(glm::vec4) * ssaoNoise.size(),
-      &source,
+      &destination, ssaoNoise.data(), sizeof(glm::vec4) * ssaoNoise.size(), &source,
       &size
     );
 
@@ -382,21 +375,41 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 }
 
-void Renderer::Render() {
-  // imgui
-  if (!m_state->focused) {
-    ImGui_ImplWGPU_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+void Renderer::ImguiRender() {
+  ImGui_ImplWGPU_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
 
+  if (m_state->showStats) {
+    ImGui::Begin("Statistics");
+    {
+      const int NUM_FRAMES = 200;
+      static float frameTimes[NUM_FRAMES] = {};
+      static int frameTimeIndex = 0;
+
+      frameTimes[frameTimeIndex] = m_state->dt;
+      frameTimeIndex = (frameTimeIndex + 1) % NUM_FRAMES;
+
+      ImGui::Text("FPS: %.3f", m_state->fps);
+      ImGui::Text("Frame Times");
+      ImGui::PlotHistogram(
+        "##Frame Times", frameTimes, NUM_FRAMES, frameTimeIndex, nullptr, 0.0f, 0.033333f,
+        ImVec2(ImGui::GetWindowSize().x - 20, 150)
+      );
+    }
+    ImGui::End();
+  }
+
+  if (!m_state->focused) {
     static bool isFirstFrame = true;
     if (isFirstFrame) {
-      ImGui::SetNextWindowPos(ImVec2(m_state->size.x - 300, 30));
-      ImGui::SetNextWindowSize(ImVec2(270, 200));
+      // ImGui::SetNextWindowPos(ImVec2(m_state->size.x - 300, 30));
+      // ImGui::SetNextWindowSize(ImVec2(270, 200));
       isFirstFrame = false;
     }
     ImGui::Begin("Options");
     {
+      // ssao options ---------------------------------------------
       bool tempEnabled = m_ssao.enabled;
       if (ImGui::Checkbox("##Hidden", &tempEnabled)) {
         m_ssao.enabled = tempEnabled;
@@ -420,13 +433,25 @@ void Renderer::Render() {
           m_ctx->queue.WriteBuffer(m_ssaoBuffer, 0, &m_ssao, sizeof(m_ssao));
         }
       }
+
+      // chunk options ---------------------------------------------
+      if (ImGui::CollapsingHeader("Chunk")) {
+        ImGui::SliderInt("Radius", &m_state->chunkManager->radius, 0, 32);
+        if (ImGui::InputInt("Max Gens", &m_state->chunkManager->max_gens, 1, 10)) {
+          if (m_state->chunkManager->max_gens < 1) {
+            m_state->chunkManager->max_gens = 1;
+          }
+        }
+      }
     }
     ImGui::End();
-
-    ImGui::Render();
   }
+  ImGui::Render();
+}
 
-  // rendering
+void Renderer::Render() {
+  ImguiRender();
+
   TextureView nextTexture = m_ctx->swapChain.GetCurrentTextureView();
   if (!nextTexture) {
     std::cerr << "Cannot acquire next swap chain texture" << std::endl;
@@ -479,8 +504,7 @@ void Renderer::Render() {
     passEncoder.SetBindGroup(1, m_ssaoFinalTexureBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
-    if (!m_state->focused)
-      ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), passEncoder.Get());
+    ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), passEncoder.Get());
     passEncoder.End();
   }
 

@@ -12,11 +12,11 @@ namespace game {
 class ChunkManager {
 private:
   util::Context *m_ctx;
-  static const int RADIUS = 12;
-  static const int MAX_GENS = 10;
   wgpu::BindGroupLayout m_offsetLayout;
 
 public:
+  int radius = 10;
+  int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
   ChunkManager() = default;

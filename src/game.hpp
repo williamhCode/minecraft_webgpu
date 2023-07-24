@@ -11,7 +11,12 @@
 struct GameState {
   glm::uvec2 size;
   glm::uvec2 fbSize;
-  bool focused;
+
+  bool focused = true;
+
+  bool showStats = false;
+  float dt;
+  float fps;
 
   game::Player player;
   std::unique_ptr<game::ChunkManager> chunkManager;
@@ -25,7 +30,6 @@ private:
   GameState m_state;
 
   glm::vec2 m_lastMousePos;
-  float m_dt;
 
 public:
   Game();

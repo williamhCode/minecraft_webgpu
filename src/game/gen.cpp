@@ -23,14 +23,6 @@ void GenChunkData(Chunk &chunk) {
     } else {
       data[i] = BlockId::Stone;
     }
-
-    // if (pos.z > 100) {
-    //   data[i] = BlockId::Air;
-    // } else if (pos.z == 100) {
-    //   data[i] = BlockId::Grass;
-    // } else {
-    //   data[i] = BlockId::Dirt;
-    // }
   }
 }
 

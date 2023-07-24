@@ -59,13 +59,6 @@ public:
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder& passEncoder);
 
-  std::array<BlockId, VOLUME> &GetBlockIdData() {
-    return m_blockIdData;
-  }
-  glm::ivec3 GetOffsetPos() {
-    return m_offsetPos;
-  }
-
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
   bool HasNeighbor(glm::ivec3 position, Direction direction);
@@ -73,6 +66,12 @@ public:
   BlockId GetBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockID);
   void UpdateFace(glm::ivec3 position, Direction direction, bool shouldRender);
+  auto &GetBlockIdData() {
+    return m_blockIdData;
+  }
+  auto GetOffsetPos() {
+    return m_offsetPos;
+  }
 };
 
 }; // namespace game

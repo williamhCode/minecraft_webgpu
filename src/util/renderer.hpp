@@ -68,6 +68,7 @@ private:
 
 public:
   Renderer(Context *ctx, GameState *state);
+  void ImguiRender();
   void Render();
   void Present();
 };

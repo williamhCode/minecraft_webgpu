@@ -8,9 +8,9 @@ Timer::Timer() {
   m_prevTime = glfwGetTime();
 }
 
-double Timer::Tick() {
+float Timer::Tick() {
   m_currTime = glfwGetTime();
-  double dt = m_currTime - m_prevTime;
+  float dt = m_currTime - m_prevTime;
   m_prevTime = m_currTime;
 
   if (dt != 0) {
@@ -23,8 +23,8 @@ double Timer::Tick() {
   return dt;
 }
 
-double Timer::GetFps() {
-  double averageDt = std::reduce(m_dtList.begin(), m_dtList.end()) / m_dtList.size();
+float Timer::GetFps() {
+  float averageDt = std::reduce(m_dtList.begin(), m_dtList.end()) / m_dtList.size();
   return 1 / averageDt;
 }
 

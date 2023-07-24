@@ -10,8 +10,8 @@ using namespace wgpu;
 
 ChunkManager::ChunkManager(util::Context *ctx) : m_ctx(ctx) {
   const glm::ivec2 centerPos = glm::floor(glm::vec2(0, 0) / glm::vec2(Chunk::SIZE)),
-                   minOffset = centerPos - glm::ivec2(RADIUS, RADIUS),
-                   maxOffset = centerPos + glm::ivec2(RADIUS, RADIUS);
+                   minOffset = centerPos - glm::ivec2(radius, radius),
+                   maxOffset = centerPos + glm::ivec2(radius, radius);
 
   for (int x = minOffset.x; x <= maxOffset.x; x++) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
@@ -30,8 +30,8 @@ ChunkManager::ChunkManager(util::Context *ctx) : m_ctx(ctx) {
 
 void ChunkManager::Update(glm::vec2 position) {
   const glm::ivec2 centerPos = glm::floor(position / glm::vec2(Chunk::SIZE)),
-                   minOffset = centerPos - glm::ivec2(RADIUS, RADIUS),
-                   maxOffset = centerPos + glm::ivec2(RADIUS, RADIUS);
+                   minOffset = centerPos - glm::ivec2(radius, radius),
+                   maxOffset = centerPos + glm::ivec2(radius, radius);
 
   // remove chunks not in radius
   std::erase_if(chunks, [&](auto &pair) {
@@ -44,7 +44,7 @@ void ChunkManager::Update(glm::vec2 position) {
   int gens = 0;
   for (int x = minOffset.x; x <= maxOffset.x; x++) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
-      if (gens >= MAX_GENS)
+      if (gens >= max_gens)
         goto exit;
 
       const auto offset = glm::ivec2(x, y);
@@ -109,19 +109,19 @@ ChunkManager::GetChunk(glm::ivec3 position) {
 
 bool ChunkManager::HasBlock(glm::ivec3 position) {
   auto chunk = GetChunk(position);
-  if (!chunk.has_value()) {
+  if (!chunk) {
     return false;
   }
-  const auto &[chunkPtr, localPos] = chunk.value();
+  auto &[chunkPtr, localPos] = *chunk;
   return chunkPtr->HasBlock(localPos);
 }
 
 void ChunkManager::SetBlock(glm::ivec3 position, BlockId blockId) {
   auto chunk = GetChunk(position);
-  if (!chunk.has_value()) {
+  if (!chunk) {
     return;
   }
-  const auto &[chunkPtr, localPos] = chunk.value();
+  auto &[chunkPtr, localPos] = *chunk;
   chunkPtr->SetBlock(localPos, blockId);
 }
 
@@ -129,10 +129,10 @@ void ChunkManager::UpdateFace(
   glm::ivec3 position, Direction direction, bool shouldRender
 ) {
   auto chunk = GetChunk(position);
-  if (!chunk.has_value()) {
+  if (!chunk) {
     return;
   }
-  const auto &[chunkPtr, localPos] = chunk.value();
+  auto &[chunkPtr, localPos] = *chunk;
   if (!chunkPtr->HasBlock(localPos)) {
     return;
   }
