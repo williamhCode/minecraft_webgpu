@@ -1,6 +1,7 @@
 #include "game.hpp"
 #include "renderer.hpp"
 #include "game/block.hpp"
+#include <cfloat>
 #include <iostream>
 #include <ostream>
 #include <random>
@@ -421,10 +422,10 @@ void Renderer::ImguiRender() {
         if (ImGui::SliderInt("Sample Size", &m_ssao.sampleSize, 1, 64)) {
           WRITE_SSAO_BUFFER(sampleSize);
         }
-        if (ImGui::SliderFloat("Radius", &m_ssao.radius, 0.0, 15.0)) {
+        if (ImGui::DragFloat("Radius##ssao", &m_ssao.radius, 0.5, 0.0, FLT_MAX)) {
           WRITE_SSAO_BUFFER(radius);
         }
-        if (ImGui::SliderFloat("Bias", &m_ssao.bias, 0.0, 1.0)) {
+        if (ImGui::SliderFloat("Bias", &m_ssao.bias, 0.0, 5.0)) {
           WRITE_SSAO_BUFFER(bias);
         }
         // center the button relative to the sliders
@@ -436,8 +437,8 @@ void Renderer::ImguiRender() {
 
       // chunk options ---------------------------------------------
       if (ImGui::CollapsingHeader("Chunk")) {
-        ImGui::SliderInt("Radius", &m_state->chunkManager->radius, 0, 32);
-        if (ImGui::InputInt("Max Gens", &m_state->chunkManager->max_gens, 1, 10)) {
+        ImGui::SliderInt("Radius##chunk", &m_state->chunkManager->radius, 0, 32);
+        if (ImGui::DragInt("Max Gens", &m_state->chunkManager->max_gens, 1, 1, 100)) {
           if (m_state->chunkManager->max_gens < 1) {
             m_state->chunkManager->max_gens = 1;
           }

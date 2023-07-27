@@ -15,7 +15,7 @@ private:
   wgpu::BindGroupLayout m_offsetLayout;
 
 public:
-  int radius = 10;
+  int radius = 16;
   int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
@@ -25,8 +25,8 @@ public:
   void Render(wgpu::RenderPassEncoder &passEncoder);
 
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);
-
   std::optional<std::tuple<Chunk *, glm::ivec3>> GetChunk(glm::ivec3 position);
+  bool ShouldRender(glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockId);
   void UpdateFace(glm::ivec3 position, Direction direction, bool shouldRender);

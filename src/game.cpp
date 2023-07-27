@@ -56,14 +56,20 @@ Game::Game() {
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  // disable high-dpi for macOS
+  glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+
   m_state.size = {1100, 800};
-  // m_state.size = {600, 400};
   m_window =
     glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
   }
+
+  // fix bug with high_dpi=False not setting the correct framebuffer size
+  // glfwPollEvents();
+
   glfwSetWindowUserPointer(m_window, this);
 
   glfwSetKeyCallback(m_window, _KeyCallback);
@@ -95,22 +101,15 @@ Game::Game() {
 
   ImGui_ImplGlfw_InitForOther(m_window, true);
   ImGui_ImplWGPU_Init(
-    m_ctx.device.Get(),
-    1,
-    (WGPUTextureFormat)m_ctx.swapChainFormat,
+    m_ctx.device.Get(), 1, (WGPUTextureFormat)m_ctx.swapChainFormat,
     WGPUTextureFormat_Undefined
   );
   // end imgui ----------------------------------------------
 
   // setup game state
   util::Camera camera(
-    &m_ctx,
-    glm::vec3(0, 0.0, 105.0),
-    glm::vec3(glm::radians(0.0f), 0, 0),
-    glm::radians(50.0f),
-    (float)m_state.size.x / m_state.size.y,
-    0.1,
-    1000
+    &m_ctx, glm::vec3(0, 0.0, 105.0), glm::vec3(glm::radians(0.0f), 0, 0),
+    glm::radians(50.0f), (float)m_state.size.x / m_state.size.y, 0.1, 1000
   );
   m_state.player = game::Player(camera);
 
@@ -193,9 +192,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
   if (action == GLFW_PRESS) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
       auto castData = game::Raycast(
-        m_state.player.GetPosition(),
-        m_state.player.GetDirection(),
-        10,
+        m_state.player.GetPosition(), m_state.player.GetDirection(), 10,
         *m_state.chunkManager
       );
       if (castData) {
@@ -204,9 +201,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
       auto castData = game::Raycast(
-        m_state.player.GetPosition(),
-        m_state.player.GetDirection(),
-        10,
+        m_state.player.GetPosition(), m_state.player.GetDirection(), 10,
         *m_state.chunkManager
       );
       if (castData) {

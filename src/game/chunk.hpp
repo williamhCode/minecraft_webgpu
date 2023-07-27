@@ -56,6 +56,7 @@ public:
   void CreateBuffers();
   void UpdateBuffers();
   void UpdateFaceRenderData();
+  bool ShouldRender(glm::ivec3 position, Direction direction);
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder& passEncoder);
 

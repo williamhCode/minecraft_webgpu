@@ -63,8 +63,25 @@ void Chunk::UpdateFaceRenderData() {
     auto &faceRender = m_faceRenderData[i_block];
     auto posOffset = IndexToPos(i_block);
     for (size_t i_face = 0; i_face < 6; i_face++) {
-      faceRender[i_face] = !HasNeighbor(posOffset, (Direction)i_face);
+      faceRender[i_face] = ShouldRender(posOffset, (Direction)i_face);
     }
+  }
+}
+
+bool Chunk::ShouldRender(glm::ivec3 position, Direction direction) {
+  glm::ivec3 neighborPos = position + g_DIR_OFFSETS[direction];
+
+  if (neighborPos.z < 0) {
+    return false;
+  } else if (neighborPos.z >= SIZE.z) {
+    return true;
+  }
+  else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
+           neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
+    return m_chunkManager->ShouldRender(neighborPos + m_offsetPos);
+  } else {
+    auto index = PosToIndex(neighborPos);
+    return m_blockIdData[index] == BlockId::Air;
   }
 }
 
