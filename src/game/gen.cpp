@@ -1,27 +1,35 @@
 #include "gen.hpp"
 #include "chunk.hpp"
 #include <cmath>
+#include "PerlinNoise.hpp"
 
 namespace game {
 
 void GenChunkData(Chunk &chunk) {
   auto &data = chunk.GetBlockIdData();
 
-  for (size_t i = 0; i < data.size(); i++) {
-    auto pos = Chunk::IndexToPos(i);
-    auto worldPos = pos + chunk.GetOffsetPos();
+  static const siv::PerlinNoise::seed_type seed = 10u;
+  static const siv::PerlinNoise perlin{seed};
 
-    // sin waves
-    float height = 80;
-    height += sin(worldPos.x / 10.0f) * 10.0f;
-    height += sin(worldPos.y / 10.0f) * 10.0f;
+  auto worldOffset = chunk.GetOffsetPos();
+  for (int x = 0; x < Chunk::SIZE.x; x++) {
+    for (int y = 0; y < Chunk::SIZE.y; y++) {
+      int xPos = worldOffset.x + x;
+      int yPos = worldOffset.y + y;
+      float spread = 200.0;
+      int octaves = 4;
+      int height = 80 + perlin.octave2D_01(xPos / spread, yPos / spread, octaves) * 40;
 
-    if (worldPos.z > height) {
-      data[i] = BlockId::Air;
-    } else if (worldPos.z > height - 1) {
-      data[i] = BlockId::Grass;
-    } else {
-      data[i] = BlockId::Stone;
+      for (int z = 0; z < Chunk::SIZE.z; z++) {
+        auto index = Chunk::PosToIndex({x, y, z});
+        if (z < height) {
+          data[index] = BlockId::Stone;
+        } else if (z == height) {
+          data[index] = BlockId::Grass;
+        } else {
+          data[index] = BlockId::Air;
+        }
+      }
     }
   }
 }

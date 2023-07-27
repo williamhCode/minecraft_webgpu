@@ -22,6 +22,8 @@ set(IMGUI_SRC ${IMGUI_SRC}
   ${IMGUI_DIR}/backends/imgui_impl_wgpu.cpp
 )
 set(IMGUI_INCLUDE_DIRS ${IMGUI_DIR} ${IMGUI_DIR}/backends)
+# perlin noise
+set(PERLIN_NOISE_DIR ${PROJECT_SOURCE_DIR}/deps/PerlinNoise)
 
 # app
 set(APP_SRC
@@ -51,7 +53,11 @@ add_executable(App
   ${APP_SRC}
   ${IMGUI_SRC}
 )
-target_include_directories(App PRIVATE ${PROJECT_SOURCE_DIR}/src ${IMGUI_INCLUDE_DIRS})
+target_include_directories(App PRIVATE 
+  ${PROJECT_SOURCE_DIR}/src
+  ${IMGUI_INCLUDE_DIRS}
+  ${PERLIN_NOISE_DIR}
+)
 
 target_compile_definitions(App PRIVATE
   ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
