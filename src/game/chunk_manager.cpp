@@ -23,11 +23,6 @@ ChunkManager::ChunkManager(util::Context *ctx) : m_ctx(ctx) {
       chunks.emplace(offset, chunk);
     }
   }
-
-  for (auto &[_, chunk] : chunks) {
-    chunk->UpdateFaceRenderData();
-    chunk->UpdateMesh();
-  }
 }
 
 void ChunkManager::Update(glm::vec2 position) {
@@ -55,7 +50,6 @@ void ChunkManager::Update(glm::vec2 position) {
       const auto offset = glm::ivec2(x, y);
       if (!chunks.contains(offset)) {
         auto chunk = new Chunk(m_ctx, this, offset);
-        chunk->dirty = true;
         GenChunkData(*chunk);
         chunks.emplace(offset, chunk);
         for (auto neighbor : GetChunkNeighbors(offset)) {
@@ -67,10 +61,10 @@ void ChunkManager::Update(glm::vec2 position) {
   }
 exit:
 
-  // update chunks
+  // update dirty chunks
   for (auto &[offset, chunk] : chunks) {
     if (chunk->dirty) {
-      chunk->UpdateFaceRenderData();
+      // chunk->UpdateFaceRenderData();
       chunk->UpdateMesh();
       chunk->dirty = false;
     }
@@ -83,17 +77,28 @@ void ChunkManager::Render(wgpu::RenderPassEncoder &passEncoder) {
   }
 }
 
-// including itself
+std::optional<Chunk *> ChunkManager::GetChunk(glm::ivec2 offset) {
+  const auto it = chunks.find(offset);
+  if (it == chunks.end()) {
+    return std::nullopt;
+  }
+  return it->second.get();
+}
+
 std::vector<Chunk *> ChunkManager::GetChunkNeighbors(glm::ivec2 offset) {
   std::vector<Chunk *> neighbors;
   // neighbor list
-  std::array<glm::ivec2, 4> neighborOffsets = {
-    glm::ivec2(0, 1), glm::ivec2(0, -1), glm::ivec2(1, 0), glm::ivec2(-1, 0)};
-  for (auto &[x, y] : neighborOffsets) {
-    const auto neighborOffset = offset + glm::ivec2(x, y);
-    const auto it = chunks.find(neighborOffset);
-    if (it != chunks.end()) {
-      neighbors.push_back(it->second.get());
+  static std::array<glm::ivec2, 4> neighborOffsets = {
+    glm::ivec2(0, 1),
+    glm::ivec2(0, -1),
+    glm::ivec2(1, 0),
+    glm::ivec2(-1, 0),
+  };
+  for (auto neighborOffset : neighborOffsets) {
+    neighborOffset += offset;
+    auto chunk = GetChunk(neighborOffset);
+    if (chunk) {
+      neighbors.push_back(*chunk);
     }
   }
 
@@ -101,7 +106,7 @@ std::vector<Chunk *> ChunkManager::GetChunkNeighbors(glm::ivec2 offset) {
 }
 
 std::optional<std::tuple<Chunk *, glm::ivec3>>
-ChunkManager::GetChunk(glm::ivec3 position) {
+ChunkManager::GetChunkAndPos(glm::ivec3 position) {
   if (position.z < 0 || position.z >= Chunk::SIZE.z) {
     return std::nullopt;
   }
@@ -114,8 +119,9 @@ ChunkManager::GetChunk(glm::ivec3 position) {
   return std::make_tuple(it->second.get(), localPos);
 }
 
+// in context when called from a chunk
 bool ChunkManager::ShouldRender(glm::ivec3 position) {
-  auto chunk = GetChunk(position);
+  auto chunk = GetChunkAndPos(position);
   if (!chunk) {
     return false;
   }
@@ -124,7 +130,7 @@ bool ChunkManager::ShouldRender(glm::ivec3 position) {
 }
 
 bool ChunkManager::HasBlock(glm::ivec3 position) {
-  auto chunk = GetChunk(position);
+  auto chunk = GetChunkAndPos(position);
   if (!chunk) {
     return false;
   }
@@ -133,27 +139,12 @@ bool ChunkManager::HasBlock(glm::ivec3 position) {
 }
 
 void ChunkManager::SetBlock(glm::ivec3 position, BlockId blockId) {
-  auto chunk = GetChunk(position);
+  auto chunk = GetChunkAndPos(position);
   if (!chunk) {
     return;
   }
   auto &[chunkPtr, localPos] = *chunk;
   chunkPtr->SetBlock(localPos, blockId);
-}
-
-void ChunkManager::UpdateFace(
-  glm::ivec3 position, Direction direction, bool shouldRender
-) {
-  auto chunk = GetChunk(position);
-  if (!chunk) {
-    return;
-  }
-  auto &[chunkPtr, localPos] = *chunk;
-  if (!chunkPtr->HasBlock(localPos)) {
-    return;
-  }
-  chunkPtr->UpdateFace(localPos, direction, shouldRender);
-  chunkPtr->UpdateMesh();
 }
 
 } // namespace game

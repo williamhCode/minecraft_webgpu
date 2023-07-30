@@ -23,6 +23,7 @@ public:
   static constexpr size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
 
   bool dirty;
+  glm::ivec2 offset;
 
 private:
   util::Context *m_ctx;
@@ -33,8 +34,6 @@ private:
   static std::array<Cube, VOLUME> m_cubeData;
 
   std::array<BlockId, VOLUME> m_blockIdData;  // block data
-  // records if faces should be rendered
-  std::array<std::bitset<6>, VOLUME> m_faceRenderData;
 
   std::vector<Face> m_faces;
   std::vector<FaceIndex> m_indices;
@@ -55,18 +54,16 @@ public:
 
   void CreateBuffers();
   void UpdateBuffers();
-  void UpdateFaceRenderData();
-  bool ShouldRender(glm::ivec3 position, Direction direction);
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder& passEncoder);
 
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
-  bool HasNeighbor(glm::ivec3 position, Direction direction);
+  bool ShouldRender(glm::ivec3 position, Direction direction);
+  // bool HasNeighbor(glm::ivec3 position, Direction direction);
   bool HasBlock(glm::ivec3 position);
   BlockId GetBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockID);
-  void UpdateFace(glm::ivec3 position, Direction direction, bool shouldRender);
   auto &GetBlockIdData() {
     return m_blockIdData;
   }

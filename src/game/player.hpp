@@ -6,7 +6,7 @@ namespace game {
 
 class Player {
 private:
-  static constexpr float m_SPEED = 100;
+  static constexpr float m_SPEED = 20;
 
 public:
   util::Camera camera;

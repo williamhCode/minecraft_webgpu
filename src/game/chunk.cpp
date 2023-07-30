@@ -12,7 +12,7 @@ namespace game {
 using namespace wgpu;
 
 Chunk::Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset)
-    : dirty(false), m_ctx(ctx), m_chunkManager(chunkManager) {
+    : dirty(true), offset(offset), m_ctx(ctx), m_chunkManager(chunkManager) {
   m_offsetPos = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
 
   // create bind group
@@ -53,38 +53,6 @@ void Chunk::InitSharedData() {
   }
 }
 
-void Chunk::UpdateFaceRenderData() {
-  m_faceRenderData = {};
-  for (size_t i_block = 0; i_block < VOLUME; i_block++) {
-    BlockId id = m_blockIdData[i_block];
-    if (id == BlockId::Air)
-      continue;
-
-    auto &faceRender = m_faceRenderData[i_block];
-    auto posOffset = IndexToPos(i_block);
-    for (size_t i_face = 0; i_face < 6; i_face++) {
-      faceRender[i_face] = ShouldRender(posOffset, (Direction)i_face);
-    }
-  }
-}
-
-bool Chunk::ShouldRender(glm::ivec3 position, Direction direction) {
-  glm::ivec3 neighborPos = position + g_DIR_OFFSETS[direction];
-
-  if (neighborPos.z < 0) {
-    return false;
-  } else if (neighborPos.z >= SIZE.z) {
-    return true;
-  }
-  else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
-           neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-    return m_chunkManager->ShouldRender(neighborPos + m_offsetPos);
-  } else {
-    auto index = PosToIndex(neighborPos);
-    return m_blockIdData[index] == BlockId::Air;
-  }
-}
-
 void Chunk::CreateBuffers() {
   {
     BufferDescriptor bufferDesc{
@@ -121,11 +89,11 @@ void Chunk::UpdateMesh() {
     if (id == BlockId::Air)
       continue;
     BlockType blockType = g_BLOCK_TYPES[id];
+    auto posOffset = IndexToPos(i_block);
 
-    auto &faceRender = m_faceRenderData[i_block];
     Cube &cube = m_cubeData[i_block];
     for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
-      if (faceRender[i_face] == false)
+      if (!ShouldRender(posOffset, (Direction)i_face))
         continue;
 
       Face face = cube.faces[i_face];
@@ -166,20 +134,37 @@ glm::ivec3 Chunk::IndexToPos(size_t index) {
   );
 }
 
-bool Chunk::HasNeighbor(glm::ivec3 position, Direction direction) {
+bool Chunk::ShouldRender(glm::ivec3 position, Direction direction) {
   glm::ivec3 neighborPos = position + g_DIR_OFFSETS[direction];
 
-  if (neighborPos.z < 0 || neighborPos.z >= SIZE.z) {
+  if (neighborPos.z < 0) {
     return false;
+  } else if (neighborPos.z >= SIZE.z) {
+    return true;
   }
   else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-    return m_chunkManager->HasBlock(neighborPos + m_offsetPos);
+    return m_chunkManager->ShouldRender(neighborPos + m_offsetPos);
   } else {
     auto index = PosToIndex(neighborPos);
-    return m_blockIdData[index] != BlockId::Air;
+    return m_blockIdData[index] == BlockId::Air;
   }
 }
+
+// bool Chunk::HasNeighbor(glm::ivec3 position, Direction direction) {
+//   glm::ivec3 neighborPos = position + g_DIR_OFFSETS[direction];
+
+//   if (neighborPos.z < 0 || neighborPos.z >= SIZE.z) {
+//     return false;
+//   }
+//   else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x ||
+//            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
+//     return m_chunkManager->HasBlock(neighborPos + m_offsetPos);
+//   } else {
+//     auto index = PosToIndex(neighborPos);
+//     return m_blockIdData[index] != BlockId::Air;
+//   }
+// }
 
 BlockId Chunk::GetBlock(glm::ivec3 position) {
   return m_blockIdData[PosToIndex(position)];
@@ -191,38 +176,35 @@ void Chunk::SetBlock(glm::ivec3 position, BlockId blockID) {
   }
   auto index = PosToIndex(position);
   m_blockIdData[index] = blockID;
-  if (blockID != BlockId::Air) {
-    auto &faceRender = m_faceRenderData[index];
-    for (size_t i_face = 0; i_face < 6; i_face++) {
-      faceRender[i_face] = !HasNeighbor(position, (Direction)i_face);
-    }
-  }
-  // update block faces for neighbors
-  bool shouldRender = blockID == BlockId::Air;
-  for (size_t i_face = 0; i_face < 6; i_face++) {
-    glm::ivec3 neighborPos = position + g_DIR_OFFSETS[i_face];
-    Direction neighborDir = DirOpposite((Direction)i_face);
-    if (neighborPos.z < 0 || neighborPos.z >= SIZE.z) {
+
+  static std::array<glm::ivec2, 4> neighborOffsets = {
+    glm::ivec2(0, 1),
+    glm::ivec2(0, -1),
+    glm::ivec2(1, 0),
+    glm::ivec2(-1, 0),
+  };
+  std::array<bool, 4> neighborClose = {
+    position.y == SIZE.y - 1,
+    position.y == 0,
+    position.x == SIZE.x - 1,
+    position.x == 0,
+  };
+
+  for (size_t i = 0; i < 4; i++) {
+    if (!neighborClose[i])
       continue;
-    }
-    else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
-             neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-      m_chunkManager->UpdateFace(neighborPos + m_offsetPos, neighborDir, shouldRender);
-    } else {
-      UpdateFace(neighborPos, neighborDir, shouldRender);
+    auto neighborOffset = offset + neighborOffsets[i];
+    auto chunk = m_chunkManager->GetChunk(neighborOffset);
+    if (chunk) {
+      (*chunk)->dirty = true;
     }
   }
-  UpdateMesh();
+
+  dirty = true;
 }
 
 bool Chunk::HasBlock(glm::ivec3 position) {
   return GetBlock(position) != BlockId::Air;
-}
-
-void Chunk::UpdateFace(glm::ivec3 position, Direction direction, bool shouldRender) {
-  if (!HasBlock(position))
-    return;
-  m_faceRenderData[PosToIndex(position)][direction] = shouldRender;
 }
 
 }; // namespace game

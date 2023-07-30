@@ -109,7 +109,7 @@ Game::Game() {
   // setup game state
   util::Camera camera(
     &m_ctx, glm::vec3(0, 0.0, 105.0), glm::vec3(glm::radians(0.0f), 0, 0),
-    glm::radians(50.0f), (float)m_state.size.x / m_state.size.y, 0.1, 1000
+    glm::radians(50.0f), (float)m_state.size.x / m_state.size.y, 0.1, 2000
   );
   m_state.player = game::Player(camera);
 

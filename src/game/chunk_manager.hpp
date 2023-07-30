@@ -24,12 +24,12 @@ public:
   void Update(glm::vec2 position);
   void Render(wgpu::RenderPassEncoder &passEncoder);
 
+  std::optional<Chunk *> GetChunk(glm::ivec2 offset);
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);
-  std::optional<std::tuple<Chunk *, glm::ivec3>> GetChunk(glm::ivec3 position);
+  std::optional<std::tuple<Chunk *, glm::ivec3>> GetChunkAndPos(glm::ivec3 position);
   bool ShouldRender(glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockId);
-  void UpdateFace(glm::ivec3 position, Direction direction, bool shouldRender);
 };
 
 } // namespace game
