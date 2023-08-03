@@ -28,6 +28,7 @@ public:
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);
   std::optional<std::tuple<Chunk *, glm::ivec3>> GetChunkAndPos(glm::ivec3 position);
   bool ShouldRender(glm::ivec3 position);
+  bool WaterShouldRender(glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockId);
 };

@@ -6,7 +6,7 @@
 #include <webgpu/webgpu_cpp.h>
 #include "game/direction.hpp"
 #include "glm/ext/vector_int2.hpp"
-#include "glm/vec3.hpp"
+#include "glm/ext/vector_int3.hpp"
 
 #include "util/context.hpp"
 #include "game/block.hpp"
@@ -37,9 +37,13 @@ private:
 
   std::vector<Face> m_faces;
   std::vector<FaceIndex> m_indices;
-
   wgpu::Buffer m_vertexBuffer;
   wgpu::Buffer m_indexBuffer;
+
+  std::vector<Face> m_waterFaces;
+  std::vector<FaceIndex> m_waterIndices;
+  wgpu::Buffer m_waterVbo;
+  wgpu::Buffer m_waterEbo;
 
   wgpu::Buffer m_offsetBuffer;
   wgpu::BindGroup m_bindGroup;
@@ -56,12 +60,15 @@ public:
   void UpdateBuffers();
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder& passEncoder);
+  void RenderWater(const wgpu::RenderPassEncoder& passEncoder);
 
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
   bool ShouldRender(glm::ivec3 position, Direction direction);
+  bool WaterShouldRender(glm::ivec3 position, Direction direction);
   // bool HasNeighbor(glm::ivec3 position, Direction direction);
   bool HasBlock(glm::ivec3 position);
+  bool WaterHasBlock(glm::ivec3 position);
   BlockId GetBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockID);
   auto &GetBlockIdData() {

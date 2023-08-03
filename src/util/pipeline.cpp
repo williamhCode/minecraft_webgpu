@@ -125,8 +125,8 @@ Pipeline::Pipeline(Context &ctx) {
         .shaderLocation = 2,
       },
       VertexAttribute{
-        .format = VertexFormat::Float32x2,
-        .offset = offsetof(Vertex, texLoc),
+        .format = VertexFormat::Uint32,
+        .offset = offsetof(Vertex, extraData),
         .shaderLocation = 3,
       },
     };
@@ -159,6 +159,18 @@ Pipeline::Pipeline(Context &ctx) {
       .depthCompare = CompareFunction::Less,
     };
 
+    static BlendState blend{
+      .color{
+        .operation = BlendOperation::Add,
+        .srcFactor = BlendFactor::SrcAlpha,
+        .dstFactor = BlendFactor::OneMinusSrcAlpha,
+      },
+      .alpha{
+        .operation = BlendOperation::Add,
+        .srcFactor = BlendFactor::Zero,
+        .dstFactor = BlendFactor::One,
+      },
+    };
     // Fragment State
     std::vector<ColorTargetState> targets{
       // position
@@ -172,6 +184,7 @@ Pipeline::Pipeline(Context &ctx) {
       // albedo
       ColorTargetState{
         .format = TextureFormat::BGRA8Unorm,
+        .blend = &blend,
       },
     };
     FragmentState fragmentState{
@@ -290,8 +303,7 @@ Pipeline::Pipeline(Context &ctx) {
         .buffer{
           .type = BufferBindingType::Uniform,
           .minBindingSize = sizeof(SSAO),
-        }
-      },
+        }},
     };
     BindGroupLayoutDescriptor desc{
       .entryCount = entries.size(),
@@ -382,9 +394,7 @@ Pipeline::Pipeline(Context &ctx) {
   }
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{
-      bgl_ssaoTexture
-    };
+    std::vector<BindGroupLayout> bindGroupLayouts{bgl_ssaoTexture};
     PipelineLayoutDescriptor layoutDesc{
       .bindGroupLayoutCount = bindGroupLayouts.size(),
       .bindGroupLayouts = bindGroupLayouts.data(),
@@ -435,10 +445,7 @@ Pipeline::Pipeline(Context &ctx) {
     util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_final.wgsl", ctx.device);
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{
-      bgl_gBuffer,
-      bgl_ssaoTexture
-    };
+    std::vector<BindGroupLayout> bindGroupLayouts{bgl_gBuffer, bgl_ssaoTexture};
     PipelineLayoutDescriptor layoutDesc{
       .bindGroupLayoutCount = bindGroupLayouts.size(),
       .bindGroupLayouts = bindGroupLayouts.data(),

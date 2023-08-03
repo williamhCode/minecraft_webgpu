@@ -34,11 +34,11 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
   let noiseScale = vec2f(textureDimensions(gBufferPosition)) / 4.0;
   let randomVec = textureSampleLevel(noiseTexture, noiseSampler, uv * noiseScale, 0.0).xyz;
 
-  // // create TBN change-of-basis matrix: from tangent-space to view-space
+  // create TBN change-of-basis matrix: from tangent-space to view-space
   let tangent = normalize(randomVec - dot(randomVec, normal) * normal);
   let bitangent = cross(normal, tangent);
   let TBN = mat3x3f(tangent, bitangent, normal);
-  // // iterate over the sample kernel and calculate occlusion factor
+  // iterate over the sample kernel and calculate occlusion factor
   var occlusion = 0.0;
   for (var i = 0; i < opts.sampleSize; i++) {
     // get sample position

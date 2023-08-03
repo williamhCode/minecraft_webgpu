@@ -12,16 +12,18 @@ namespace game {
 
 enum BlockId : uint8_t {
   Air = 0,
-  Dirt = 1,
-  Grass = 2,
-  Stone = 3,
+  Dirt,
+  Grass,
+  Stone,
+  Sand,
+  Water,
 };
 
 struct BlockType {
-  glm::vec2 (*GetTextureLoc)(Direction dir);
+  glm::ivec2 (*GetTextureLoc)(Direction dir);
 };
 
-const extern std::array<BlockType, 4> g_BLOCK_TYPES;
+const extern std::array<BlockType, 6> g_BLOCK_TYPES;
 
 wgpu::BindGroup CreateBlocksTexture(util::Context &ctx);
 

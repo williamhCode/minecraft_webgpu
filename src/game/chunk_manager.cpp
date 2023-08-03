@@ -64,7 +64,6 @@ exit:
   // update dirty chunks
   for (auto &[offset, chunk] : chunks) {
     if (chunk->dirty) {
-      // chunk->UpdateFaceRenderData();
       chunk->UpdateMesh();
       chunk->dirty = false;
     }
@@ -74,6 +73,10 @@ exit:
 void ChunkManager::Render(wgpu::RenderPassEncoder &passEncoder) {
   for (auto &[offset, chunk] : chunks) {
     chunk->Render(passEncoder);
+  }
+
+  for (auto &[offset, chunk] : chunks) {
+    chunk->RenderWater(passEncoder);
   }
 }
 
@@ -127,6 +130,15 @@ bool ChunkManager::ShouldRender(glm::ivec3 position) {
   }
   auto &[chunkPtr, localPos] = *chunk;
   return !chunkPtr->HasBlock(localPos);
+}
+
+bool ChunkManager::WaterShouldRender(glm::ivec3 position) {
+  auto chunk = GetChunkAndPos(position);
+  if (!chunk) {
+    return false;
+  }
+  auto &[chunkPtr, localPos] = *chunk;
+  return !chunkPtr->WaterHasBlock(localPos);
 }
 
 bool ChunkManager::HasBlock(glm::ivec3 position) {

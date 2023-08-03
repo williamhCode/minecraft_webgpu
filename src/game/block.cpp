@@ -7,18 +7,18 @@ namespace game {
 
 using namespace wgpu;
 
-const std::array<BlockType, 4> g_BLOCK_TYPES = {
+const std::array<BlockType, 6> g_BLOCK_TYPES = {
   // Air
   BlockType{},
   // Dirt
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::vec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
       return {2, 0};
     },
   },
   // Grass
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::vec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
       switch (dir) {
       case Direction::TOP:
         return {0, 0};
@@ -31,8 +31,20 @@ const std::array<BlockType, 4> g_BLOCK_TYPES = {
   },
   // Stone
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::vec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
       return {3, 0};
+    },
+  },
+  // Sand
+  BlockType{
+    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+      return {0, 1};
+    },
+  },
+  // Water
+  BlockType{
+    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+      return {0, 15};
     },
   },
 };
