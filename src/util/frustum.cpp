@@ -3,8 +3,8 @@
 
 namespace util {
 
-Frustum::Frustum(glm::mat4 viewProj) {
-  viewProj = glm::transpose(viewProj);
+Frustum::Frustum(const glm::mat4 &mat) {
+  auto viewProj = glm::transpose(mat);
   // left, right, bottom, top, near, far
   planes[0] = viewProj[3] + viewProj[1];
   planes[1] = viewProj[3] - viewProj[1];
@@ -15,8 +15,7 @@ Frustum::Frustum(glm::mat4 viewProj) {
 
   // Normalize the plane equations
   for (auto &plane : planes) {
-    float length = glm::length(glm::vec3(plane));
-    plane /= length;
+    plane = glm::normalize(plane);
   }
 }
 

@@ -7,8 +7,8 @@
 namespace util {
 
 struct AABB {
-  glm::vec3 min; // Minimum point (bottom, left, near)
-  glm::vec3 max; // Maximum point (top, right, far)
+  glm::vec3 min; // bottom, left, near
+  glm::vec3 max; // top, right, far
 };
 
 struct Frustum {
@@ -16,7 +16,7 @@ struct Frustum {
   std::array<glm::vec4, 6> planes;
 
   Frustum() = default;
-  Frustum(glm::mat4 viewProj);
+  Frustum(const glm::mat4 &viewProj);
   bool Intersects(const AABB &aabb);
 };
 
