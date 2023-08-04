@@ -15,7 +15,7 @@ Camera::Camera(
   float near,
   float far
 )
-    : m_ctx(ctx), position(position), orientation(orientation) {
+    : m_ctx(ctx), position(position), orientation(orientation), fov(fov) {
   // create bind group
   BufferDescriptor bufferDesc{
     .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
@@ -65,10 +65,10 @@ void Camera::Update() {
 
   direction = rotation * m_forward;
   glm::vec3 up = rotation * m_up;
-  glm::mat4 view = glm::lookAt(position, position + direction, up);
-  glm::mat4 inverseView = glm::inverse(view);
+  m_view = glm::lookAt(position, position + direction, up);
+  glm::mat4 inverseView = glm::inverse(m_view);
 
-  m_ctx->queue.WriteBuffer(m_viewBuffer, 0, &view, sizeof(view));
+  m_ctx->queue.WriteBuffer(m_viewBuffer, 0, &m_view, sizeof(m_view));
   m_ctx->queue.WriteBuffer(m_inverseViewBuffer, 0, &inverseView, sizeof(inverseView));
 }
 

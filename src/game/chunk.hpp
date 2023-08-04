@@ -9,6 +9,7 @@
 #include "glm/ext/vector_int3.hpp"
 
 #include "util/context.hpp"
+#include "util/frustum.hpp"
 #include "game/block.hpp"
 #include "mesh.hpp"
 #include <inttypes.h>
@@ -33,7 +34,7 @@ private:
   // shared chunk data, precomputed positions, normals, and uv
   static std::array<Cube, VOLUME> m_cubeData;
 
-  std::array<BlockId, VOLUME> m_blockIdData;  // block data
+  std::array<BlockId, VOLUME> m_blockIdData; // block data
 
   std::vector<Face> m_faces;
   std::vector<FaceIndex> m_indices;
@@ -49,18 +50,14 @@ private:
   wgpu::BindGroup m_bindGroup;
 
 public:
-  Chunk(
-    util::Context *ctx,
-    ChunkManager *chunkManager,
-    glm::ivec2 offset
-  );
+  Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset);
   static void InitSharedData();
 
   void CreateBuffers();
   void UpdateBuffers();
   void UpdateMesh();
-  void Render(const wgpu::RenderPassEncoder& passEncoder);
-  void RenderWater(const wgpu::RenderPassEncoder& passEncoder);
+  void Render(const wgpu::RenderPassEncoder &passEncoder);
+  void RenderWater(const wgpu::RenderPassEncoder &passEncoder);
 
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
@@ -76,6 +73,9 @@ public:
   }
   auto GetOffsetPos() {
     return m_offsetPos;
+  }
+  util::AABB GetBoundingBox() {
+    return util::AABB{m_offsetPos, m_offsetPos + SIZE};
   }
 };
 

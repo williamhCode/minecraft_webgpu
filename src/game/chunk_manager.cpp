@@ -2,13 +2,17 @@
 #include "gen.hpp"
 #include "glm/common.hpp"
 #include "util/context.hpp"
+#include <iostream>
+#include <ostream>
 #include <unordered_map>
+#include "game.hpp"
 
 namespace game {
 
 using namespace wgpu;
 
-ChunkManager::ChunkManager(util::Context *ctx) : m_ctx(ctx) {
+ChunkManager::ChunkManager(util::Context *ctx, GameState *state)
+    : m_ctx(ctx), m_state(state) {
   const glm::ivec2 centerPos = glm::floor(glm::vec2(0, 0) / glm::vec2(Chunk::SIZE)),
                    minOffset = centerPos - glm::ivec2(radius, radius),
                    maxOffset = centerPos + glm::ivec2(radius, radius);
@@ -70,13 +74,19 @@ exit:
   }
 }
 
-void ChunkManager::Render(wgpu::RenderPassEncoder &passEncoder) {
+void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder) {
+  auto frustum = m_state->player.camera.GetFrustum();
+
   for (auto &[offset, chunk] : chunks) {
-    chunk->Render(passEncoder);
+    auto boundingBox = chunk->GetBoundingBox();
+    if (frustum.Intersects(boundingBox))
+      chunk->Render(passEncoder);
   }
 
   for (auto &[offset, chunk] : chunks) {
-    chunk->RenderWater(passEncoder);
+    auto boundingBox = chunk->GetBoundingBox();
+    if (frustum.Intersects(boundingBox))
+      chunk->RenderWater(passEncoder);
   }
 }
 

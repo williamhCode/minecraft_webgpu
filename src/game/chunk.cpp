@@ -130,8 +130,8 @@ void Chunk::UpdateMesh() {
       Face face = cube.faces[i_face];
       for (size_t i_vertex = 0; i_vertex < face.vertices.size(); i_vertex++) {
         glm::ivec2 texLoc = blockType.GetTextureLoc((Direction)i_face);
-        // convert texLoc to 2 bytes, store in end of extraData
-        face.vertices[i_vertex].extraData = texLoc.x | (texLoc.y << 8);
+        // convert texLoc to 1 byte (2x 4 bits), store in end of extraData
+        face.vertices[i_vertex].extraData = texLoc.x | (texLoc.y << 4);
       }
 
       FaceIndex faceIndex;
@@ -275,7 +275,7 @@ bool Chunk::HasBlock(glm::ivec3 position) {
 
 bool Chunk::WaterHasBlock(glm::ivec3 position) {
   auto blockId = GetBlock(position);
-  return blockId == BlockId::Water;
+  return blockId != BlockId::Air;
 }
 
 }; // namespace game

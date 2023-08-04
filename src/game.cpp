@@ -115,7 +115,7 @@ Game::Game() {
 
   game::InitMesh();
   game::Chunk::InitSharedData();
-  m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx);
+  m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx, &m_state);
 
   // setup rendering
   util::Renderer renderer(&m_ctx, &m_state);
@@ -137,13 +137,13 @@ Game::Game() {
     if (m_state.focused) {
       glm::vec3 moveDir(0);
       if (KeyPressed(GLFW_KEY_W))
-        moveDir.y += 1;
-      if (KeyPressed(GLFW_KEY_S))
-        moveDir.y -= 1;
-      if (KeyPressed(GLFW_KEY_D))
         moveDir.x += 1;
-      if (KeyPressed(GLFW_KEY_A))
+      if (KeyPressed(GLFW_KEY_S))
         moveDir.x -= 1;
+      if (KeyPressed(GLFW_KEY_A))
+        moveDir.y += 1;
+      if (KeyPressed(GLFW_KEY_D))
+        moveDir.y -= 1;
       if (KeyPressed(GLFW_KEY_SPACE))
         moveDir.z += 1;
       if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
@@ -181,6 +181,13 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
     }
     if (key == GLFW_KEY_G) {
       m_state.showStats = !m_state.showStats;
+    }
+    // any ctrl key
+    if (mods & GLFW_MOD_CONTROL) {
+      if (m_state.player.speed == 20)
+        m_state.player.speed = 100;
+      else
+        m_state.player.speed = 20;
     }
   }
 }

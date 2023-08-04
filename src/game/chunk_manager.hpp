@@ -7,12 +7,15 @@
 #include <unordered_map>
 #include <vector>
 
+// forward decl
+struct GameState;
+
 namespace game {
 
 class ChunkManager {
 private:
   util::Context *m_ctx;
-  wgpu::BindGroupLayout m_offsetLayout;
+  GameState *m_state;
 
 public:
   int radius = 16;
@@ -20,9 +23,9 @@ public:
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
   ChunkManager() = default;
-  ChunkManager(util::Context *ctx);
+  ChunkManager(util::Context *ctx, GameState *state);
   void Update(glm::vec2 position);
-  void Render(wgpu::RenderPassEncoder &passEncoder);
+  void Render(const wgpu::RenderPassEncoder &passEncoder);
 
   std::optional<Chunk *> GetChunk(glm::ivec2 offset);
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);

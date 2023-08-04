@@ -38,6 +38,7 @@ set(APP_SRC
   src/util/texture.cpp
   src/util/renderer.cpp
   src/util/timer.cpp
+  src/util/frustum.cpp
 
   src/game/chunk.cpp
   src/game/chunk_manager.cpp

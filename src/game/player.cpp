@@ -6,13 +6,13 @@ Player::Player(util::Camera &camera) : camera(camera) {
 }
 
 void Player::Look(glm::vec2 delta) {
-  camera.orientation += glm::vec3(-delta.y, 0, -delta.x);
+  camera.orientation += glm::vec3(0, delta.y, -delta.x);
   float pi_4 = glm::radians(90.0f);
-  camera.orientation.x = std::max(-pi_4, std::min(camera.orientation.x, pi_4));
+  camera.orientation.y = std::max(-pi_4, std::min(camera.orientation.y, pi_4));
 }
 
 void Player::Move(glm::vec3 moveDir) {
-  moveDir *= m_SPEED;
+  moveDir *= speed;
   moveDir = glm::rotateZ(moveDir, camera.orientation.z);
   camera.position += moveDir;
 }
@@ -28,4 +28,5 @@ glm::vec3 Player::GetPosition() {
 glm::vec3 Player::GetDirection() {
   return camera.direction;
 }
+
 } // namespace game

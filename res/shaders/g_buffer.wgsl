@@ -43,8 +43,8 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> GBufferOutput {
-  // get last 2 bytes, put in vec2f
-  let texLoc = vec2f(f32(in.extraData & 0xFFu), f32((in.extraData >> 8u) & 0xFFu));
+  // get last byte (2x 4 bits), put in vec2f
+  let texLoc = vec2f(f32(in.extraData & 0x0Fu), f32((in.extraData >> 4u) & 0x0Fu));
   let uv = (in.uv + texLoc) / 16.0;
 
   var out: GBufferOutput;

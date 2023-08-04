@@ -2,15 +2,17 @@
 
 #include "glm-include.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "util/context.hpp"
+#include "context.hpp"
+#include "frustum.hpp"
 
 namespace util {
 
 class Camera {
 private:
   Context *m_ctx;
-  glm::vec4 m_forward = glm::vec4(0.0, 1.0, 0.0, 1.0);
-  glm::vec4 m_up = glm::vec4(0.0, 0.0, 1.0, 1.0);
+  constexpr static glm::vec4 m_forward = glm::vec4(1.0, 0.0, 0.0, 1.0);
+  constexpr static glm::vec4 m_up = glm::vec4(0.0, 0.0, 1.0, 1.0);
+  glm::mat4 m_view;
   glm::mat4 m_projection;
   wgpu::Buffer m_viewBuffer;
   wgpu::Buffer m_projectionBuffer;
@@ -20,7 +22,8 @@ public:
   wgpu::BindGroup bindGroup;
   glm::vec3 position;
   glm::vec3 direction;
-  glm::vec3 orientation; // yaw, pitch, roll
+  glm::vec3 orientation; // pitch, roll, yaw
+  float fov;
 
   Camera() = default;
   Camera(
@@ -33,6 +36,9 @@ public:
     float far
   );
   void Update();
+  Frustum GetFrustum() {
+    return Frustum(m_projection * m_view);
+  }
 };
 
 } // namespace util
