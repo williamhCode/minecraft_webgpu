@@ -26,6 +26,7 @@ public:
   ChunkManager(util::Context *ctx, GameState *state);
   void Update(glm::vec2 position);
   void Render(const wgpu::RenderPassEncoder &passEncoder);
+  void RenderWater(const wgpu::RenderPassEncoder &passEncoder);
 
   std::optional<Chunk *> GetChunk(glm::ivec2 offset);
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);

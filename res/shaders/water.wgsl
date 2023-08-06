@@ -13,12 +13,6 @@ struct VertexOutput {
 	@location(3) @interpolate(flat) extraData: u32,
 };
 
-struct GBufferOutput {
-  @location(0) position : vec4f,
-  @location(1) normal : vec4f,
-  @location(2) albedo : vec4f,
-}
-
 @group(0) @binding(0) var<uniform> view: mat4x4f;
 @group(0) @binding(1) var<uniform> projection: mat4x4f;
 
@@ -40,20 +34,14 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> GBufferOutput {
+fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   // get last byte (2x 4 bits), put in vec2f
   let texLoc = vec2f(f32(in.extraData & 0x0Fu), f32((in.extraData >> 4u) & 0x0Fu));
   let uv = (in.uv + texLoc) / 16.0;
 
-  var out: GBufferOutput;
-  out.albedo = vec4f(textureSample(texture, textureSampler, uv).rgb, 1.0);
-  out.position = vec4f(in.fragPos, 0.0);
-  out.normal = vec4f(normalize(in.normal), 0.0);
-
-  if (all(texLoc == vec2f(0.0, 15.0))) {
-    out.albedo.a = 0.6;
-  }
+  let out = textureSample(texture, textureSampler, uv);
 
   return out;
 }
+
 

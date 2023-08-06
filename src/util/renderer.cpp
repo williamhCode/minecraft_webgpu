@@ -18,7 +18,6 @@ using namespace wgpu;
 std::vector<QuadVertex> GetQuadVertices() {
   return {
     {{-1.0, -1.0}, {0.0, 1.0}}, {{1.0, -1.0}, {1.0, 1.0}}, {{-1.0, 1.0}, {0.0, 0.0}},
-
     {{1.0, -1.0}, {1.0, 1.0}},  {{1.0, 1.0}, {1.0, 0.0}},  {{-1.0, 1.0}, {0.0, 0.0}},
   };
 }
@@ -79,7 +78,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     m_depthTextureView = depthTexture.CreateView();
   }
 
-  // render pass
+  // pass desc
   {
     static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
       RenderPassColorAttachment{
@@ -108,6 +107,41 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       .depthClearValue = 1.0f,
     };
     m_gBufferPassDesc = {
+      .colorAttachmentCount = colorAttachments.size(),
+      .colorAttachments = colorAttachments.data(),
+      .depthStencilAttachment = &depthStencilAttachment,
+    };
+  }
+  
+  // water pass ---------------------------------------------------
+  TextureView waterTextureView;
+  {
+    TextureDescriptor textureDesc{
+      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
+      .size = textureSize,
+      .format = TextureFormat::BGRA8Unorm,
+    };
+    Texture waterTexture = m_ctx->device.CreateTexture(&textureDesc);
+    waterTextureView = waterTexture.CreateView();
+  }
+  
+  // pass desc
+  {
+    static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
+      RenderPassColorAttachment{
+        .view = waterTextureView,
+        .loadOp = LoadOp::Clear,
+        .storeOp = StoreOp::Store,
+        .clearValue = {0.0, 0.0, 0.0, 0.0},
+      },
+    };
+    static RenderPassDepthStencilAttachment depthStencilAttachment{
+      .view = m_depthTextureView,
+      .depthLoadOp = LoadOp::Load,
+      .depthStoreOp = StoreOp::Store,
+      .depthClearValue = 1.0f,
+    };
+    m_waterPassDesc = {
       .colorAttachmentCount = colorAttachments.size(),
       .colorAttachments = colorAttachments.data(),
       .depthStencilAttachment = &depthStencilAttachment,
@@ -234,7 +268,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.bgl_gBuffer,
+      .layout = m_ctx->pipeline.gBufferBGL,
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
@@ -264,33 +298,33 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.bgl_ssaoSampling,
+      .layout = m_ctx->pipeline.ssaoSamplingBGL,
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
     m_ssaoSamplingBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
   }
 
-  // ssao render texture
-  TextureView ssaoTextureView;
-  {
+  // ssao render textures, pre-blur and blurred
+  std::array<wgpu::TextureView, 2> ssaoTextureViews;
+  for (size_t i = 0; i < ssaoTextureViews.size(); i++) {
     TextureDescriptor textureDesc{
       .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
       .size = textureSize,
       .format = TextureFormat::R8Unorm,
     };
     Texture ssaoTexture = m_ctx->device.CreateTexture(&textureDesc);
-    ssaoTextureView = ssaoTexture.CreateView();
+    ssaoTextureViews[i] = ssaoTexture.CreateView();
   }
 
-  // render pass
+  // pass desc
   {
     static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
       RenderPassColorAttachment{
-        .view = ssaoTextureView,
+        .view = ssaoTextureViews[0],
         .loadOp = LoadOp::Clear,
         .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 0.0},
+        .clearValue = {1.0, 0.0, 0.0, 0.0},
       },
     };
     m_ssaoPassDesc = {
@@ -300,12 +334,12 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   // blur pass ---------------------------------------------------
-  // ssao texture bindgroup
-  {
+  // ssao texture bindgroups
+  for (size_t i = 0; i < m_ssaoTextureBindGroups.size(); i++) {
     std::vector<BindGroupEntry> entries{
       BindGroupEntry{
         .binding = 0,
-        .textureView = ssaoTextureView,
+        .textureView = ssaoTextureViews[i],
       },
       BindGroupEntry{
         .binding = 1,
@@ -313,29 +347,17 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.bgl_ssaoTexture,
+      .layout = m_ctx->pipeline.ssaoTextureBGL,
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    m_ssaoTexureBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
-  }
-
-  // blur texture
-  TextureView blurTextureView;
-  {
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
-      .size = textureSize,
-      .format = TextureFormat::R8Unorm,
-    };
-    Texture blurTexture = m_ctx->device.CreateTexture(&textureDesc);
-    blurTextureView = blurTexture.CreateView();
+    m_ssaoTextureBindGroups[i] = m_ctx->device.CreateBindGroup(&bindGroupDesc);
   }
 
   {
     static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
       RenderPassColorAttachment{
-        .view = blurTextureView,
+        .view = ssaoTextureViews[1],
         .loadOp = LoadOp::Clear,
         .storeOp = StoreOp::Store,
         .clearValue = {0.0, 0.0, 0.0, 0.0},
@@ -347,29 +369,25 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     };
   }
 
-  // final pass ---------------------------------------------------
-  // blur texture bindgroup
+  // composite pass ---------------------------------------------------
+  // water texture bindgroup
   {
     std::vector<BindGroupEntry> entries{
       BindGroupEntry{
         .binding = 0,
-        .textureView = blurTextureView,
-      },
-      BindGroupEntry{
-        .binding = 1,
-        .sampler = nearestClampSampler,
+        .textureView = waterTextureView,
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.bgl_ssaoTexture,
+      .layout = m_ctx->pipeline.waterTextureBGL,
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    m_ssaoFinalTexureBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
+    m_waterTextureBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
   }
 
   {
-    m_finalPassDesc = {
+    m_compositePassDesc = {
       .colorAttachmentCount = 1,
       .colorAttachments = nullptr,
     };
@@ -394,8 +412,8 @@ void Renderer::ImguiRender() {
       ImGui::Text("FPS: %.3f", m_state->fps);
       ImGui::Text("Frame Times");
       ImGui::PlotHistogram(
-        "##Frame Times", frameTimes, NUM_FRAMES, frameTimeIndex, nullptr, 0.0f, 0.033333f,
-        ImVec2(ImGui::GetWindowSize().x - 20, 150)
+        "##Frame Times", frameTimes, NUM_FRAMES, frameTimeIndex, nullptr, 0.0f,
+        0.033333f, ImVec2(ImGui::GetWindowSize().x - 20, 150)
       );
     }
     ImGui::End();
@@ -465,22 +483,31 @@ void Renderer::Render() {
     .storeOp = StoreOp::Store,
     .clearValue = {0.0, 0.0, 0.0, 1.0},
   };
-  m_finalPassDesc.colorAttachments = &colorAttachment;
+  m_compositePassDesc.colorAttachments = &colorAttachment;
 
   CommandEncoder commandEncoder = m_ctx->device.CreateCommandEncoder();
   // gbuffer pass
   {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
-    passEncoder.SetPipeline(m_ctx->pipeline.rpl_gBuffer);
+    passEncoder.SetPipeline(m_ctx->pipeline.gBufferRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
     m_state->chunkManager->Render(passEncoder);
     passEncoder.End();
   }
+  // water pass
+  {
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_waterPassDesc);
+    passEncoder.SetPipeline(m_ctx->pipeline.waterRPL);
+    passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
+    passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
+    m_state->chunkManager->RenderWater(passEncoder);
+    passEncoder.End();
+  }
   // ssao pass
   {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_ssaoPassDesc);
-    passEncoder.SetPipeline(m_ctx->pipeline.rpl_ssao);
+    passEncoder.SetPipeline(m_ctx->pipeline.ssaoRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_gBufferBindGroup);
     passEncoder.SetBindGroup(2, m_ssaoSamplingBindGroup);
@@ -491,18 +518,19 @@ void Renderer::Render() {
   // ssao-blur pass
   {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_blurPassDesc);
-    passEncoder.SetPipeline(m_ctx->pipeline.rpl_blur);
-    passEncoder.SetBindGroup(0, m_ssaoTexureBindGroup);
+    passEncoder.SetPipeline(m_ctx->pipeline.blurRPL);
+    passEncoder.SetBindGroup(0, m_ssaoTextureBindGroups[0]);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
     passEncoder.End();
   }
-  // final pass
+  // composite pass
   {
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_finalPassDesc);
-    passEncoder.SetPipeline(m_ctx->pipeline.rpl_final);
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_compositePassDesc);
+    passEncoder.SetPipeline(m_ctx->pipeline.compositeRPL);
     passEncoder.SetBindGroup(0, m_gBufferBindGroup);
-    passEncoder.SetBindGroup(1, m_ssaoFinalTexureBindGroup);
+    passEncoder.SetBindGroup(1, m_ssaoTextureBindGroups[1]);
+    passEncoder.SetBindGroup(2, m_waterTextureBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
     ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), passEncoder.Get());

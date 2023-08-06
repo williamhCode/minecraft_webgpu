@@ -13,9 +13,39 @@ using namespace wgpu;
 using game::Vertex;
 
 Pipeline::Pipeline(Context &ctx) {
-  // ssao pipeline -------------------------------------------------
-  ShaderModule shaderGBuffer =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", ctx.device);
+
+  // chunk vbo layout
+  VertexBufferLayout chunkVBL;
+  {
+    static std::vector<VertexAttribute> vertexAttributes = {
+      VertexAttribute{
+        .format = VertexFormat::Float32x3,
+        .offset = offsetof(Vertex, position),
+        .shaderLocation = 0,
+      },
+      VertexAttribute{
+        .format = VertexFormat::Float32x3,
+        .offset = offsetof(Vertex, normal),
+        .shaderLocation = 1,
+      },
+      VertexAttribute{
+        .format = VertexFormat::Float32x2,
+        .offset = offsetof(Vertex, uv),
+        .shaderLocation = 2,
+      },
+      VertexAttribute{
+        .format = VertexFormat::Uint32,
+        .offset = offsetof(Vertex, extraData),
+        .shaderLocation = 3,
+      },
+    };
+    chunkVBL = {
+      .arrayStride = sizeof(Vertex),
+      .stepMode = VertexStepMode::Vertex,
+      .attributeCount = vertexAttributes.size(),
+      .attributes = vertexAttributes.data(),
+    };
+  }
 
   // view, projection layout
   {
@@ -49,7 +79,7 @@ Pipeline::Pipeline(Context &ctx) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_viewProj = ctx.device.CreateBindGroupLayout(&desc);
+    viewProjBGL = ctx.device.CreateBindGroupLayout(&desc);
   }
   // texture layout
   {
@@ -74,32 +104,17 @@ Pipeline::Pipeline(Context &ctx) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_texture = ctx.device.CreateBindGroupLayout(&desc);
+    textureBGL = ctx.device.CreateBindGroupLayout(&desc);
   }
-  // offset layout
-  {
-    std::vector<BindGroupLayoutEntry> entries{
-      BindGroupLayoutEntry{
-        .binding = 0,
-        .visibility = ShaderStage::Vertex,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::vec3),
-        },
-      },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    bgl_offset = ctx.device.CreateBindGroupLayout(&desc);
-  }
+
+  // water pipeline --------------------------------------------------
+  ShaderModule shaderWater =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/water.wgsl", ctx.device);
 
   {
     std::vector<BindGroupLayout> bindGroupLayouts{
-      bgl_viewProj,
-      bgl_texture,
-      bgl_offset,
+      viewProjBGL,
+      textureBGL,
     };
     PipelineLayoutDescriptor layoutDesc{
       .bindGroupLayoutCount = bindGroupLayouts.size(),
@@ -108,48 +123,18 @@ Pipeline::Pipeline(Context &ctx) {
     PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
 
     // Vertex State
-    std::vector<VertexAttribute> vertexAttributes = {
-      VertexAttribute{
-        .format = VertexFormat::Float32x3,
-        .offset = offsetof(Vertex, position),
-        .shaderLocation = 0,
-      },
-      VertexAttribute{
-        .format = VertexFormat::Float32x3,
-        .offset = offsetof(Vertex, normal),
-        .shaderLocation = 1,
-      },
-      VertexAttribute{
-        .format = VertexFormat::Float32x2,
-        .offset = offsetof(Vertex, uv),
-        .shaderLocation = 2,
-      },
-      VertexAttribute{
-        .format = VertexFormat::Uint32,
-        .offset = offsetof(Vertex, extraData),
-        .shaderLocation = 3,
-      },
-    };
-    VertexBufferLayout vertexBufferLayout{
-      .arrayStride = sizeof(Vertex),
-      .stepMode = VertexStepMode::Vertex,
-      .attributeCount = vertexAttributes.size(),
-      .attributes = vertexAttributes.data(),
-    };
     VertexState vertexState{
-      .module = shaderGBuffer,
+      .module = shaderWater,
       .entryPoint = "vs_main",
       .bufferCount = 1,
-      .buffers = &vertexBufferLayout,
+      .buffers = &chunkVBL,
     };
 
     // Primitve State
     PrimitiveState primitiveState{
       .topology = PrimitiveTopology::TriangleList,
-      .stripIndexFormat = IndexFormat::Undefined,
       .frontFace = FrontFace::CCW,
-      .cullMode = CullMode::Back,
-      // .cullMode = CullMode::None,
+      .cullMode = CullMode::None,
     };
 
     // Depth Stencil State
@@ -159,7 +144,82 @@ Pipeline::Pipeline(Context &ctx) {
       .depthCompare = CompareFunction::Less,
     };
 
-    static BlendState blend{
+    BlendState blend{
+      .color{
+        .operation = BlendOperation::Add,
+        .srcFactor = BlendFactor::SrcAlpha,
+        .dstFactor = BlendFactor::OneMinusSrcAlpha,
+      },
+      .alpha{
+        .operation = BlendOperation::Add,
+        .srcFactor = BlendFactor::One,
+        .dstFactor = BlendFactor::Zero,
+      },
+    };
+
+    // Fragment State
+    std::vector<ColorTargetState> targets{
+      ColorTargetState{
+        .format = TextureFormat::BGRA8Unorm,
+        .blend = &blend,
+      },
+    };
+    FragmentState fragmentState{
+      .module = shaderWater,
+      .entryPoint = "fs_main",
+      .targetCount = targets.size(),
+      .targets = targets.data(),
+    };
+
+    RenderPipelineDescriptor pipelineDesc{
+      .layout = pipelineLayout,
+      .vertex = vertexState,
+      .primitive = primitiveState,
+      .depthStencil = &depthStencilState,
+      .fragment = &fragmentState,
+    };
+
+    waterRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
+  }
+
+  // ssao pipeline -------------------------------------------------
+  ShaderModule shaderGBuffer =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", ctx.device);
+
+  {
+    std::vector<BindGroupLayout> bindGroupLayouts{
+      viewProjBGL,
+      textureBGL,
+    };
+    PipelineLayoutDescriptor layoutDesc{
+      .bindGroupLayoutCount = bindGroupLayouts.size(),
+      .bindGroupLayouts = bindGroupLayouts.data(),
+    };
+    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
+
+    // Vertex State
+    VertexState vertexState{
+      .module = shaderGBuffer,
+      .entryPoint = "vs_main",
+      .bufferCount = 1,
+      .buffers = &chunkVBL,
+    };
+
+    // Primitve State
+    PrimitiveState primitiveState{
+      .topology = PrimitiveTopology::TriangleList,
+      .frontFace = FrontFace::CCW,
+      .cullMode = CullMode::Back,
+    };
+
+    // Depth Stencil State
+    DepthStencilState depthStencilState{
+      .format = ctx.depthFormat,
+      .depthWriteEnabled = true,
+      .depthCompare = CompareFunction::Less,
+    };
+
+    BlendState blend{
       .color{
         .operation = BlendOperation::Add,
         .srcFactor = BlendFactor::SrcAlpha,
@@ -202,7 +262,7 @@ Pipeline::Pipeline(Context &ctx) {
       .fragment = &fragmentState,
     };
 
-    rpl_gBuffer = ctx.device.CreateRenderPipeline(&pipelineDesc);
+    gBufferRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
   }
 
   // ssao pipeline -------------------------------------------------
@@ -269,7 +329,7 @@ Pipeline::Pipeline(Context &ctx) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_gBuffer = ctx.device.CreateBindGroupLayout(&desc);
+    gBufferBGL = ctx.device.CreateBindGroupLayout(&desc);
   }
   // ssao specific
   {
@@ -309,14 +369,14 @@ Pipeline::Pipeline(Context &ctx) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_ssaoSampling = ctx.device.CreateBindGroupLayout(&desc);
+    ssaoSamplingBGL = ctx.device.CreateBindGroupLayout(&desc);
   }
 
   {
     std::vector<BindGroupLayout> bindGroupLayouts{
-      bgl_viewProj,
-      bgl_gBuffer,
-      bgl_ssaoSampling,
+      viewProjBGL,
+      gBufferBGL,
+      ssaoSamplingBGL,
     };
     PipelineLayoutDescriptor layoutDesc{
       .bindGroupLayoutCount = bindGroupLayouts.size(),
@@ -361,7 +421,7 @@ Pipeline::Pipeline(Context &ctx) {
       .fragment = &fragmentState,
     };
 
-    rpl_ssao = ctx.device.CreateRenderPipeline(&pipelineDesc);
+    ssaoRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
   }
 
   // blur pipeline --------------------------------------------------
@@ -390,11 +450,11 @@ Pipeline::Pipeline(Context &ctx) {
       .entryCount = entries.size(),
       .entries = entries.data(),
     };
-    bgl_ssaoTexture = ctx.device.CreateBindGroupLayout(&desc);
+    ssaoTextureBGL = ctx.device.CreateBindGroupLayout(&desc);
   }
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{bgl_ssaoTexture};
+    std::vector<BindGroupLayout> bindGroupLayouts{ssaoTextureBGL};
     PipelineLayoutDescriptor layoutDesc{
       .bindGroupLayoutCount = bindGroupLayouts.size(),
       .bindGroupLayouts = bindGroupLayouts.data(),
@@ -437,15 +497,37 @@ Pipeline::Pipeline(Context &ctx) {
       .fragment = &fragmentState,
     };
 
-    rpl_blur = ctx.device.CreateRenderPipeline(&pipelineDesc);
+    blurRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
   }
 
-  // blur pipeline --------------------------------------------------
-  ShaderModule shaderFragFinal =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_final.wgsl", ctx.device);
+  // composite pipeline --------------------------------------------------
+  ShaderModule shaderFragComposite =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_composite.wgsl", ctx.device);
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{bgl_gBuffer, bgl_ssaoTexture};
+    std::vector<BindGroupLayoutEntry> entries{
+      BindGroupLayoutEntry{
+        .binding = 0,
+        .visibility = ShaderStage::Fragment,
+        .texture{
+          .sampleType = TextureSampleType::UnfilterableFloat,
+          .viewDimension = TextureViewDimension::e2D,
+        },
+      },
+    };
+    BindGroupLayoutDescriptor desc{
+      .entryCount = entries.size(),
+      .entries = entries.data(),
+    };
+    waterTextureBGL = ctx.device.CreateBindGroupLayout(&desc);
+  }
+
+  {
+    std::vector<BindGroupLayout> bindGroupLayouts{
+      gBufferBGL,
+      ssaoTextureBGL,
+      waterTextureBGL,
+    };
     PipelineLayoutDescriptor layoutDesc{
       .bindGroupLayoutCount = bindGroupLayouts.size(),
       .bindGroupLayouts = bindGroupLayouts.data(),
@@ -469,13 +551,12 @@ Pipeline::Pipeline(Context &ctx) {
 
     // Fragment State
     std::vector<ColorTargetState> targets{
-      // ssao texture
       ColorTargetState{
         .format = TextureFormat::BGRA8Unorm,
       },
     };
     FragmentState fragmentState{
-      .module = shaderFragFinal,
+      .module = shaderFragComposite,
       .entryPoint = "fs_main",
       .targetCount = targets.size(),
       .targets = targets.data(),
@@ -488,7 +569,7 @@ Pipeline::Pipeline(Context &ctx) {
       .fragment = &fragmentState,
     };
 
-    rpl_final = ctx.device.CreateRenderPipeline(&pipelineDesc);
+    compositeRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
   }
 }
 

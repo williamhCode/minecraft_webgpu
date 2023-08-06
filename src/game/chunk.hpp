@@ -24,12 +24,12 @@ public:
   static constexpr size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
 
   bool dirty;
-  glm::ivec2 offset;
+  glm::ivec2 chunkOffset;
 
 private:
   util::Context *m_ctx;
   ChunkManager *m_chunkManager;
-  glm::ivec3 m_offsetPos;
+  glm::ivec3 m_worldOffset;
 
   // shared chunk data, precomputed positions, normals, and uv
   static std::array<Cube, VOLUME> m_cubeData;
@@ -45,9 +45,6 @@ private:
   std::vector<FaceIndex> m_waterIndices;
   wgpu::Buffer m_waterVbo;
   wgpu::Buffer m_waterEbo;
-
-  wgpu::Buffer m_offsetBuffer;
-  wgpu::BindGroup m_bindGroup;
 
 public:
   Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset);
@@ -72,10 +69,10 @@ public:
     return m_blockIdData;
   }
   auto GetOffsetPos() {
-    return m_offsetPos;
+    return m_worldOffset;
   }
   util::AABB GetBoundingBox() {
-    return util::AABB{m_offsetPos, m_offsetPos + SIZE};
+    return util::AABB{m_worldOffset, m_worldOffset + SIZE};
   }
 };
 

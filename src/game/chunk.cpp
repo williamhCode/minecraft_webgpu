@@ -12,28 +12,8 @@ namespace game {
 using namespace wgpu;
 
 Chunk::Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset)
-    : dirty(true), offset(offset), m_ctx(ctx), m_chunkManager(chunkManager) {
-  m_offsetPos = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
-
-  // create bind group
-  const glm::vec3 posOffset(glm::vec2(offset) * glm::vec2(SIZE), 0);
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
-    .size = sizeof(posOffset),
-  };
-  m_offsetBuffer = ctx->device.CreateBuffer(&bufferDesc);
-  ctx->queue.WriteBuffer(m_offsetBuffer, 0, &posOffset, sizeof(posOffset));
-
-  BindGroupEntry entry{
-    .binding = 0,
-    .buffer = m_offsetBuffer,
-  };
-  BindGroupDescriptor bindGroupDesc{
-    .layout = ctx->pipeline.bgl_offset,
-    .entryCount = 1,
-    .entries = &entry,
-  };
-  this->m_bindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
+    : dirty(true), chunkOffset(offset), m_ctx(ctx), m_chunkManager(chunkManager) {
+  m_worldOffset = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
 }
 
 std::array<Cube, Chunk::VOLUME> Chunk::m_cubeData;
@@ -128,10 +108,11 @@ void Chunk::UpdateMesh() {
       }
 
       Face face = cube.faces[i_face];
-      for (size_t i_vertex = 0; i_vertex < face.vertices.size(); i_vertex++) {
+      for (auto &vertex : face.vertices) {
         glm::ivec2 texLoc = blockType.GetTextureLoc((Direction)i_face);
         // convert texLoc to 1 byte (2x 4 bits), store in end of extraData
-        face.vertices[i_vertex].extraData = texLoc.x | (texLoc.y << 4);
+        vertex.extraData = texLoc.x | (texLoc.y << 4);
+        vertex.position += m_worldOffset;
       }
 
       FaceIndex faceIndex;
@@ -159,7 +140,6 @@ void Chunk::UpdateMesh() {
 }
 
 void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
-  passEncoder.SetBindGroup(2, m_bindGroup);
   passEncoder.SetVertexBuffer(0, m_vertexBuffer, 0, m_vertexBuffer.GetSize());
   passEncoder.SetIndexBuffer(
     m_indexBuffer, IndexFormat::Uint32, 0, m_indexBuffer.GetSize()
@@ -168,7 +148,6 @@ void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
 }
 
 void Chunk::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
-  passEncoder.SetBindGroup(2, m_bindGroup);
   passEncoder.SetVertexBuffer(0, m_waterVbo, 0, m_waterVbo.GetSize());
   passEncoder.SetIndexBuffer(m_waterEbo, IndexFormat::Uint32, 0, m_waterEbo.GetSize());
   passEncoder.DrawIndexed(m_waterIndices.size() * 6);
@@ -194,7 +173,7 @@ bool Chunk::ShouldRender(glm::ivec3 position, Direction direction) {
   }
   else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-    return m_chunkManager->ShouldRender(neighborPos + m_offsetPos);
+    return m_chunkManager->ShouldRender(neighborPos + m_worldOffset);
   } else {
     return !HasBlock(neighborPos);
   }
@@ -210,7 +189,7 @@ bool Chunk::WaterShouldRender(glm::ivec3 position, Direction direction) {
   }
   else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-    return m_chunkManager->WaterShouldRender(neighborPos + m_offsetPos);
+    return m_chunkManager->WaterShouldRender(neighborPos + m_worldOffset);
   } else {
     return !WaterHasBlock(neighborPos);
   }
@@ -258,7 +237,7 @@ void Chunk::SetBlock(glm::ivec3 position, BlockId blockID) {
   for (size_t i = 0; i < 4; i++) {
     if (!neighborClose[i])
       continue;
-    auto neighborOffset = offset + neighborOffsets[i];
+    auto neighborOffset = chunkOffset + neighborOffsets[i];
     auto chunk = m_chunkManager->GetChunk(neighborOffset);
     if (chunk) {
       (*chunk)->dirty = true;

@@ -8,19 +8,21 @@ namespace util {
 struct Context;
 
 struct Pipeline {
-  wgpu::BindGroupLayout bgl_viewProj;
-  wgpu::BindGroupLayout bgl_texture;
-  wgpu::BindGroupLayout bgl_offset;
+  wgpu::BindGroupLayout viewProjBGL;
+  wgpu::BindGroupLayout textureBGL;
 
-  wgpu::BindGroupLayout bgl_gBuffer;
-  wgpu::BindGroupLayout bgl_ssaoSampling;
+  wgpu::BindGroupLayout gBufferBGL;
+  wgpu::BindGroupLayout ssaoSamplingBGL;
 
-  wgpu::BindGroupLayout bgl_ssaoTexture;
+  wgpu::BindGroupLayout ssaoTextureBGL;
 
-  wgpu::RenderPipeline rpl_gBuffer;
-  wgpu::RenderPipeline rpl_ssao;
-  wgpu::RenderPipeline rpl_blur;
-  wgpu::RenderPipeline rpl_final;
+  wgpu::BindGroupLayout waterTextureBGL;
+
+  wgpu::RenderPipeline gBufferRPL;
+  wgpu::RenderPipeline waterRPL;
+  wgpu::RenderPipeline ssaoRPL;
+  wgpu::RenderPipeline blurRPL;
+  wgpu::RenderPipeline compositeRPL;
 
   Pipeline() = default;
   Pipeline(Context &ctx);

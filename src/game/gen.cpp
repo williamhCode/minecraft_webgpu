@@ -43,7 +43,7 @@ void GenChunkData(Chunk &chunk) {
       BlockId topBlock;
       switch (biome) {
       case Ocean:
-        topBlock = Dirt;
+        topBlock = Stone;
         break;
       case Beach:
         topBlock = Sand;

@@ -82,6 +82,10 @@ void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder) {
     if (frustum.Intersects(boundingBox))
       chunk->Render(passEncoder);
   }
+}
+
+void ChunkManager::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
+  auto frustum = m_state->player.camera.GetFrustum();
 
   for (auto &[offset, chunk] : chunks) {
     auto boundingBox = chunk->GetBoundingBox();

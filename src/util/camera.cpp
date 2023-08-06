@@ -44,7 +44,7 @@ Camera::Camera(
       },
     };
     BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.bgl_viewProj,
+      .layout = m_ctx->pipeline.viewProjBGL,
       .entryCount = entries.size(),
       .entries = entries.data(),
     };

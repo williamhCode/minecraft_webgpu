@@ -47,8 +47,12 @@ private:
   wgpu::Buffer m_quadBuffer;
 
   // gbuffer
+  // position, normal, color
   std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
   wgpu::RenderPassDescriptor m_gBufferPassDesc;
+
+  // water
+  wgpu::RenderPassDescriptor m_waterPassDesc;
 
   // ssao
   SSAO m_ssao;
@@ -59,12 +63,13 @@ private:
   wgpu::RenderPassDescriptor m_ssaoPassDesc;
 
   // blur
-  wgpu::BindGroup m_ssaoTexureBindGroup;
+  // pre-blur and blurred (used in composite)
+  std::array<wgpu::BindGroup, 2> m_ssaoTextureBindGroups;
   wgpu::RenderPassDescriptor m_blurPassDesc;
 
-  // final
-  wgpu::BindGroup m_ssaoFinalTexureBindGroup;
-  wgpu::RenderPassDescriptor m_finalPassDesc;
+  // composite
+  wgpu::BindGroup m_waterTextureBindGroup;
+  wgpu::RenderPassDescriptor m_compositePassDesc;
 
 public:
   Renderer(Context *ctx, GameState *state);

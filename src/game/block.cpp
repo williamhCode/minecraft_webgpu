@@ -80,7 +80,7 @@ BindGroup CreateBlocksTexture(util::Context &ctx) {
     },
   };
   BindGroupDescriptor bindGroupDesc{
-    .layout = ctx.pipeline.bgl_texture,
+    .layout = ctx.pipeline.textureBGL,
     .entryCount = entries.size(),
     .entries = entries.data(),
   };

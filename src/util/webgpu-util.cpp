@@ -79,7 +79,7 @@ void SetUncapturedErrorCallback(Device &device) {
 ShaderModule LoadShaderModule(const fs::path &path, Device &device) {
   std::ifstream file(path);
   if (!file.is_open()) {
-    return nullptr;
+    throw std::runtime_error("Could not open shader file" + path.string());
   }
   file.seekg(0, std::ios::end);
   size_t size = file.tellg();
