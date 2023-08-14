@@ -147,8 +147,8 @@ Pipeline::Pipeline(Context &ctx) {
     BlendState blend{
       .color{
         .operation = BlendOperation::Add,
-        .srcFactor = BlendFactor::SrcAlpha,
-        .dstFactor = BlendFactor::OneMinusSrcAlpha,
+        .srcFactor = BlendFactor::One,
+        .dstFactor = BlendFactor::Zero,
       },
       .alpha{
         .operation = BlendOperation::Add,

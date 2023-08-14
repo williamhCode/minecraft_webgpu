@@ -139,7 +139,6 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       .view = m_depthTextureView,
       .depthLoadOp = LoadOp::Load,
       .depthStoreOp = StoreOp::Store,
-      .depthClearValue = 1.0f,
     };
     m_waterPassDesc = {
       .colorAttachmentCount = colorAttachments.size(),
