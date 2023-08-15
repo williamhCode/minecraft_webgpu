@@ -4,6 +4,7 @@
 #include "game/direction.hpp"
 #include "game/mesh.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include "util/webgpu-util.hpp"
 #include <iostream>
 #include <vector>
 
@@ -33,54 +34,6 @@ void Chunk::InitSharedData() {
   }
 }
 
-void Chunk::CreateBuffers() {
-  {
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
-      .size = m_faces.size() * sizeof(Face),
-    };
-    m_vertexBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
-  }
-  {
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Index,
-      .size = m_indices.size() * sizeof(FaceIndex),
-    };
-    m_indexBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
-  }
-
-  {
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
-      .size = m_waterFaces.size() * sizeof(Face),
-    };
-    m_waterVbo = m_ctx->device.CreateBuffer(&bufferDesc);
-  }
-  {
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Index,
-      .size = m_waterIndices.size() * sizeof(FaceIndex),
-    };
-    m_waterEbo = m_ctx->device.CreateBuffer(&bufferDesc);
-  }
-}
-
-void Chunk::UpdateBuffers() {
-  m_ctx->queue.WriteBuffer(
-    m_vertexBuffer, 0, m_faces.data(), m_faces.size() * sizeof(Face)
-  );
-  m_ctx->queue.WriteBuffer(
-    m_indexBuffer, 0, m_indices.data(), m_indices.size() * sizeof(FaceIndex)
-  );
-
-  m_ctx->queue.WriteBuffer(
-    m_waterVbo, 0, m_waterFaces.data(), m_waterFaces.size() * sizeof(Face)
-  );
-  m_ctx->queue.WriteBuffer(
-    m_waterEbo, 0, m_waterIndices.data(), m_waterIndices.size() * sizeof(FaceIndex)
-  );
-}
-
 void Chunk::UpdateMesh() {
   m_faces.clear();
   m_indices.clear();
@@ -92,19 +45,16 @@ void Chunk::UpdateMesh() {
   size_t numWaterFace = 0;
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
     BlockId id = m_blockIdData[i_block];
-    if (id == BlockId::Air)
-      continue;
+    if (id == BlockId::Air) continue;
     BlockType blockType = g_BLOCK_TYPES[id];
     auto posOffset = IndexToPos(i_block);
 
     Cube &cube = m_cubeData[i_block];
     for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
       if (id == BlockId::Water) {
-        if (!WaterShouldRender(posOffset, (Direction)i_face))
-          continue;
+        if (!WaterShouldRender(posOffset, (Direction)i_face)) continue;
       } else {
-        if (!ShouldRender(posOffset, (Direction)i_face))
-          continue;
+        if (!ShouldRender(posOffset, (Direction)i_face)) continue;
       }
 
       Face face = cube.faces[i_face];
@@ -135,8 +85,17 @@ void Chunk::UpdateMesh() {
     }
   }
 
-  CreateBuffers();
-  UpdateBuffers();
+  m_vertexBuffer =
+    util::CreateVertexBuffer(m_ctx, m_faces.size() * sizeof(Face), m_faces.data());
+  m_indexBuffer = util::CreateIndexBuffer(
+    m_ctx, m_indices.size() * sizeof(FaceIndex), m_indices.data()
+  );
+  m_waterVbo = util::CreateVertexBuffer(
+    m_ctx, m_waterFaces.size() * sizeof(Face), m_waterFaces.data()
+  );
+  m_waterEbo = util::CreateIndexBuffer(
+    m_ctx, m_waterIndices.size() * sizeof(FaceIndex), m_waterIndices.data()
+  );
 }
 
 void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
@@ -235,8 +194,7 @@ void Chunk::SetBlock(glm::ivec3 position, BlockId blockID) {
   };
 
   for (size_t i = 0; i < 4; i++) {
-    if (!neighborClose[i])
-      continue;
+    if (!neighborClose[i]) continue;
     auto neighborOffset = chunkOffset + neighborOffsets[i];
     auto chunk = m_chunkManager->GetChunk(neighborOffset);
     if (chunk) {

@@ -43,7 +43,6 @@ Texture LoadTexture(Context &ctx, std::filesystem::path path) {
   return texture;
 }
 
-// TODO: Segfaults!
 Texture LoadTextureMipmap(Context &ctx, std::filesystem::path path) {
   int width, height, channels;
   uint8_t *pixelData = stbi_load(path.string().c_str(), &width, &height, &channels, 4);

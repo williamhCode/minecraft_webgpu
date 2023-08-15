@@ -1,9 +1,11 @@
 #include "webgpu-util.hpp"
+#include "util/context.hpp"
 #include <iostream>
 #include <map>
 #include <ostream>
 
 namespace util {
+// using namespace util;
 
 using namespace wgpu;
 
@@ -15,10 +17,8 @@ Adapter RequestAdapter(Instance &instance, RequestAdapterOptions const *options)
   UserData userData;
 
   auto onAdapterRequestEnded = [](
-                                 WGPURequestAdapterStatus status,
-                                 WGPUAdapter adapter,
-                                 char const *message,
-                                 void *pUserData
+                                 WGPURequestAdapterStatus status, WGPUAdapter adapter,
+                                 char const *message, void *pUserData
                                ) {
     UserData &userData = *reinterpret_cast<UserData *>(pUserData);
     if (status == WGPURequestAdapterStatus_Success) {
@@ -44,10 +44,8 @@ Device RequestDevice(Adapter &instance, DeviceDescriptor const *descriptor) {
   UserData userData;
 
   auto onDeviceRequestEnded = [](
-                                WGPURequestDeviceStatus status,
-                                WGPUDevice device,
-                                char const *message,
-                                void *pUserData
+                                WGPURequestDeviceStatus status, WGPUDevice device,
+                                char const *message, void *pUserData
                               ) {
     UserData &userData = *reinterpret_cast<UserData *>(pUserData);
     if (status == WGPURequestDeviceStatus_Success) {
@@ -68,8 +66,7 @@ Device RequestDevice(Adapter &instance, DeviceDescriptor const *descriptor) {
 void SetUncapturedErrorCallback(Device &device) {
   auto onUncapturedError = [](WGPUErrorType type, char const *message, void *userdata) {
     std::cout << "Device error: type " << type;
-    if (message)
-      std::cout << " (message: " << message << ")";
+    if (message) std::cout << " (message: " << message << ")";
     std::cout << std::endl;
   };
 
@@ -92,6 +89,36 @@ ShaderModule LoadShaderModule(const fs::path &path, Device &device) {
   shaderCodeDesc.code = shaderSource.c_str();
   ShaderModuleDescriptor shaderDesc{.nextInChain = &shaderCodeDesc};
   return device.CreateShaderModule(&shaderDesc);
+}
+
+Buffer CreateVertexBuffer(Context *ctx, size_t size, const void *data) {
+  BufferDescriptor bufferDesc{
+    .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
+    .size = size,
+  };
+  Buffer buffer = ctx->device.CreateBuffer(&bufferDesc);
+  if (data) ctx->queue.WriteBuffer(buffer, 0, data, size);
+  return buffer;
+}
+
+Buffer CreateIndexBuffer(Context *ctx, size_t size, const void *data) {
+  BufferDescriptor bufferDesc{
+    .usage = BufferUsage::CopyDst | BufferUsage::Index,
+    .size = size,
+  };
+  Buffer buffer = ctx->device.CreateBuffer(&bufferDesc);
+  if (data) ctx->queue.WriteBuffer(buffer, 0, data, size);
+  return buffer;
+}
+
+Buffer CreateUniformBuffer(Context *ctx, size_t size, const void *data) {
+  BufferDescriptor bufferDesc{
+    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
+    .size = size,
+  };
+  Buffer buffer = ctx->device.CreateBuffer(&bufferDesc);
+  if (data) ctx->queue.WriteBuffer(buffer, 0, data, size);
+  return buffer;
 }
 
 } // namespace util

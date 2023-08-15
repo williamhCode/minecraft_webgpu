@@ -28,5 +28,4 @@ struct Pipeline {
   Pipeline(Context &ctx);
 };
 
-
 } // namespace util

@@ -50,8 +50,6 @@ public:
   Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset);
   static void InitSharedData();
 
-  void CreateBuffers();
-  void UpdateBuffers();
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder &passEncoder);
   void RenderWater(const wgpu::RenderPassEncoder &passEncoder);

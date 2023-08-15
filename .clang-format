@@ -9,5 +9,6 @@ SortIncludes: false
 # BinPackArguments: false
 BinPackParameters: false
 AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: WithoutElse
 ...
 

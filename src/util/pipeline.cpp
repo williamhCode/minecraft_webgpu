@@ -145,7 +145,7 @@ Pipeline::Pipeline(Context &ctx) {
     };
 
     BlendState blend{
-      .color{
+      .color = BlendComponent{
         .operation = BlendOperation::Add,
         .srcFactor = BlendFactor::One,
         .dstFactor = BlendFactor::Zero,
@@ -209,7 +209,8 @@ Pipeline::Pipeline(Context &ctx) {
     PrimitiveState primitiveState{
       .topology = PrimitiveTopology::TriangleList,
       .frontFace = FrontFace::CCW,
-      .cullMode = CullMode::Back,
+      // .cullMode = CullMode::Back,
+      .cullMode = CullMode::None,
     };
 
     // Depth Stencil State

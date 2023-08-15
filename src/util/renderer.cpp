@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_wgpu.h"
+#include "util/webgpu-util.hpp"
 
 namespace util {
 
@@ -26,15 +27,8 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   m_blocksTextureBindGroup = game::CreateBlocksTexture(*m_ctx);
 
   // init quad buffer
-  {
-    auto quadVertices = GetQuadVertices();
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
-      .size = quadVertices.size() * sizeof(QuadVertex),
-    };
-    m_quadBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
-    m_ctx->queue.WriteBuffer(m_quadBuffer, 0, quadVertices.data(), bufferDesc.size);
-  }
+  auto quadVertices = GetQuadVertices();
+  m_quadBuffer = util::CreateVertexBuffer(m_ctx, quadVertices.size() * sizeof(QuadVertex), quadVertices.data());
 
   Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
   // gbuffer pass -----------------------------------------------------
@@ -112,7 +106,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       .depthStencilAttachment = &depthStencilAttachment,
     };
   }
-  
+
   // water pass ---------------------------------------------------
   TextureView waterTextureView;
   {
@@ -124,7 +118,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     Texture waterTexture = m_ctx->device.CreateTexture(&textureDesc);
     waterTextureView = waterTexture.CreateView();
   }
-  
+
   // pass desc
   {
     static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
@@ -148,14 +142,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   // ssao pass ---------------------------------------------------
-  {
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
-      .size = sizeof(m_ssao),
-    };
-    m_ssaoBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
-    m_ctx->queue.WriteBuffer(m_ssaoBuffer, 0, &m_ssao, sizeof(m_ssao));
-  }
+  m_ssaoBuffer = util::CreateUniformBuffer(m_ctx, sizeof(m_ssao), &m_ssao);
 
   // kernel uniform
   std::default_random_engine gen;
@@ -177,15 +164,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
   auto kernelSize = sizeof(glm::vec4) * ssaoKernel.size();
 
-  Buffer kernelBuffer;
-  {
-    BufferDescriptor bufferDesc{
-      .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
-      .size = kernelSize,
-    };
-    kernelBuffer = m_ctx->device.CreateBuffer(&bufferDesc);
-    m_ctx->queue.WriteBuffer(kernelBuffer, 0, ssaoKernel.data(), kernelSize);
-  }
+  Buffer kernelBuffer = util::CreateUniformBuffer(m_ctx, kernelSize, ssaoKernel.data());
 
   // noise texture
   std::vector<glm::vec4> ssaoNoise;
@@ -525,7 +504,8 @@ void Renderer::Render() {
   }
   // composite pass
   {
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_compositePassDesc);
+    RenderPassEncoder passEncoder =
+      commandEncoder.BeginRenderPass(&m_compositePassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.compositeRPL);
     passEncoder.SetBindGroup(0, m_gBufferBindGroup);
     passEncoder.SetBindGroup(1, m_ssaoTextureBindGroups[1]);

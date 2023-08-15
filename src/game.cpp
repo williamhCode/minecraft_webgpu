@@ -30,8 +30,6 @@
 #include <sstream>
 #include <vector>
 
-using namespace wgpu;
-
 void _KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   Game *game = reinterpret_cast<Game *>(glfwGetWindowUserPointer(window));
   game->KeyCallback(key, scancode, action, mods);
