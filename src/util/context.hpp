@@ -26,6 +26,12 @@ struct Context {
 
   Context() = default;
   Context(GLFWwindow *window, glm::uvec2 size);
+
+  wgpu::Buffer
+  CreateBuffer(wgpu::BufferUsage usage, size_t size, const void *data = nullptr);
+  wgpu::Buffer CreateVertexBuffer(size_t size, const void *data = nullptr);
+  wgpu::Buffer CreateIndexBuffer(size_t size, const void *data = nullptr);
+  wgpu::Buffer CreateUniformBuffer(size_t size, const void *data = nullptr);
 };
 
 } // namespace util

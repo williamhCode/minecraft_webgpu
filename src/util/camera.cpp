@@ -17,13 +17,10 @@ Camera::Camera(
 )
     : m_ctx(ctx), position(position), orientation(orientation), fov(fov) {
   // create bind group
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
-    .size = sizeof(glm::mat4),
-  };
-  m_viewBuffer = ctx->device.CreateBuffer(&bufferDesc);
-  m_projectionBuffer = ctx->device.CreateBuffer(&bufferDesc);
-  m_inverseViewBuffer = ctx->device.CreateBuffer(&bufferDesc);
+  size_t size = sizeof(glm::mat4);
+  m_viewBuffer = ctx->CreateUniformBuffer(size);
+  m_projectionBuffer = ctx->CreateUniformBuffer(size);
+  m_inverseViewBuffer = ctx->CreateUniformBuffer(size);
 
   {
     std::vector<BindGroupEntry> entries{

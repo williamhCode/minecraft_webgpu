@@ -13,7 +13,6 @@ using namespace wgpu;
 using game::Vertex;
 
 Pipeline::Pipeline(Context &ctx) {
-
   // chunk vbo layout
   VertexBufferLayout chunkVBL;
   {
@@ -209,8 +208,8 @@ Pipeline::Pipeline(Context &ctx) {
     PrimitiveState primitiveState{
       .topology = PrimitiveTopology::TriangleList,
       .frontFace = FrontFace::CCW,
-      // .cullMode = CullMode::Back,
-      .cullMode = CullMode::None,
+      .cullMode = CullMode::Back,
+      // .cullMode = CullMode::None,
     };
 
     // Depth Stencil State

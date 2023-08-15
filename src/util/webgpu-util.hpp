@@ -16,10 +16,4 @@ void SetUncapturedErrorCallback(wgpu::Device &device);
 
 wgpu::ShaderModule LoadShaderModule(const fs::path &path, wgpu::Device &device);
 
-wgpu::Buffer CreateVertexBuffer(Context *ctx, size_t size, const void *data=nullptr);
-
-wgpu::Buffer CreateIndexBuffer(Context *ctx, size_t size, const void *data=nullptr);
-
-wgpu::Buffer CreateUniformBuffer(Context *ctx, size_t size, const void *data=nullptr);
-
 } // namespace util

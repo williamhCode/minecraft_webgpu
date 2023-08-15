@@ -91,34 +91,4 @@ ShaderModule LoadShaderModule(const fs::path &path, Device &device) {
   return device.CreateShaderModule(&shaderDesc);
 }
 
-Buffer CreateVertexBuffer(Context *ctx, size_t size, const void *data) {
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | BufferUsage::Vertex,
-    .size = size,
-  };
-  Buffer buffer = ctx->device.CreateBuffer(&bufferDesc);
-  if (data) ctx->queue.WriteBuffer(buffer, 0, data, size);
-  return buffer;
-}
-
-Buffer CreateIndexBuffer(Context *ctx, size_t size, const void *data) {
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | BufferUsage::Index,
-    .size = size,
-  };
-  Buffer buffer = ctx->device.CreateBuffer(&bufferDesc);
-  if (data) ctx->queue.WriteBuffer(buffer, 0, data, size);
-  return buffer;
-}
-
-Buffer CreateUniformBuffer(Context *ctx, size_t size, const void *data) {
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | BufferUsage::Uniform,
-    .size = size,
-  };
-  Buffer buffer = ctx->device.CreateBuffer(&bufferDesc);
-  if (data) ctx->queue.WriteBuffer(buffer, 0, data, size);
-  return buffer;
-}
-
 } // namespace util

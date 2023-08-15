@@ -86,15 +86,13 @@ void Chunk::UpdateMesh() {
   }
 
   m_vertexBuffer =
-    util::CreateVertexBuffer(m_ctx, m_faces.size() * sizeof(Face), m_faces.data());
-  m_indexBuffer = util::CreateIndexBuffer(
-    m_ctx, m_indices.size() * sizeof(FaceIndex), m_indices.data()
-  );
-  m_waterVbo = util::CreateVertexBuffer(
-    m_ctx, m_waterFaces.size() * sizeof(Face), m_waterFaces.data()
-  );
-  m_waterEbo = util::CreateIndexBuffer(
-    m_ctx, m_waterIndices.size() * sizeof(FaceIndex), m_waterIndices.data()
+    m_ctx->CreateVertexBuffer(m_faces.size() * sizeof(Face), m_faces.data());
+  m_indexBuffer =
+    m_ctx->CreateIndexBuffer(m_indices.size() * sizeof(FaceIndex), m_indices.data());
+  m_waterVbo =
+    m_ctx->CreateVertexBuffer(m_waterFaces.size() * sizeof(Face), m_waterFaces.data());
+  m_waterEbo = m_ctx->CreateIndexBuffer(
+    m_waterIndices.size() * sizeof(FaceIndex), m_waterIndices.data()
   );
 }
 

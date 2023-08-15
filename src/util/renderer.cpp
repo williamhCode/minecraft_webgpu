@@ -28,7 +28,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
 
   // init quad buffer
   auto quadVertices = GetQuadVertices();
-  m_quadBuffer = util::CreateVertexBuffer(m_ctx, quadVertices.size() * sizeof(QuadVertex), quadVertices.data());
+  m_quadBuffer = m_ctx->CreateVertexBuffer(quadVertices.size() * sizeof(QuadVertex), quadVertices.data());
 
   Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
   // gbuffer pass -----------------------------------------------------
@@ -142,7 +142,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   // ssao pass ---------------------------------------------------
-  m_ssaoBuffer = util::CreateUniformBuffer(m_ctx, sizeof(m_ssao), &m_ssao);
+  m_ssaoBuffer = m_ctx->CreateUniformBuffer(sizeof(m_ssao), &m_ssao);
 
   // kernel uniform
   std::default_random_engine gen;
@@ -164,7 +164,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
   auto kernelSize = sizeof(glm::vec4) * ssaoKernel.size();
 
-  Buffer kernelBuffer = util::CreateUniformBuffer(m_ctx, kernelSize, ssaoKernel.data());
+  Buffer kernelBuffer = m_ctx->CreateUniformBuffer(kernelSize, ssaoKernel.data());
 
   // noise texture
   std::vector<glm::vec4> ssaoNoise;

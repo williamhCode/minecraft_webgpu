@@ -19,8 +19,7 @@ ChunkManager::ChunkManager(util::Context *ctx, GameState *state)
 
   for (int x = minOffset.x; x <= maxOffset.x; x++) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
-      if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1)
-        continue;
+      if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
       const auto offset = glm::ivec2(x, y);
       auto chunk = new Chunk(m_ctx, this, offset);
       GenChunkData(*chunk);
@@ -47,10 +46,8 @@ void ChunkManager::Update(glm::vec2 position) {
   int gens = 0;
   for (int x = minOffset.x; x <= maxOffset.x; x++) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
-      if (gens >= max_gens)
-        goto exit;
-      if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1)
-        continue;
+      if (gens >= max_gens) goto exit;
+      if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
       const auto offset = glm::ivec2(x, y);
       if (!chunks.contains(offset)) {
         auto chunk = new Chunk(m_ctx, this, offset);
@@ -79,8 +76,7 @@ void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder) {
 
   for (auto &[offset, chunk] : chunks) {
     auto boundingBox = chunk->GetBoundingBox();
-    if (frustum.Intersects(boundingBox))
-      chunk->Render(passEncoder);
+    if (frustum.Intersects(boundingBox)) chunk->Render(passEncoder);
   }
 }
 
@@ -89,8 +85,7 @@ void ChunkManager::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
 
   for (auto &[offset, chunk] : chunks) {
     auto boundingBox = chunk->GetBoundingBox();
-    if (frustum.Intersects(boundingBox))
-      chunk->RenderWater(passEncoder);
+    if (frustum.Intersects(boundingBox)) chunk->RenderWater(passEncoder);
   }
 }
 
