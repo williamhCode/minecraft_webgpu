@@ -32,7 +32,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
 
   Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
   // gbuffer pass -----------------------------------------------------
-  // create textures: position, normal, color
+  // create textures: position (view-space), normal, color
   {
     TextureDescriptor textureDesc{
       .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
@@ -132,7 +132,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     static RenderPassDepthStencilAttachment depthStencilAttachment{
       .view = m_depthTextureView,
       .depthLoadOp = LoadOp::Load,
-      .depthStoreOp = StoreOp::Store,
+      .depthStoreOp = StoreOp::Discard,
     };
     m_waterPassDesc = {
       .colorAttachmentCount = colorAttachments.size(),

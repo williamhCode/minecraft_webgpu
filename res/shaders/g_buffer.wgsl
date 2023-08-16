@@ -47,12 +47,8 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
 
   var out: GBufferOutput;
   out.albedo = vec4f(textureSample(texture, textureSampler, uv).rgb, 1.0);
-  out.position = vec4f(in.fragPos, 0.0);
-  out.normal = vec4f(normalize(in.normal), 0.0);
-
-  if (all(texLoc == vec2f(0.0, 15.0))) {
-    out.albedo.a = 0.6;
-  }
+  out.position = vec4f(in.fragPos, 1.0);
+  out.normal = vec4f(in.normal, 1.0);
 
   return out;
 }

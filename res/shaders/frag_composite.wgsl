@@ -20,24 +20,21 @@ fn blend(src: vec4f, dst: vec4f) -> vec4f {
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0).xyz;
+  let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0);
   let albedo = textureSampleLevel(gBufferAlbedo, gBufferSampler, uv, 0.0).rgb;
   let ambientOcclusion = textureSampleLevel(ssaoTexture, ssaoSampler, uv, 0.0).r;
 
   var waterColor = textureSampleLevel(waterTexture, gBufferSampler, uv, 0.0);
 
-  // let ambient = vec3f(ambientOcclusion, ambientOcclusion, ambientOcclusion);
   let ambient = vec3f(albedo * ambientOcclusion);
 
-  if (all(normal == vec3f(0.0, 0.0, 0.0))) {
-    return vec4f(ambient, 1.0);
+  var color = ambient;
+  if (normal.w == 1.0) {
+    color *= max(0.6, dot(normal.xyz, normalize(vec3f(1.0, 2.0, 3.0))));
   }
 
-  var color = ambient * max(0.6, dot(normal, normalize(vec3f(1.0, 2.0, 3.0))));
-  // var color = ambient;
   var finalColor = vec4f(color, 1.0);
   finalColor = blend(waterColor, finalColor);
-  // finalColor = waterColor;
 
   return finalColor;
 }

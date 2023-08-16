@@ -47,7 +47,7 @@ private:
   wgpu::Buffer m_quadBuffer;
 
   // gbuffer
-  // position, normal, color
+  // position (view-space), normal, color
   std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
   wgpu::RenderPassDescriptor m_gBufferPassDesc;
 

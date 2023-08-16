@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0...3.25)
 project(
-    LearnWebGPU
-    VERSION 0.1.0
-    LANGUAGES CXX C
+  LearnWebGPU
+  VERSION 0.1.0
+  LANGUAGES CXX C
 )
 
 # variables
@@ -76,15 +76,15 @@ set_target_properties(App PROPERTIES
 # DAWN_DEBUG_BREAK_ON_ERROR
 
 if (MSVC)
-    target_compile_options(App PRIVATE /W4)
+  target_compile_options(App PRIVATE /W4)
 else()
-    target_compile_options(App PRIVATE -Wall -Wextra -pedantic)
+  target_compile_options(App PRIVATE -Wall -Wextra -pedantic)
 endif()
 
 if(XCODE)
-    set_target_properties(App PROPERTIES
-        XCODE_GENERATE_SCHEME ON
-        XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
-    )
-    set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
+  set_target_properties(App PROPERTIES
+      XCODE_GENERATE_SCHEME ON
+      XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
+  )
+  set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
 endif()

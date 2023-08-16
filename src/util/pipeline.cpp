@@ -143,24 +143,10 @@ Pipeline::Pipeline(Context &ctx) {
       .depthCompare = CompareFunction::Less,
     };
 
-    BlendState blend{
-      .color = BlendComponent{
-        .operation = BlendOperation::Add,
-        .srcFactor = BlendFactor::One,
-        .dstFactor = BlendFactor::Zero,
-      },
-      .alpha{
-        .operation = BlendOperation::Add,
-        .srcFactor = BlendFactor::One,
-        .dstFactor = BlendFactor::Zero,
-      },
-    };
-
     // Fragment State
     std::vector<ColorTargetState> targets{
       ColorTargetState{
         .format = TextureFormat::BGRA8Unorm,
-        .blend = &blend,
       },
     };
     FragmentState fragmentState{
@@ -181,7 +167,7 @@ Pipeline::Pipeline(Context &ctx) {
     waterRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
   }
 
-  // ssao pipeline -------------------------------------------------
+  // g_buffer pipeline -------------------------------------------------
   ShaderModule shaderGBuffer =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", ctx.device);
 

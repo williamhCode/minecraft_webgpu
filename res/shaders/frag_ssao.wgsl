@@ -25,11 +25,11 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
   }
 
   // get input for SSAO algorithm
-  let fragPos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0).xyz;
-  if (fragPos.x == 0.0) {
+  let fragPos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
+  if (fragPos.w == 0.0) {
     return 1.0;
   }
-  let fragWorldPos = (inverseView * vec4f(fragPos, 1.0)).xyz;
+  let fragWorldPos = (inverseView * fragPos).xyz;
   let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0).xyz;
   let noiseScale = vec2f(textureDimensions(gBufferPosition)) / 4.0;
   let randomVec = textureSampleLevel(noiseTexture, noiseSampler, uv * noiseScale, 0.0).xyz;
