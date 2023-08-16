@@ -211,11 +211,6 @@ Pipeline::Pipeline(Context &ctx) {
         .srcFactor = BlendFactor::SrcAlpha,
         .dstFactor = BlendFactor::OneMinusSrcAlpha,
       },
-      .alpha{
-        .operation = BlendOperation::Add,
-        .srcFactor = BlendFactor::Zero,
-        .dstFactor = BlendFactor::One,
-      },
     };
     // Fragment State
     std::vector<ColorTargetState> targets{

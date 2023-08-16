@@ -1,7 +1,6 @@
 #include "game.hpp"
 #include "renderer.hpp"
 #include "game/block.hpp"
-#include <cfloat>
 #include <iostream>
 #include <ostream>
 #include <random>
@@ -10,6 +9,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_wgpu.h"
+#include "util/context.hpp"
 #include "util/webgpu-util.hpp"
 
 namespace util {
@@ -28,49 +28,22 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
 
   // init quad buffer
   auto quadVertices = GetQuadVertices();
-  m_quadBuffer = m_ctx->CreateVertexBuffer(quadVertices.size() * sizeof(QuadVertex), quadVertices.data());
+  m_quadBuffer = m_ctx->CreateVertexBuffer(
+    quadVertices.size() * sizeof(QuadVertex), quadVertices.data()
+  );
 
   Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
   // gbuffer pass -----------------------------------------------------
   // create textures: position (view-space), normal, color
-  {
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
-      .size = textureSize,
-      .format = TextureFormat::RGBA16Float,
-    };
-    Texture positionTexture = m_ctx->device.CreateTexture(&textureDesc);
-    m_gBufferTextureViews[0] = positionTexture.CreateView();
-  }
-  {
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
-      .size = textureSize,
-      .format = TextureFormat::RGBA16Float,
-    };
-    Texture normalTexture = m_ctx->device.CreateTexture(&textureDesc);
-    m_gBufferTextureViews[1] = normalTexture.CreateView();
-  }
-  {
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
-      .size = textureSize,
-      .format = TextureFormat::BGRA8Unorm,
-    };
-    Texture colorTexture = m_ctx->device.CreateTexture(&textureDesc);
-    m_gBufferTextureViews[2] = colorTexture.CreateView();
-  }
+  m_gBufferTextureViews[0] =
+    m_ctx->CreateRenderTexture(textureSize, TextureFormat::RGBA16Float).CreateView();
+  m_gBufferTextureViews[1] =
+    m_ctx->CreateRenderTexture(textureSize, TextureFormat::RGBA16Float).CreateView();
+  m_gBufferTextureViews[2] =
+    m_ctx->CreateRenderTexture(textureSize, TextureFormat::BGRA8Unorm).CreateView();
 
   // create depth texture
-  {
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::RenderAttachment,
-      .size = textureSize,
-      .format = m_ctx->depthFormat,
-    };
-    Texture depthTexture = m_ctx->device.CreateTexture(&textureDesc);
-    m_depthTextureView = depthTexture.CreateView();
-  }
+  m_depthTextureView = m_ctx->CreateDepthTexture(textureSize).CreateView();
 
   // pass desc
   {
@@ -108,16 +81,8 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   // water pass ---------------------------------------------------
-  TextureView waterTextureView;
-  {
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
-      .size = textureSize,
-      .format = TextureFormat::BGRA8Unorm,
-    };
-    Texture waterTexture = m_ctx->device.CreateTexture(&textureDesc);
-    waterTextureView = waterTexture.CreateView();
-  }
+  TextureView waterTextureView =
+    m_ctx->CreateRenderTexture(textureSize, TextureFormat::BGRA8Unorm).CreateView();
 
   // pass desc
   {
@@ -178,52 +143,31 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     ssaoNoise.push_back({noise, 0.0});
   }
 
-  TextureView noiseTextureView;
-  {
-    Extent3D size{4, 4, 1};
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::CopyDst | TextureUsage::TextureBinding,
-      .size = size,
-      .format = TextureFormat::RGBA16Float,
-    };
-    Texture noiseTexture = m_ctx->device.CreateTexture(&textureDesc);
-
-    ImageCopyTexture destination{
-      .texture = noiseTexture,
-    };
-    TextureDataLayout source{
-      .bytesPerRow = static_cast<uint32_t>(sizeof(glm::vec4)) * size.width,
-      .rowsPerImage = size.height,
-    };
-    m_ctx->queue.WriteTexture(
-      &destination, ssaoNoise.data(), sizeof(glm::vec4) * ssaoNoise.size(), &source,
-      &size
-    );
-
-    noiseTextureView = noiseTexture.CreateView();
-  }
+  TextureView noiseTextureView =
+    m_ctx->CreateTexture({4, 4, 1}, TextureFormat::RGBA16Float, ssaoNoise.data())
+      .CreateView();
 
   // samplers
-  Sampler nearestClampSampler;
-  {
-    SamplerDescriptor samplerDesc{
+  Sampler nearestClampSampler =
+    SET(
+      SamplerDescriptor samplerDesc{
       .addressModeU = AddressMode::ClampToEdge,
       .addressModeV = AddressMode::ClampToEdge,
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
     };
-    nearestClampSampler = m_ctx->device.CreateSampler(&samplerDesc);
-  }
-  Sampler noiseSampler;
-  {
-    SamplerDescriptor samplerDesc{
+    return m_ctx->device.CreateSampler(&samplerDesc);
+  );
+
+  Sampler noiseSampler = SET(
+      SamplerDescriptor samplerDesc{
       .addressModeU = AddressMode::Repeat,
       .addressModeV = AddressMode::Repeat,
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
     };
-    noiseSampler = m_ctx->device.CreateSampler(&samplerDesc);
-  }
+    return m_ctx->device.CreateSampler(&samplerDesc);
+  );
 
   // gbuffer bind group
   {
@@ -286,13 +230,8 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   // ssao render textures, pre-blur and blurred
   std::array<wgpu::TextureView, 2> ssaoTextureViews;
   for (size_t i = 0; i < ssaoTextureViews.size(); i++) {
-    TextureDescriptor textureDesc{
-      .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
-      .size = textureSize,
-      .format = TextureFormat::R8Unorm,
-    };
-    Texture ssaoTexture = m_ctx->device.CreateTexture(&textureDesc);
-    ssaoTextureViews[i] = ssaoTexture.CreateView();
+    ssaoTextureViews[i] =
+      m_ctx->CreateRenderTexture(textureSize, TextureFormat::R8Unorm).CreateView();
   }
 
   // pass desc

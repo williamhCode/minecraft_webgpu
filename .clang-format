@@ -3,6 +3,7 @@ Language:        Cpp
 ColumnLimit:     88
 # AlignAfterOpenBracket: AlwaysBreak
 AlignAfterOpenBracket: BlockIndent
+# IndentWidth: 2
 ContinuationIndentWidth: 2
 SortIncludes: false
 
@@ -10,5 +11,7 @@ SortIncludes: false
 BinPackParameters: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: WithoutElse
+WhitespaceSensitiveMacros:
+  - SET
 ...
 

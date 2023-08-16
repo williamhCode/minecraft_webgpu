@@ -16,4 +16,6 @@ void SetUncapturedErrorCallback(wgpu::Device &device);
 
 wgpu::ShaderModule LoadShaderModule(const fs::path &path, wgpu::Device &device);
 
+#define SET(...) [&] { __VA_ARGS__ }()
+
 } // namespace util

@@ -67,7 +67,10 @@ target_compile_definitions(App PRIVATE
   GLM_FORCE_XYZW_ONLY
 )
 
-target_link_libraries(App PRIVATE glfw webgpu dawn_glfw dawncpp glm tinyobjloader stb)
+target_link_libraries(App PRIVATE 
+  glfw webgpu glm tinyobjloader stb
+  dawn_glfw dawncpp dawn_utils
+)
 
 set_target_properties(App PROPERTIES
   CXX_STANDARD 20
@@ -79,6 +82,8 @@ if (MSVC)
   target_compile_options(App PRIVATE /W4)
 else()
   target_compile_options(App PRIVATE -Wall -Wextra -pedantic)
+  # assert in release
+  target_compile_options(App PRIVATE -UNDEBUG)
 endif()
 
 if(XCODE)

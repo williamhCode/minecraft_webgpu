@@ -19,6 +19,7 @@ Texture LoadTexture(Context &ctx, std::filesystem::path path) {
     stbi_load(path.string().c_str(), &width, &height, &channels, 4);
 
   Extent3D size{static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
+  
   TextureDescriptor textureDesc{
     .usage = TextureUsage::TextureBinding | TextureUsage::CopyDst,
     .dimension = TextureDimension::e2D,
