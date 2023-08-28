@@ -17,10 +17,10 @@ constexpr int WATER_LEVEL = 64;
 void GenChunkData(Chunk &chunk) {
   auto &data = chunk.GetBlockIdData();
 
-  static const siv::PerlinNoise::seed_type seed = 4;
-  // static const siv::PerlinNoise perlin{seed};
+  // static const siv::PerlinNoise::seed_type seed = 4;
 
-  static const siv::PerlinNoise biomeNoise{seed};
+  static const siv::PerlinNoise biomeNoise{4};
+  static const siv::PerlinNoise topLayerNoise{10};
 
   auto worldOffset = chunk.GetOffsetPos();
   for (int x = 0; x < Chunk::SIZE.x; x++) {
@@ -30,6 +30,9 @@ void GenChunkData(Chunk &chunk) {
       float spread = 150.0;
       int height =
         28 + biomeNoise.octave2D_01(xyWorld.x / spread, xyWorld.y / spread, 4) * 100;
+      int topDepth =
+        2 + topLayerNoise.octave2D_01(xyWorld.x / 10.0, xyWorld.y / 10.0, 4) * 6;
+      int topHeight = height - topDepth;
 
       Biome biome;
       if (height < WATER_LEVEL) {
@@ -41,15 +44,18 @@ void GenChunkData(Chunk &chunk) {
       }
 
       BlockId topBlock;
+      BlockId centerBlock = Stone;
       switch (biome) {
       case Ocean:
         topBlock = Stone;
         break;
       case Beach:
         topBlock = Sand;
+        centerBlock = Sand;
         break;
       case Plains:
         topBlock = Grass;
+        centerBlock = Dirt;
         break;
       }
 
@@ -58,7 +64,11 @@ void GenChunkData(Chunk &chunk) {
 
         if (z > height && z <= WATER_LEVEL) {
           data[index] = BlockId::Water;
-        } else if (z <= height) {
+        } else if (z <= topHeight) {
+          data[index] = BlockId::Stone;
+        } else if (z <= height - 1) {
+          data[index] = centerBlock;
+        } else if (z == height) {
           data[index] = topBlock;
         } else {
           data[index] = BlockId::Air;

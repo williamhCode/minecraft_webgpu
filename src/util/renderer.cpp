@@ -1,3 +1,4 @@
+#include "dawn/utils/WGPUHelpers.h"
 #include "game.hpp"
 #include "renderer.hpp"
 #include "game/block.hpp"
@@ -28,86 +29,55 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
 
   // init quad buffer
   auto quadVertices = GetQuadVertices();
-  m_quadBuffer = m_ctx->CreateVertexBuffer(
-    quadVertices.size() * sizeof(QuadVertex), quadVertices.data()
+  m_quadBuffer = util::CreateVertexBuffer(
+    m_ctx->device, quadVertices.size() * sizeof(QuadVertex), quadVertices.data()
   );
 
   Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
   // gbuffer pass -----------------------------------------------------
   // create textures: position (view-space), normal, color
   m_gBufferTextureViews[0] =
-    m_ctx->CreateRenderTexture(textureSize, TextureFormat::RGBA16Float).CreateView();
+    util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::RGBA16Float)
+      .CreateView();
   m_gBufferTextureViews[1] =
-    m_ctx->CreateRenderTexture(textureSize, TextureFormat::RGBA16Float).CreateView();
+    util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::RGBA16Float)
+      .CreateView();
   m_gBufferTextureViews[2] =
-    m_ctx->CreateRenderTexture(textureSize, TextureFormat::BGRA8Unorm).CreateView();
+    util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::BGRA8Unorm)
+      .CreateView();
 
   // create depth texture
-  m_depthTextureView = m_ctx->CreateDepthTexture(textureSize).CreateView();
+  m_depthTextureView =
+    util::CreateRenderTexture(m_ctx->device, textureSize, m_ctx->depthFormat)
+      .CreateView();
 
   // pass desc
-  {
-    static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
-      RenderPassColorAttachment{
-        .view = m_gBufferTextureViews[0],
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, -10000, 0.0},
-      },
-      RenderPassColorAttachment{
-        .view = m_gBufferTextureViews[1],
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 0.0},
-      },
-      RenderPassColorAttachment{
-        .view = m_gBufferTextureViews[2],
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.5, 0.8, 0.9, 1.0},
-      },
-    };
-    static RenderPassDepthStencilAttachment depthStencilAttachment{
-      .view = m_depthTextureView,
-      .depthLoadOp = LoadOp::Clear,
-      .depthStoreOp = StoreOp::Store,
-      .depthClearValue = 1.0f,
-    };
-    m_gBufferPassDesc = {
-      .colorAttachmentCount = colorAttachments.size(),
-      .colorAttachments = colorAttachments.data(),
-      .depthStencilAttachment = &depthStencilAttachment,
-    };
-  }
+  m_gBufferPassDesc = dawn::utils::ComboRenderPassDescriptor(
+    {
+      m_gBufferTextureViews[0],
+      m_gBufferTextureViews[1],
+      m_gBufferTextureViews[2],
+    },
+    m_depthTextureView
+  );
+  m_gBufferPassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
+  m_gBufferPassDesc.cColorAttachments[0].clearValue = {0.0, 0.0, -10000, 0.0};
+  m_gBufferPassDesc.cColorAttachments[2].clearValue = {0.5, 0.8, 0.9, 1.0};
 
   // water pass ---------------------------------------------------
   TextureView waterTextureView =
-    m_ctx->CreateRenderTexture(textureSize, TextureFormat::BGRA8Unorm).CreateView();
+    util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::BGRA8Unorm)
+      .CreateView();
 
   // pass desc
-  {
-    static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
-      RenderPassColorAttachment{
-        .view = waterTextureView,
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 0.0},
-      },
-    };
-    static RenderPassDepthStencilAttachment depthStencilAttachment{
-      .view = m_depthTextureView,
-      .depthLoadOp = LoadOp::Load,
-      .depthStoreOp = StoreOp::Discard,
-    };
-    m_waterPassDesc = {
-      .colorAttachmentCount = colorAttachments.size(),
-      .colorAttachments = colorAttachments.data(),
-      .depthStencilAttachment = &depthStencilAttachment,
-    };
-  }
+  m_waterPassDesc =
+    dawn::utils::ComboRenderPassDescriptor({waterTextureView}, m_depthTextureView);
+  m_waterPassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
+  m_waterPassDesc.cDepthStencilAttachmentInfo.depthLoadOp = LoadOp::Load;
+  m_waterPassDesc.cDepthStencilAttachmentInfo.depthStoreOp = StoreOp::Discard;
 
   // ssao pass ---------------------------------------------------
-  m_ssaoBuffer = m_ctx->CreateUniformBuffer(sizeof(m_ssao), &m_ssao);
+  m_ssaoBuffer = util::CreateUniformBuffer(m_ctx->device, sizeof(m_ssao), &m_ssao);
 
   // kernel uniform
   std::default_random_engine gen;
@@ -129,14 +99,12 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
   auto kernelSize = sizeof(glm::vec4) * ssaoKernel.size();
 
-  Buffer kernelBuffer = m_ctx->CreateUniformBuffer(kernelSize, ssaoKernel.data());
+  Buffer kernelBuffer =
+    util::CreateUniformBuffer(m_ctx->device, kernelSize, ssaoKernel.data());
 
   // noise texture
   std::vector<glm::vec4> ssaoNoise;
   for (unsigned int i = 0; i < 16; i++) {
-    // auto noise = glm::normalize(
-    //   glm::vec3(randomFloats(gen) * 2.0 - 1.0, randomFloats(gen) * 2.0 - 1.0, 0.0)
-    // );
     glm::mat3 rmat =
       glm::rotate(randomFloats(gen) * glm::pi<float>() * 2.0f, glm::vec3(0, 0, 1));
     glm::vec3 noise = rmat * glm::vec3(1, 0, 0);
@@ -144,94 +112,58 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   TextureView noiseTextureView =
-    m_ctx->CreateTexture({4, 4, 1}, TextureFormat::RGBA16Float, ssaoNoise.data())
+    util::CreateTexture(
+      m_ctx->device, {4, 4, 1}, TextureFormat::RGBA16Float, ssaoNoise.data()
+    )
       .CreateView();
 
   // samplers
-  Sampler nearestClampSampler =
-    SET(
-      SamplerDescriptor samplerDesc{
+  Sampler nearestClampSampler = ({
+    SamplerDescriptor samplerDesc{
       .addressModeU = AddressMode::ClampToEdge,
       .addressModeV = AddressMode::ClampToEdge,
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
     };
-    return m_ctx->device.CreateSampler(&samplerDesc);
-  );
+    m_ctx->device.CreateSampler(&samplerDesc);
+  });
 
-  Sampler noiseSampler = SET(
-      SamplerDescriptor samplerDesc{
+  Sampler noiseSampler = ({
+    SamplerDescriptor samplerDesc{
       .addressModeU = AddressMode::Repeat,
       .addressModeV = AddressMode::Repeat,
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
     };
-    return m_ctx->device.CreateSampler(&samplerDesc);
+    m_ctx->device.CreateSampler(&samplerDesc);
+  });
+
+  m_gBufferBindGroup = dawn::utils::MakeBindGroup(
+    m_ctx->device, m_ctx->pipeline.gBufferBGL,
+    {
+      {0, m_gBufferTextureViews[0]},
+      {1, m_gBufferTextureViews[1]},
+      {2, m_gBufferTextureViews[2]},
+      {3, nearestClampSampler},
+    }
   );
 
-  // gbuffer bind group
-  {
-    std::vector<BindGroupEntry> entries{
-      BindGroupEntry{
-        .binding = 0,
-        .textureView = m_gBufferTextureViews[0],
-      },
-      BindGroupEntry{
-        .binding = 1,
-        .textureView = m_gBufferTextureViews[1],
-      },
-      BindGroupEntry{
-        .binding = 2,
-        .textureView = m_gBufferTextureViews[2],
-      },
-      BindGroupEntry{
-        .binding = 3,
-        .sampler = nearestClampSampler,
-      },
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.gBufferBGL,
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    m_gBufferBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
-  }
-
-  // ssao sampling bind group
-  {
-    std::vector<BindGroupEntry> entries{
-      BindGroupEntry{
-        .binding = 0,
-        .buffer = kernelBuffer,
-        .size = kernelSize,
-      },
-      BindGroupEntry{
-        .binding = 1,
-        .textureView = noiseTextureView,
-      },
-      BindGroupEntry{
-        .binding = 2,
-        .sampler = noiseSampler,
-      },
-      BindGroupEntry{
-        .binding = 3,
-        .buffer = m_ssaoBuffer,
-        .size = sizeof(SSAO),
-      },
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.ssaoSamplingBGL,
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    m_ssaoSamplingBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
-  }
+  m_ssaoSamplingBindGroup = dawn::utils::MakeBindGroup(
+    m_ctx->device, m_ctx->pipeline.ssaoSamplingBGL,
+    {
+      {0, kernelBuffer},
+      {1, noiseTextureView},
+      {2, noiseSampler},
+      {3, m_ssaoBuffer},
+    }
+  );
 
   // ssao render textures, pre-blur and blurred
   std::array<wgpu::TextureView, 2> ssaoTextureViews;
   for (size_t i = 0; i < ssaoTextureViews.size(); i++) {
     ssaoTextureViews[i] =
-      m_ctx->CreateRenderTexture(textureSize, TextureFormat::R8Unorm).CreateView();
+      util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::R8Unorm)
+        .CreateView();
   }
 
   // pass desc
@@ -253,22 +185,13 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   // blur pass ---------------------------------------------------
   // ssao texture bindgroups
   for (size_t i = 0; i < m_ssaoTextureBindGroups.size(); i++) {
-    std::vector<BindGroupEntry> entries{
-      BindGroupEntry{
-        .binding = 0,
-        .textureView = ssaoTextureViews[i],
-      },
-      BindGroupEntry{
-        .binding = 1,
-        .sampler = nearestClampSampler,
-      },
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.ssaoTextureBGL,
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    m_ssaoTextureBindGroups[i] = m_ctx->device.CreateBindGroup(&bindGroupDesc);
+    m_ssaoTextureBindGroups[i] = dawn::utils::MakeBindGroup(
+      ctx->device, m_ctx->pipeline.ssaoTextureBGL,
+      {
+        {0, ssaoTextureViews[i]},
+        {1, nearestClampSampler},
+      }
+    );
   }
 
   {
@@ -287,21 +210,9 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   // composite pass ---------------------------------------------------
-  // water texture bindgroup
-  {
-    std::vector<BindGroupEntry> entries{
-      BindGroupEntry{
-        .binding = 0,
-        .textureView = waterTextureView,
-      },
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.waterTextureBGL,
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    m_waterTextureBindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
-  }
+  m_waterTextureBindGroup = dawn::utils::MakeBindGroup(
+    m_ctx->device, m_ctx->pipeline.waterTextureBGL, {{0, waterTextureView}}
+  );
 
   {
     m_compositePassDesc = {

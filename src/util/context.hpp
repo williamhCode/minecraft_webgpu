@@ -26,18 +26,6 @@ struct Context {
 
   Context() = default;
   Context(GLFWwindow *window, glm::uvec2 size);
-
-  wgpu::Buffer
-  CreateBuffer(wgpu::BufferUsage usage, size_t size, const void *data = nullptr);
-  wgpu::Buffer CreateVertexBuffer(size_t size, const void *data = nullptr);
-  wgpu::Buffer CreateIndexBuffer(size_t size, const void *data = nullptr);
-  wgpu::Buffer CreateUniformBuffer(size_t size, const void *data = nullptr);
-
-  wgpu::Texture CreateTexture(
-    wgpu::Extent3D size, wgpu::TextureFormat format, const void *data = nullptr
-  );
-  wgpu::Texture CreateRenderTexture(wgpu::Extent3D size, wgpu::TextureFormat format);
-  wgpu::Texture CreateDepthTexture(wgpu::Extent3D size);
 };
 
 } // namespace util

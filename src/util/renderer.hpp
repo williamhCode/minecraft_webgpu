@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dawn/utils/WGPUHelpers.h"
 #include "glm/ext/vector_uint2.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "webgpu/webgpu_cpp.h"
@@ -49,10 +50,10 @@ private:
   // gbuffer
   // position (view-space), normal, color
   std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
-  wgpu::RenderPassDescriptor m_gBufferPassDesc;
+  dawn::utils::ComboRenderPassDescriptor m_gBufferPassDesc;
 
   // water
-  wgpu::RenderPassDescriptor m_waterPassDesc;
+  dawn::utils::ComboRenderPassDescriptor m_waterPassDesc;
 
   // ssao
   SSAO m_ssao;

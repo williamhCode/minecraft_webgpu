@@ -55,7 +55,7 @@ Game::Game() {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   // disable high-dpi for macOS
-  glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+  // glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 
   m_state.size = {1100, 800};
   m_window =
@@ -134,18 +134,12 @@ Game::Game() {
     // update --------------------------------------------------------
     if (m_state.focused) {
       glm::vec3 moveDir(0);
-      if (KeyPressed(GLFW_KEY_W))
-        moveDir.x += 1;
-      if (KeyPressed(GLFW_KEY_S))
-        moveDir.x -= 1;
-      if (KeyPressed(GLFW_KEY_A))
-        moveDir.y += 1;
-      if (KeyPressed(GLFW_KEY_D))
-        moveDir.y -= 1;
-      if (KeyPressed(GLFW_KEY_SPACE))
-        moveDir.z += 1;
-      if (KeyPressed(GLFW_KEY_LEFT_SHIFT))
-        moveDir.z -= 1;
+      if (KeyPressed(GLFW_KEY_W)) moveDir.x += 1;
+      if (KeyPressed(GLFW_KEY_S)) moveDir.x -= 1;
+      if (KeyPressed(GLFW_KEY_A)) moveDir.y += 1;
+      if (KeyPressed(GLFW_KEY_D)) moveDir.y -= 1;
+      if (KeyPressed(GLFW_KEY_SPACE)) moveDir.z += 1;
+      if (KeyPressed(GLFW_KEY_LEFT_SHIFT)) moveDir.z -= 1;
       m_state.player.Move(moveDir * m_state.dt);
     }
     m_state.player.Update();
@@ -191,8 +185,7 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
 }
 
 void Game::MouseButtonCallback(int button, int action, int mods) {
-  if (!m_state.focused)
-    return;
+  if (!m_state.focused) return;
 
   if (action == GLFW_PRESS) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -222,8 +215,7 @@ void Game::CursorPosCallback(double xpos, double ypos) {
   glm::vec2 currMousePos(xpos, ypos);
   glm::vec2 delta = currMousePos - m_lastMousePos;
   m_lastMousePos = currMousePos;
-  if (!m_state.focused)
-    return;
+  if (!m_state.focused) return;
   m_state.player.Look(delta * 0.003f);
 }
 

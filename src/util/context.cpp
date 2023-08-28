@@ -24,7 +24,9 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
 
   // adapter
   RequestAdapterOptions adapterOpts{
-    .powerPreference = PowerPreference::HighPerformance};
+    .compatibleSurface = surface,
+    .powerPreference = PowerPreference::HighPerformance,
+  };
   adapter = util::RequestAdapter(instance, &adapterOpts);
 
   // device limits
@@ -60,73 +62,6 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
   swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 
   pipeline = Pipeline(*this);
-}
-
-wgpu::Buffer
-Context::CreateBuffer(wgpu::BufferUsage usage, size_t size, const void *data) {
-  BufferDescriptor bufferDesc{
-    .usage = BufferUsage::CopyDst | usage,
-    .size = size,
-  };
-  Buffer buffer = device.CreateBuffer(&bufferDesc);
-  if (data) queue.WriteBuffer(buffer, 0, data, size);
-  return buffer;
-}
-
-wgpu::Buffer Context::CreateVertexBuffer(size_t size, const void *data) {
-  return CreateBuffer(BufferUsage::Vertex, size, data);
-}
-
-wgpu::Buffer Context::CreateIndexBuffer(size_t size, const void *data) {
-  return CreateBuffer(BufferUsage::Index, size, data);
-}
-
-wgpu::Buffer Context::CreateUniformBuffer(size_t size, const void *data) {
-  return CreateBuffer(BufferUsage::Uniform, size, data);
-}
-
-wgpu::Texture Context::CreateTexture(
-  wgpu::Extent3D size, wgpu::TextureFormat format, const void *data
-) {
-  TextureDescriptor textureDesc{
-    .usage = TextureUsage::TextureBinding | TextureUsage::CopyDst,
-    .size = size,
-    .format = format,
-  };
-  Texture texture = device.CreateTexture(&textureDesc);
-  if (data) {
-    auto texelBlockSize = dawn::utils::GetTexelBlockSizeInBytes(format);
-    ImageCopyTexture destination{
-      .texture = texture,
-    };
-    TextureDataLayout dataLayout{
-      .bytesPerRow = size.width * texelBlockSize,
-      .rowsPerImage = size.height,
-    };
-    queue.WriteTexture(
-      &destination, data, size.width * size.height * texelBlockSize, &dataLayout, &size
-    );
-  }
-  return texture;
-}
-
-wgpu::Texture
-Context::CreateRenderTexture(wgpu::Extent3D size, wgpu::TextureFormat format) {
-  TextureDescriptor textureDesc{
-    .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
-    .size = size,
-    .format = format,
-  };
-  return device.CreateTexture(&textureDesc);
-}
-
-wgpu::Texture Context::CreateDepthTexture(wgpu::Extent3D size) {
-  TextureDescriptor textureDesc{
-    .usage = TextureUsage::RenderAttachment,
-    .size = size,
-    .format = depthFormat,
-  };
-  return device.CreateTexture(&textureDesc);
 }
 
 } // namespace util

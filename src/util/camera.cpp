@@ -1,4 +1,6 @@
 #include "camera.hpp"
+#include "util/webgpu-util.hpp"
+#include "dawn/utils/WGPUHelpers.h"
 #include <algorithm>
 #include <vector>
 
@@ -18,35 +20,18 @@ Camera::Camera(
     : m_ctx(ctx), position(position), orientation(orientation), fov(fov) {
   // create bind group
   size_t size = sizeof(glm::mat4);
-  m_viewBuffer = ctx->CreateUniformBuffer(size);
-  m_projectionBuffer = ctx->CreateUniformBuffer(size);
-  m_inverseViewBuffer = ctx->CreateUniformBuffer(size);
+  m_viewBuffer = util::CreateUniformBuffer(m_ctx->device, size);
+  m_projectionBuffer = util::CreateUniformBuffer(m_ctx->device, size);
+  m_inverseViewBuffer = util::CreateUniformBuffer(m_ctx->device, size);
 
-  {
-    std::vector<BindGroupEntry> entries{
-      BindGroupEntry{
-        .binding = 0,
-        .buffer = m_viewBuffer,
-        .size = sizeof(glm::mat4),
-      },
-      BindGroupEntry{
-        .binding = 1,
-        .buffer = m_projectionBuffer,
-        .size = sizeof(glm::mat4),
-      },
-      BindGroupEntry{
-        .binding = 2,
-        .buffer = m_inverseViewBuffer,
-        .size = sizeof(glm::mat4),
-      },
-    };
-    BindGroupDescriptor bindGroupDesc{
-      .layout = m_ctx->pipeline.viewProjBGL,
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    bindGroup = m_ctx->device.CreateBindGroup(&bindGroupDesc);
-  }
+  bindGroup = dawn::utils::MakeBindGroup(
+    ctx->device, ctx->pipeline.viewProjBGL,
+    {
+      {0, m_viewBuffer},
+      {1, m_projectionBuffer},
+      {2, m_inverseViewBuffer},
+    }
+  );
 
   m_projection = glm::perspective(fov, aspect, near, far);
   m_ctx->queue.WriteBuffer(m_projectionBuffer, 0, &m_projection, sizeof(m_projection));

@@ -1,4 +1,5 @@
 #include "webgpu-util.hpp"
+#include "dawn/utils/WGPUHelpers.h"
 #include "util/context.hpp"
 #include <iostream>
 #include <map>
@@ -84,11 +85,70 @@ ShaderModule LoadShaderModule(const fs::path &path, Device &device) {
   file.seekg(0);
   file.read(shaderSource.data(), size);
 
-  ShaderModuleWGSLDescriptor shaderCodeDesc{};
-  shaderCodeDesc.nextInChain = nullptr;
-  shaderCodeDesc.code = shaderSource.c_str();
-  ShaderModuleDescriptor shaderDesc{.nextInChain = &shaderCodeDesc};
-  return device.CreateShaderModule(&shaderDesc);
+  return dawn::utils::CreateShaderModule(device, shaderSource.c_str());
+}
+
+wgpu::Buffer CreateBuffer(
+  wgpu::Device &device, wgpu::BufferUsage usage, size_t size, const void *data
+) {
+  BufferDescriptor bufferDesc{
+    .usage = BufferUsage::CopyDst | usage,
+    .size = size,
+  };
+  Buffer buffer = device.CreateBuffer(&bufferDesc);
+  if (data) device.GetQueue().WriteBuffer(buffer, 0, data, size);
+  return buffer;
+}
+
+wgpu::Buffer CreateVertexBuffer(wgpu::Device &device, size_t size, const void *data) {
+  return CreateBuffer(device, BufferUsage::Vertex, size, data);
+}
+
+wgpu::Buffer CreateIndexBuffer(wgpu::Device &device, size_t size, const void *data) {
+  return CreateBuffer(device, BufferUsage::Index, size, data);
+}
+
+wgpu::Buffer CreateUniformBuffer(wgpu::Device &device, size_t size, const void *data) {
+  return CreateBuffer(device, BufferUsage::Uniform, size, data);
+}
+
+wgpu::Texture CreateTexture(
+  wgpu::Device &device,
+  wgpu::Extent3D size,
+  wgpu::TextureFormat format,
+  const void *data
+) {
+  TextureDescriptor textureDesc{
+    .usage = TextureUsage::TextureBinding | TextureUsage::CopyDst,
+    .size = size,
+    .format = format,
+  };
+  Texture texture = device.CreateTexture(&textureDesc);
+  if (data) {
+    auto texelBlockSize = dawn::utils::GetTexelBlockSizeInBytes(format);
+    ImageCopyTexture destination{
+      .texture = texture,
+    };
+    TextureDataLayout dataLayout{
+      .bytesPerRow = size.width * texelBlockSize,
+      .rowsPerImage = size.height,
+    };
+    device.GetQueue().WriteTexture(
+      &destination, data, size.width * size.height * texelBlockSize, &dataLayout, &size
+    );
+  }
+  return texture;
+}
+
+wgpu::Texture CreateRenderTexture(
+  wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format
+) {
+  TextureDescriptor textureDesc{
+    .usage = TextureUsage::RenderAttachment | TextureUsage::TextureBinding,
+    .size = size,
+    .format = format,
+  };
+  return device.CreateTexture(&textureDesc);
 }
 
 } // namespace util

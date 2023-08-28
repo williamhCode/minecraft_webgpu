@@ -81,7 +81,7 @@ set_target_properties(App PROPERTIES
 if (MSVC)
   target_compile_options(App PRIVATE /W4)
 else()
-  target_compile_options(App PRIVATE -Wall -Wextra -pedantic)
+  target_compile_options(App PRIVATE -Wall -Wextra -pedantic -Wno-gnu-statement-expression)
   # assert in release
   target_compile_options(App PRIVATE -UNDEBUG)
 endif()

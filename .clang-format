@@ -11,7 +11,6 @@ SortIncludes: false
 BinPackParameters: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: WithoutElse
-WhitespaceSensitiveMacros:
-  - SET
+PenaltyReturnTypeOnItsOwnLine: 10000
 ...
 

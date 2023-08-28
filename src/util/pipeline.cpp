@@ -1,4 +1,5 @@
 #include "pipeline.hpp"
+#include "dawn/utils/WGPUHelpers.h"
 #include "util/context.hpp"
 #include "util/renderer.hpp"
 #include "util/webgpu-util.hpp"
@@ -16,110 +17,49 @@ Pipeline::Pipeline(Context &ctx) {
   // chunk vbo layout
   VertexBufferLayout chunkVBL;
   {
-    static std::vector<VertexAttribute> vertexAttributes = {
-      VertexAttribute{
-        .format = VertexFormat::Float32x3,
-        .offset = offsetof(Vertex, position),
-        .shaderLocation = 0,
-      },
-      VertexAttribute{
-        .format = VertexFormat::Float32x3,
-        .offset = offsetof(Vertex, normal),
-        .shaderLocation = 1,
-      },
-      VertexAttribute{
-        .format = VertexFormat::Float32x2,
-        .offset = offsetof(Vertex, uv),
-        .shaderLocation = 2,
-      },
-      VertexAttribute{
-        .format = VertexFormat::Uint32,
-        .offset = offsetof(Vertex, extraData),
-        .shaderLocation = 3,
-      },
+    static std::vector<VertexAttribute> vertexAttributes{
+      {VertexFormat::Float32x3, offsetof(Vertex, position), 0},
+      {VertexFormat::Float32x3, offsetof(Vertex, normal), 1},
+      {VertexFormat::Float32x2, offsetof(Vertex, uv), 2},
+      {VertexFormat::Uint32, offsetof(Vertex, extraData), 3},
     };
     chunkVBL = {
       .arrayStride = sizeof(Vertex),
-      .stepMode = VertexStepMode::Vertex,
       .attributeCount = vertexAttributes.size(),
       .attributes = vertexAttributes.data(),
     };
   }
 
   // view, projection layout
-  {
-    std::vector<BindGroupLayoutEntry> entries{
-      BindGroupLayoutEntry{
-        .binding = 0,
-        .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::mat4),
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 1,
-        .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::mat4),
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 2,
-        .visibility = ShaderStage::Vertex | ShaderStage::Fragment,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::mat4),
-        },
-      },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    viewProjBGL = ctx.device.CreateBindGroupLayout(&desc);
-  }
+  viewProjBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+      {1, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+      {2, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+    }
+  );
   // texture layout
-  {
-    std::vector<BindGroupLayoutEntry> entries{
-      BindGroupLayoutEntry{
-        .binding = 0,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::Float,
-          .viewDimension = TextureViewDimension::e2D,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 1,
-        .visibility = ShaderStage::Fragment,
-        .sampler{
-          .type = SamplerBindingType::Filtering,
-        },
-      },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    textureBGL = ctx.device.CreateBindGroupLayout(&desc);
-  }
+  textureBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, TextureSampleType::Float},
+      {1, ShaderStage::Fragment, SamplerBindingType::Filtering},
+    }
+  );
 
   // water pipeline --------------------------------------------------
   ShaderModule shaderWater =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/water.wgsl", ctx.device);
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{
-      viewProjBGL,
-      textureBGL,
-    };
-    PipelineLayoutDescriptor layoutDesc{
-      .bindGroupLayoutCount = bindGroupLayouts.size(),
-      .bindGroupLayouts = bindGroupLayouts.data(),
-    };
-    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
+    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        viewProjBGL,
+        textureBGL,
+      }
+    );
 
     // Vertex State
     VertexState vertexState{
@@ -145,9 +85,7 @@ Pipeline::Pipeline(Context &ctx) {
 
     // Fragment State
     std::vector<ColorTargetState> targets{
-      ColorTargetState{
-        .format = TextureFormat::BGRA8Unorm,
-      },
+      {.format = TextureFormat::BGRA8Unorm},
     };
     FragmentState fragmentState{
       .module = shaderWater,
@@ -172,15 +110,13 @@ Pipeline::Pipeline(Context &ctx) {
     util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", ctx.device);
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{
-      viewProjBGL,
-      textureBGL,
-    };
-    PipelineLayoutDescriptor layoutDesc{
-      .bindGroupLayoutCount = bindGroupLayouts.size(),
-      .bindGroupLayouts = bindGroupLayouts.data(),
-    };
-    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
+    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        viewProjBGL,
+        textureBGL,
+      }
+    );
 
     // Vertex State
     VertexState vertexState{
@@ -214,17 +150,10 @@ Pipeline::Pipeline(Context &ctx) {
     };
     // Fragment State
     std::vector<ColorTargetState> targets{
-      // position
-      ColorTargetState{
-        .format = TextureFormat::RGBA16Float,
-      },
-      // normal
-      ColorTargetState{
-        .format = TextureFormat::RGBA16Float,
-      },
-      // albedo
-      ColorTargetState{
-        .format = TextureFormat::BGRA8Unorm,
+      {.format = TextureFormat::RGBA16Float}, // position
+      {.format = TextureFormat::RGBA16Float}, // normal
+      {
+        .format = TextureFormat::BGRA8Unorm, // albedo
         .blend = &blend,
       },
     };
@@ -252,17 +181,9 @@ Pipeline::Pipeline(Context &ctx) {
   ShaderModule shaderFragSsao =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_ssao.wgsl", ctx.device);
 
-  std::vector<VertexAttribute> vertexAttributes = {
-    VertexAttribute{
-      .format = VertexFormat::Float32x2,
-      .offset = 0,
-      .shaderLocation = 0,
-    },
-    VertexAttribute{
-      .format = VertexFormat::Float32x2,
-      .offset = sizeof(glm::vec2),
-      .shaderLocation = 1,
-    },
+  std::vector<VertexAttribute> vertexAttributes{
+    {VertexFormat::Float32x2, 0, 0},
+    {VertexFormat::Float32x2, sizeof(glm::vec2), 1},
   };
   VertexBufferLayout quadVertexBufferLayout{
     .arrayStride = sizeof(glm::vec2) * 2,
@@ -271,99 +192,35 @@ Pipeline::Pipeline(Context &ctx) {
     .attributes = vertexAttributes.data(),
   };
 
-  // GBuffer
-  {
-    std::vector<BindGroupLayoutEntry> entries{
-      BindGroupLayoutEntry{
-        .binding = 0,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::UnfilterableFloat,
-          .viewDimension = TextureViewDimension::e2D,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 1,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::UnfilterableFloat,
-          .viewDimension = TextureViewDimension::e2D,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 2,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::UnfilterableFloat,
-          .viewDimension = TextureViewDimension::e2D,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 3,
-        .visibility = ShaderStage::Fragment,
-        .sampler{
-          .type = SamplerBindingType::NonFiltering,
-        },
-      },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    gBufferBGL = ctx.device.CreateBindGroupLayout(&desc);
-  }
-  // ssao specific
-  {
-    std::vector<BindGroupLayoutEntry> entries{
-      BindGroupLayoutEntry{
-        .binding = 0,
-        .visibility = ShaderStage::Fragment,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(glm::vec4) * 64,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 1,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::UnfilterableFloat,
-          .viewDimension = TextureViewDimension::e2D,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 2,
-        .visibility = ShaderStage::Fragment,
-        .sampler{
-          .type = SamplerBindingType::NonFiltering,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 3,
-        .visibility = ShaderStage::Fragment,
-        .buffer{
-          .type = BufferBindingType::Uniform,
-          .minBindingSize = sizeof(SSAO),
-        }},
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    ssaoSamplingBGL = ctx.device.CreateBindGroupLayout(&desc);
-  }
+  gBufferBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {1, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {2, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {3, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
+    }
+  );
+
+  ssaoSamplingBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, BufferBindingType::Uniform},
+      {1, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {2, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
+      {3, ShaderStage::Fragment, BufferBindingType::Uniform},
+    }
+  );
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{
-      viewProjBGL,
-      gBufferBGL,
-      ssaoSamplingBGL,
-    };
-    PipelineLayoutDescriptor layoutDesc{
-      .bindGroupLayoutCount = bindGroupLayouts.size(),
-      .bindGroupLayouts = bindGroupLayouts.data(),
-    };
-    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
+    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        viewProjBGL,
+        gBufferBGL,
+        ssaoSamplingBGL,
+      }
+    );
 
     // Vertex State
     VertexState vertexState{
@@ -382,11 +239,7 @@ Pipeline::Pipeline(Context &ctx) {
 
     // Fragment State
     std::vector<ColorTargetState> targets{
-      // ssao texture
-      ColorTargetState{
-        // .format = TextureFormat::BGRA8Unorm,
-        .format = TextureFormat::R8Unorm,
-      },
+      {.format = TextureFormat::R8Unorm}, // ssao texture
     };
     FragmentState fragmentState{
       .module = shaderFragSsao,
@@ -409,38 +262,17 @@ Pipeline::Pipeline(Context &ctx) {
   ShaderModule shaderFragBlur =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_blur.wgsl", ctx.device);
 
-  {
-    std::vector<BindGroupLayoutEntry> entries{
-      BindGroupLayoutEntry{
-        .binding = 0,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::UnfilterableFloat,
-          .viewDimension = TextureViewDimension::e2D,
-        },
-      },
-      BindGroupLayoutEntry{
-        .binding = 1,
-        .visibility = ShaderStage::Fragment,
-        .sampler{
-          .type = SamplerBindingType::NonFiltering,
-        },
-      },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    ssaoTextureBGL = ctx.device.CreateBindGroupLayout(&desc);
-  }
+  ssaoTextureBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {1, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
+    }
+  );
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{ssaoTextureBGL};
-    PipelineLayoutDescriptor layoutDesc{
-      .bindGroupLayoutCount = bindGroupLayouts.size(),
-      .bindGroupLayouts = bindGroupLayouts.data(),
-    };
-    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
+    PipelineLayout pipelineLayout =
+      dawn::utils::MakePipelineLayout(ctx.device, {ssaoTextureBGL});
 
     // Vertex State
     VertexState vertexState{
@@ -459,10 +291,7 @@ Pipeline::Pipeline(Context &ctx) {
 
     // Fragment State
     std::vector<ColorTargetState> targets{
-      // ssao texture
-      ColorTargetState{
-        .format = TextureFormat::R8Unorm,
-      },
+      {.format = TextureFormat::R8Unorm}, // ssao texture
     };
     FragmentState fragmentState{
       .module = shaderFragBlur,
@@ -485,35 +314,19 @@ Pipeline::Pipeline(Context &ctx) {
   ShaderModule shaderFragComposite =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_composite.wgsl", ctx.device);
 
-  {
-    std::vector<BindGroupLayoutEntry> entries{
-      BindGroupLayoutEntry{
-        .binding = 0,
-        .visibility = ShaderStage::Fragment,
-        .texture{
-          .sampleType = TextureSampleType::UnfilterableFloat,
-          .viewDimension = TextureViewDimension::e2D,
-        },
-      },
-    };
-    BindGroupLayoutDescriptor desc{
-      .entryCount = entries.size(),
-      .entries = entries.data(),
-    };
-    waterTextureBGL = ctx.device.CreateBindGroupLayout(&desc);
-  }
+  waterTextureBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device, {{0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat}}
+  );
 
   {
-    std::vector<BindGroupLayout> bindGroupLayouts{
-      gBufferBGL,
-      ssaoTextureBGL,
-      waterTextureBGL,
-    };
-    PipelineLayoutDescriptor layoutDesc{
-      .bindGroupLayoutCount = bindGroupLayouts.size(),
-      .bindGroupLayouts = bindGroupLayouts.data(),
-    };
-    PipelineLayout pipelineLayout = ctx.device.CreatePipelineLayout(&layoutDesc);
+    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        gBufferBGL,
+        ssaoTextureBGL,
+        waterTextureBGL,
+      }
+    );
 
     // Vertex State
     VertexState vertexState{
@@ -532,9 +345,7 @@ Pipeline::Pipeline(Context &ctx) {
 
     // Fragment State
     std::vector<ColorTargetState> targets{
-      ColorTargetState{
-        .format = TextureFormat::BGRA8Unorm,
-      },
+      {.format = TextureFormat::BGRA8Unorm},
     };
     FragmentState fragmentState{
       .module = shaderFragComposite,

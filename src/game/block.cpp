@@ -1,4 +1,5 @@
 #include "block.hpp"
+#include "dawn/utils/WGPUHelpers.h"
 #include "game/direction.hpp"
 #include "util/context.hpp"
 #include "util/texture.hpp"
@@ -69,22 +70,13 @@ BindGroup CreateBlocksTexture(util::Context &ctx) {
   Sampler blocksSampler = ctx.device.CreateSampler(&samplerDesc);
 
   // create bind group
-  std::vector<BindGroupEntry> entries{
-    BindGroupEntry{
-      .binding = 0,
-      .textureView = blocksTextureView,
-    },
-    BindGroupEntry{
-      .binding = 1,
-      .sampler = blocksSampler,
-    },
-  };
-  BindGroupDescriptor bindGroupDesc{
-    .layout = ctx.pipeline.textureBGL,
-    .entryCount = entries.size(),
-    .entries = entries.data(),
-  };
-  return ctx.device.CreateBindGroup(&bindGroupDesc);
+  return dawn::utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.textureBGL,
+    {
+      {0, blocksTextureView},
+      {1, blocksSampler},
+    }
+  );
 }
 
 } // namespace game
