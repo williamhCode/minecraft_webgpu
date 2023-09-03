@@ -118,25 +118,23 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
       .CreateView();
 
   // samplers
-  Sampler nearestClampSampler = ({
-    SamplerDescriptor samplerDesc{
+  Sampler nearestClampSampler = m_ctx->device.CreateSampler( //
+    ToPtr(SamplerDescriptor{
       .addressModeU = AddressMode::ClampToEdge,
       .addressModeV = AddressMode::ClampToEdge,
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
-    };
-    m_ctx->device.CreateSampler(&samplerDesc);
-  });
+    })
+  );
 
-  Sampler noiseSampler = ({
-    SamplerDescriptor samplerDesc{
+  Sampler noiseSampler = m_ctx->device.CreateSampler( //
+    ToPtr(SamplerDescriptor{
       .addressModeU = AddressMode::Repeat,
       .addressModeV = AddressMode::Repeat,
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
-    };
-    m_ctx->device.CreateSampler(&samplerDesc);
-  });
+    })
+  );
 
   m_gBufferBindGroup = dawn::utils::MakeBindGroup(
     m_ctx->device, m_ctx->pipeline.gBufferBGL,

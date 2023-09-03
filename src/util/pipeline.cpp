@@ -52,128 +52,85 @@ Pipeline::Pipeline(Context &ctx) {
   ShaderModule shaderWater =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/water.wgsl", ctx.device);
 
-  {
-    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+  waterRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
         viewProjBGL,
         textureBGL,
       }
-    );
-
-    // Vertex State
-    VertexState vertexState{
-      .module = shaderWater,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &chunkVBL,
-    };
-
-    // Primitve State
-    PrimitiveState primitiveState{
-      .topology = PrimitiveTopology::TriangleList,
-      .frontFace = FrontFace::CCW,
-      .cullMode = CullMode::None,
-    };
-
-    // Depth Stencil State
-    DepthStencilState depthStencilState{
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderWater,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &chunkVBL,
+      },
+    .primitive =
+      PrimitiveState{
+        .topology = PrimitiveTopology::TriangleList,
+      },
+    .depthStencil = ToPtr(DepthStencilState{
       .format = ctx.depthFormat,
       .depthWriteEnabled = true,
       .depthCompare = CompareFunction::Less,
-    };
-
-    // Fragment State
-    std::vector<ColorTargetState> targets{
-      {.format = TextureFormat::BGRA8Unorm},
-    };
-    FragmentState fragmentState{
-      .module = shaderWater,
-      .entryPoint = "fs_main",
-      .targetCount = targets.size(),
-      .targets = targets.data(),
-    };
-
-    RenderPipelineDescriptor pipelineDesc{
-      .layout = pipelineLayout,
-      .vertex = vertexState,
-      .primitive = primitiveState,
-      .depthStencil = &depthStencilState,
-      .fragment = &fragmentState,
-    };
-
-    waterRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
-  }
+    }),
+    .fragment = ToPtr([&] {
+      static std::vector<ColorTargetState> targets{
+        {.format = TextureFormat::BGRA8Unorm},
+      };
+      return FragmentState{
+        .module = shaderWater,
+        .entryPoint = "fs_main",
+        .targetCount = targets.size(),
+        .targets = targets.data(),
+      };
+    }()),
+  }));
 
   // g_buffer pipeline -------------------------------------------------
   ShaderModule shaderGBuffer =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", ctx.device);
 
-  {
-    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+  gBufferRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
         viewProjBGL,
         textureBGL,
       }
-    );
-
-    // Vertex State
-    VertexState vertexState{
-      .module = shaderGBuffer,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &chunkVBL,
-    };
-
-    // Primitve State
-    PrimitiveState primitiveState{
-      .topology = PrimitiveTopology::TriangleList,
-      .frontFace = FrontFace::CCW,
-      .cullMode = CullMode::Back,
-      // .cullMode = CullMode::None,
-    };
-
-    // Depth Stencil State
-    DepthStencilState depthStencilState{
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderGBuffer,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &chunkVBL,
+      },
+    .primitive =
+      PrimitiveState{
+        .cullMode = CullMode::Back,
+      },
+    .depthStencil = ToPtr(DepthStencilState{
       .format = ctx.depthFormat,
       .depthWriteEnabled = true,
       .depthCompare = CompareFunction::Less,
-    };
-
-    BlendState blend{
-      .color{
-        .operation = BlendOperation::Add,
-        .srcFactor = BlendFactor::SrcAlpha,
-        .dstFactor = BlendFactor::OneMinusSrcAlpha,
-      },
-    };
-    // Fragment State
-    std::vector<ColorTargetState> targets{
-      {.format = TextureFormat::RGBA16Float}, // position
-      {.format = TextureFormat::RGBA16Float}, // normal
-      {
-        .format = TextureFormat::BGRA8Unorm, // albedo
-        .blend = &blend,
-      },
-    };
-    FragmentState fragmentState{
-      .module = shaderGBuffer,
-      .entryPoint = "fs_main",
-      .targetCount = targets.size(),
-      .targets = targets.data(),
-    };
-
-    RenderPipelineDescriptor pipelineDesc{
-      .layout = pipelineLayout,
-      .vertex = vertexState,
-      .primitive = primitiveState,
-      .depthStencil = &depthStencilState,
-      .fragment = &fragmentState,
-    };
-
-    gBufferRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
-  }
+    }),
+    .fragment = ToPtr([&] {
+      static std::vector<ColorTargetState> targets{
+        {.format = TextureFormat::RGBA16Float}, // position
+        {.format = TextureFormat::RGBA16Float}, // normal
+        {.format = TextureFormat::BGRA8Unorm},  // albedo
+      };
+      return FragmentState{
+        .module = shaderGBuffer,
+        .entryPoint = "fs_main",
+        .targetCount = targets.size(),
+        .targets = targets.data(),
+      };
+    }()),
+  }));
 
   // ssao pipeline -------------------------------------------------
   ShaderModule shaderVertQuad =
@@ -212,51 +169,35 @@ Pipeline::Pipeline(Context &ctx) {
     }
   );
 
-  {
-    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+  ssaoRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
         viewProjBGL,
         gBufferBGL,
         ssaoSamplingBGL,
       }
-    );
-
-    // Vertex State
-    VertexState vertexState{
-      .module = shaderVertQuad,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &quadVertexBufferLayout,
-    };
-
-    // Primitve State
-    PrimitiveState primitiveState{
-      .topology = PrimitiveTopology::TriangleList,
-      .frontFace = FrontFace::CCW,
-      .cullMode = CullMode::None,
-    };
-
-    // Fragment State
-    std::vector<ColorTargetState> targets{
-      {.format = TextureFormat::R8Unorm}, // ssao texture
-    };
-    FragmentState fragmentState{
-      .module = shaderFragSsao,
-      .entryPoint = "fs_main",
-      .targetCount = targets.size(),
-      .targets = targets.data(),
-    };
-
-    RenderPipelineDescriptor pipelineDesc{
-      .layout = pipelineLayout,
-      .vertex = vertexState,
-      .primitive = primitiveState,
-      .fragment = &fragmentState,
-    };
-
-    ssaoRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
-  }
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderVertQuad,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &quadVertexBufferLayout,
+      },
+    .primitive = PrimitiveState{},
+    .fragment = ToPtr([&] {
+      static std::vector<ColorTargetState> targets{
+        {.format = TextureFormat::R8Unorm}, // ssao texture
+      };
+      return FragmentState{
+        .module = shaderFragSsao,
+        .entryPoint = "fs_main",
+        .targetCount = targets.size(),
+        .targets = targets.data(),
+      };
+    }()),
+  }));
 
   // blur pipeline --------------------------------------------------
   ShaderModule shaderFragBlur =
@@ -270,45 +211,28 @@ Pipeline::Pipeline(Context &ctx) {
     }
   );
 
-  {
-    PipelineLayout pipelineLayout =
-      dawn::utils::MakePipelineLayout(ctx.device, {ssaoTextureBGL});
-
-    // Vertex State
-    VertexState vertexState{
-      .module = shaderVertQuad,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &quadVertexBufferLayout,
-    };
-
-    // Primitve State
-    PrimitiveState primitiveState{
-      .topology = PrimitiveTopology::TriangleList,
-      .frontFace = FrontFace::CCW,
-      .cullMode = CullMode::None,
-    };
-
-    // Fragment State
-    std::vector<ColorTargetState> targets{
-      {.format = TextureFormat::R8Unorm}, // ssao texture
-    };
-    FragmentState fragmentState{
-      .module = shaderFragBlur,
-      .entryPoint = "fs_main",
-      .targetCount = targets.size(),
-      .targets = targets.data(),
-    };
-
-    RenderPipelineDescriptor pipelineDesc{
-      .layout = pipelineLayout,
-      .vertex = vertexState,
-      .primitive = primitiveState,
-      .fragment = &fragmentState,
-    };
-
-    blurRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
-  }
+  blurRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(ctx.device, {ssaoTextureBGL}),
+    .vertex =
+      VertexState{
+        .module = shaderVertQuad,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &quadVertexBufferLayout,
+      },
+    .primitive = PrimitiveState{},
+    .fragment = ToPtr([&] {
+      static std::vector<ColorTargetState> targets{
+        {.format = TextureFormat::R8Unorm}, // ssao texture
+      };
+      return FragmentState{
+        .module = shaderFragBlur,
+        .entryPoint = "fs_main",
+        .targetCount = targets.size(),
+        .targets = targets.data(),
+      };
+    }()),
+  }));
 
   // composite pipeline --------------------------------------------------
   ShaderModule shaderFragComposite =
@@ -318,51 +242,35 @@ Pipeline::Pipeline(Context &ctx) {
     ctx.device, {{0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat}}
   );
 
-  {
-    PipelineLayout pipelineLayout = dawn::utils::MakePipelineLayout(
+  compositeRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
         gBufferBGL,
         ssaoTextureBGL,
         waterTextureBGL,
       }
-    );
-
-    // Vertex State
-    VertexState vertexState{
-      .module = shaderVertQuad,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &quadVertexBufferLayout,
-    };
-
-    // Primitve State
-    PrimitiveState primitiveState{
-      .topology = PrimitiveTopology::TriangleList,
-      .frontFace = FrontFace::CCW,
-      .cullMode = CullMode::None,
-    };
-
-    // Fragment State
-    std::vector<ColorTargetState> targets{
-      {.format = TextureFormat::BGRA8Unorm},
-    };
-    FragmentState fragmentState{
-      .module = shaderFragComposite,
-      .entryPoint = "fs_main",
-      .targetCount = targets.size(),
-      .targets = targets.data(),
-    };
-
-    RenderPipelineDescriptor pipelineDesc{
-      .layout = pipelineLayout,
-      .vertex = vertexState,
-      .primitive = primitiveState,
-      .fragment = &fragmentState,
-    };
-
-    compositeRPL = ctx.device.CreateRenderPipeline(&pipelineDesc);
-  }
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderVertQuad,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &quadVertexBufferLayout,
+      },
+    .primitive = PrimitiveState{},
+    .fragment = ToPtr([&] {
+      static std::vector<ColorTargetState> targets{
+        {.format = TextureFormat::BGRA8Unorm},
+      };
+      return FragmentState{
+        .module = shaderFragComposite,
+        .entryPoint = "fs_main",
+        .targetCount = targets.size(),
+        .targets = targets.data(),
+      };
+    }()),
+  }));
 }
 
 } // namespace util

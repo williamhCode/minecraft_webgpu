@@ -26,3 +26,8 @@ wgpu::Texture CreateTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::Tex
 wgpu::Texture CreateRenderTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format);
 
 } // namespace util
+
+template <typename T>
+const T *ToPtr(T &&value) {
+  return &value;
+}
