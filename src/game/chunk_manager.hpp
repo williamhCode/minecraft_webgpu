@@ -18,7 +18,7 @@ private:
   GameState *m_state;
 
 public:
-  int radius = 16;
+  int radius = 32;
   int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 

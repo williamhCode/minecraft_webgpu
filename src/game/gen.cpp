@@ -29,7 +29,7 @@ void GenChunkData(Chunk &chunk) {
 
       float spread = 150.0;
       int height =
-        28 + biomeNoise.octave2D_01(xyWorld.x / spread, xyWorld.y / spread, 4) * 100;
+        28 + biomeNoise.octave2D_01(xyWorld.x / spread, xyWorld.y / spread, 4) * 99;
       int topDepth =
         2 + topLayerNoise.octave2D_01(xyWorld.x / 10.0, xyWorld.y / 10.0, 4) * 6;
       int topHeight = height - topDepth;

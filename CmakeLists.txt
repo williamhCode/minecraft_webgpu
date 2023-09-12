@@ -7,6 +7,7 @@ project(
 
 # variables
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
+set(DAWN_FETCH_DEPENDENCIES 1)
 
 # dependencies
 add_subdirectory(deps/glfw)
