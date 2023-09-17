@@ -47,7 +47,6 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
 
   var out: GBufferOutput;
   var color = vec4f(textureSample(texture, textureSampler, uv).rgba);
-  // color.a = color.a - (1.0 - color.a) * 1000.0;
   out.albedo = color;
   out.position = vec4f(in.fragPos, 1.0);
   out.normal = vec4f(in.normal, 1.0);

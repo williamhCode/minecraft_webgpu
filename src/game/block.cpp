@@ -58,11 +58,11 @@ const std::array<BlockType, 7> g_BLOCK_TYPES = {
 
 BindGroup CreateBlocksTexture(util::Context &ctx) {
   // g_blocksTexture = util::LoadTexture(ctx, ROOT_DIR "/res/blocks.png");
-  static Texture blocksTexture = util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
+  Texture blocksTexture = util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5
     // anything after 5th mipmap blurs the different face textures
-    .mipLevelCount = 1,
+    .mipLevelCount = 5,
   };
   TextureView blocksTextureView = blocksTexture.CreateView(&viewDesc);
 

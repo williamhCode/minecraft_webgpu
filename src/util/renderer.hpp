@@ -28,8 +28,8 @@ struct SSAO {
   }
   void SetDefault() {
     enabled = true;
-    sampleSize = 20;
-    radius = 5;
+    sampleSize = 10;
+    radius = 5.0;
     bias = 0.01;
   }
 };

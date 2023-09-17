@@ -19,7 +19,7 @@ void GenChunkData(Chunk &chunk) {
 
   // static const siv::PerlinNoise::seed_type seed = 4;
 
-  static const siv::PerlinNoise biomeNoise{4};
+  static const siv::PerlinNoise biomeNoise{20};
   static const siv::PerlinNoise topLayerNoise{10};
 
   auto worldOffset = chunk.GetOffsetPos();

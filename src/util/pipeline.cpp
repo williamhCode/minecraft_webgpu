@@ -82,22 +82,19 @@ Pipeline::Pipeline(Context &ctx) {
       .depthWriteEnabled = true,
       .depthCompare = CompareFunction::Less,
     }),
-    .fragment = ToPtr([&] {
-      static std::vector<ColorTargetState> targets{
+    .fragment = ToPtr(FragmentState{
+      .module = shaderGBuffer,
+      .entryPoint = "fs_main",
+      .targetCount = 3,
+      .targets = ToPtr<ColorTargetState>({
         {.format = TextureFormat::RGBA16Float}, // position
         {.format = TextureFormat::RGBA16Float}, // normal
         {
           .format = TextureFormat::BGRA8Unorm,
           .blend = &UBlendState::ALPHA_BLENDING,
         }, // albedo
-      };
-      return FragmentState{
-        .module = shaderGBuffer,
-        .entryPoint = "fs_main",
-        .targetCount = targets.size(),
-        .targets = targets.data(),
-      };
-    }()),
+      }),
+    }),
   }));
 
   // water pipeline --------------------------------------------------
@@ -129,17 +126,14 @@ Pipeline::Pipeline(Context &ctx) {
       .depthWriteEnabled = true,
       .depthCompare = CompareFunction::Less,
     }),
-    .fragment = ToPtr([&] {
-      static std::vector<ColorTargetState> targets{
+    .fragment = ToPtr(FragmentState{
+      .module = shaderWater,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
         {.format = TextureFormat::BGRA8Unorm},
-      };
-      return FragmentState{
-        .module = shaderWater,
-        .entryPoint = "fs_main",
-        .targetCount = targets.size(),
-        .targets = targets.data(),
-      };
-    }()),
+      }),
+    }),
   }));
 
   // ssao pipeline -------------------------------------------------
@@ -196,17 +190,14 @@ Pipeline::Pipeline(Context &ctx) {
         .buffers = &quadVertexBufferLayout,
       },
     .primitive = PrimitiveState{},
-    .fragment = ToPtr([&] {
-      static std::vector<ColorTargetState> targets{
-        {.format = TextureFormat::R8Unorm}, // ssao texture
-      };
-      return FragmentState{
-        .module = shaderFragSsao,
-        .entryPoint = "fs_main",
-        .targetCount = targets.size(),
-        .targets = targets.data(),
-      };
-    }()),
+    .fragment = ToPtr(FragmentState{
+      .module = shaderFragSsao,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
+        {.format = TextureFormat::R8Unorm},
+      }),
+    }),
   }));
 
   // blur pipeline --------------------------------------------------
@@ -231,17 +222,14 @@ Pipeline::Pipeline(Context &ctx) {
         .buffers = &quadVertexBufferLayout,
       },
     .primitive = PrimitiveState{},
-    .fragment = ToPtr([&] {
-      static std::vector<ColorTargetState> targets{
-        {.format = TextureFormat::R8Unorm}, // ssao texture
-      };
-      return FragmentState{
-        .module = shaderFragBlur,
-        .entryPoint = "fs_main",
-        .targetCount = targets.size(),
-        .targets = targets.data(),
-      };
-    }()),
+    .fragment = ToPtr(FragmentState{
+      .module = shaderFragBlur,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
+        {.format = TextureFormat::R8Unorm},
+      }),
+    }),
   }));
 
   // composite pipeline --------------------------------------------------
@@ -270,17 +258,14 @@ Pipeline::Pipeline(Context &ctx) {
         .buffers = &quadVertexBufferLayout,
       },
     .primitive = PrimitiveState{},
-    .fragment = ToPtr([&] {
-      static std::vector<ColorTargetState> targets{
+    .fragment = ToPtr(FragmentState{
+      .module = shaderFragComposite,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
         {.format = TextureFormat::BGRA8Unorm},
-      };
-      return FragmentState{
-        .module = shaderFragComposite,
-        .entryPoint = "fs_main",
-        .targetCount = targets.size(),
-        .targets = targets.data(),
-      };
-    }()),
+      }),
+    }),
   }));
 }
 

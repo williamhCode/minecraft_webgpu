@@ -9,6 +9,7 @@ namespace util {
 
 namespace fs = std::filesystem;
 
+// clang-format off
 wgpu::Adapter RequestAdapter(wgpu::Instance &instance, wgpu::RequestAdapterOptions const *options);
 
 wgpu::Device RequestDevice(wgpu::Adapter &instance, wgpu::DeviceDescriptor const *options);
@@ -24,25 +25,31 @@ wgpu::Buffer CreateUniformBuffer(wgpu::Device &device, size_t size, const void *
 
 wgpu::Texture CreateTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format, const void *data = nullptr);
 wgpu::Texture CreateRenderTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format);
+// clang-format on
 
 namespace UBlendState {
-  const wgpu::BlendState ALPHA_BLENDING = {
-    .color{
-      .operation = wgpu::BlendOperation::Add,
-      .srcFactor = wgpu::BlendFactor::SrcAlpha,
-      .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
-    },
-    .alpha{
-      .operation = wgpu::BlendOperation::Add,
-      .srcFactor = wgpu::BlendFactor::One,
-      .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
-    },
-  };
+const wgpu::BlendState ALPHA_BLENDING = {
+  .color{
+    .operation = wgpu::BlendOperation::Add,
+    .srcFactor = wgpu::BlendFactor::SrcAlpha,
+    .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+  },
+  .alpha{
+    .operation = wgpu::BlendOperation::Add,
+    .srcFactor = wgpu::BlendFactor::One,
+    .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+  },
+};
 }
 
 } // namespace util
 
 template <typename T>
-const T *ToPtr(T &&value) {
+const T *ToPtr(const T &&value) {
   return &value;
+}
+
+template <typename T, size_t N>
+constexpr const T *ToPtr(const T (&&a)[N]) {
+  return a;
 }
