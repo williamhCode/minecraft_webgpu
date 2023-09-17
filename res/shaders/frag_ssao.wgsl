@@ -29,7 +29,6 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
   if (fragPos.w == 0.0) {
     return 1.0;
   }
-  let fragWorldPos = (inverseView * fragPos).xyz;
   let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0).xyz;
   let noiseScale = vec2f(textureDimensions(gBufferPosition)) / 4.0;
   let randomVec = textureSampleLevel(noiseTexture, noiseSampler, uv * noiseScale, 0.0).xyz;
@@ -43,18 +42,19 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
   for (var i = 0; i < opts.sampleSize; i++) {
     // get sample position
     var samplePos = TBN * samples[i].xyz;
-    samplePos = fragWorldPos + samplePos * opts.radius; 
-    samplePos = (view * vec4f(samplePos, 1.0)).xyz;
+    // samplePos = fragWorldPos + samplePos * opts.radius; 
+    samplePos = fragPos.xyz + samplePos * opts.radius; 
+    let sampleViewPos = view * vec4f(samplePos, 1.0);
 
     // project sample position (to sample texture) (to get position on screen/texture)
-    var clipOffset = projection * vec4f(samplePos, 1.0);
+    var clipOffset = projection * sampleViewPos;
     clipOffset.y = -clipOffset.y;
     let screenOffset = (clipOffset.xy / clipOffset.w) * 0.5 + 0.5;
 
-    let sampleDepth = textureSampleLevel(gBufferPosition, gBufferSampler, screenOffset, 0.0).z;
+    let sampleDepth = (view * textureSampleLevel(gBufferPosition, gBufferSampler, screenOffset, 0.0)).z;
      // range check & accumulate
-    let rangeCheck = smoothstep(0.0, 1.0, opts.radius / abs(fragPos.z - sampleDepth));
-    occlusion += select(0.0, 1.0, sampleDepth >= samplePos.z + opts.bias) * rangeCheck;
+    let rangeCheck = smoothstep(0.0, 1.0, opts.radius / abs((view * fragPos).z - sampleDepth));
+    occlusion += select(0.0, 1.0, sampleDepth >= sampleViewPos.z + opts.bias) * rangeCheck;
   }
   occlusion = 1.0 - (occlusion / f32(opts.sampleSize));
 
