@@ -8,7 +8,7 @@ namespace util {
 struct Context;
 
 struct Pipeline {
-  wgpu::BindGroupLayout viewProjBGL;
+  wgpu::BindGroupLayout cameraBGL;
   wgpu::BindGroupLayout textureBGL;
 
   wgpu::BindGroupLayout gBufferBGL;

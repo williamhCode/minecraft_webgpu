@@ -1,7 +1,9 @@
 #include "camera.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "util/webgpu-util.hpp"
 #include "dawn/utils/WGPUHelpers.h"
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 namespace util {
@@ -23,13 +25,15 @@ Camera::Camera(
   m_viewBuffer = util::CreateUniformBuffer(m_ctx->device, size);
   m_projectionBuffer = util::CreateUniformBuffer(m_ctx->device, size);
   m_inverseViewBuffer = util::CreateUniformBuffer(m_ctx->device, size);
+  m_viewPosBuffer = util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &position);
 
   bindGroup = dawn::utils::MakeBindGroup(
-    ctx->device, ctx->pipeline.viewProjBGL,
+    ctx->device, ctx->pipeline.cameraBGL,
     {
       {0, m_viewBuffer},
       {1, m_projectionBuffer},
       {2, m_inverseViewBuffer},
+      {3, m_viewPosBuffer},
     }
   );
 
@@ -52,6 +56,7 @@ void Camera::Update() {
 
   m_ctx->queue.WriteBuffer(m_viewBuffer, 0, &m_view, sizeof(m_view));
   m_ctx->queue.WriteBuffer(m_inverseViewBuffer, 0, &inverseView, sizeof(inverseView));
+  m_ctx->queue.WriteBuffer(m_viewPosBuffer, 0, &position, sizeof(position));
 }
 
 } // namespace util

@@ -17,6 +17,7 @@ private:
   wgpu::Buffer m_viewBuffer;
   wgpu::Buffer m_projectionBuffer;
   wgpu::Buffer m_inverseViewBuffer;
+  wgpu::Buffer m_viewPosBuffer;
 
 public:
   wgpu::BindGroup bindGroup;

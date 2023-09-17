@@ -30,13 +30,14 @@ Pipeline::Pipeline(Context &ctx) {
     };
   }
 
-  // view, projection layout
-  viewProjBGL = dawn::utils::MakeBindGroupLayout(
+  // cameraLayout
+  cameraBGL = dawn::utils::MakeBindGroupLayout(
     ctx.device,
     {
       {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
       {1, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
       {2, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+      {3, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
     }
   );
   // texture layout
@@ -48,46 +49,10 @@ Pipeline::Pipeline(Context &ctx) {
     }
   );
 
-  // water pipeline --------------------------------------------------
-  ShaderModule shaderWater =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/water.wgsl", ctx.device);
-
-  waterRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
-    .layout = dawn::utils::MakePipelineLayout(
-      ctx.device,
-      {
-        viewProjBGL,
-        textureBGL,
-      }
-    ),
-    .vertex =
-      VertexState{
-        .module = shaderWater,
-        .entryPoint = "vs_main",
-        .bufferCount = 1,
-        .buffers = &chunkVBL,
-      },
-    .primitive =
-      PrimitiveState{
-        .topology = PrimitiveTopology::TriangleList,
-      },
-    .depthStencil = ToPtr(DepthStencilState{
-      .format = ctx.depthFormat,
-      .depthWriteEnabled = true,
-      .depthCompare = CompareFunction::Less,
-    }),
-    .fragment = ToPtr([&] {
-      static std::vector<ColorTargetState> targets{
-        {.format = TextureFormat::BGRA8Unorm},
-      };
-      return FragmentState{
-        .module = shaderWater,
-        .entryPoint = "fs_main",
-        .targetCount = targets.size(),
-        .targets = targets.data(),
-      };
-    }()),
-  }));
+  // lighting layout
+  lightingBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}
+  );
 
   // g_buffer pipeline -------------------------------------------------
   ShaderModule shaderGBuffer =
@@ -97,7 +62,7 @@ Pipeline::Pipeline(Context &ctx) {
     .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
-        viewProjBGL,
+        cameraBGL,
         textureBGL,
       }
     ),
@@ -128,6 +93,48 @@ Pipeline::Pipeline(Context &ctx) {
       };
       return FragmentState{
         .module = shaderGBuffer,
+        .entryPoint = "fs_main",
+        .targetCount = targets.size(),
+        .targets = targets.data(),
+      };
+    }()),
+  }));
+
+  // water pipeline --------------------------------------------------
+  ShaderModule shaderWater =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/water.wgsl", ctx.device);
+
+  waterRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        cameraBGL,
+        textureBGL,
+        lightingBGL,
+      }
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderWater,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &chunkVBL,
+      },
+    .primitive =
+      PrimitiveState{
+        .topology = PrimitiveTopology::TriangleList,
+      },
+    .depthStencil = ToPtr(DepthStencilState{
+      .format = ctx.depthFormat,
+      .depthWriteEnabled = true,
+      .depthCompare = CompareFunction::Less,
+    }),
+    .fragment = ToPtr([&] {
+      static std::vector<ColorTargetState> targets{
+        {.format = TextureFormat::BGRA8Unorm},
+      };
+      return FragmentState{
+        .module = shaderWater,
         .entryPoint = "fs_main",
         .targetCount = targets.size(),
         .targets = targets.data(),
@@ -176,7 +183,7 @@ Pipeline::Pipeline(Context &ctx) {
     .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
-        viewProjBGL,
+        cameraBGL,
         gBufferBGL,
         ssaoSamplingBGL,
       }
@@ -243,10 +250,6 @@ Pipeline::Pipeline(Context &ctx) {
 
   waterTextureBGL = dawn::utils::MakeBindGroupLayout(
     ctx.device, {{0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat}}
-  );
-
-  lightingBGL = dawn::utils::MakeBindGroupLayout(
-    ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}
   );
 
   compositeRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{

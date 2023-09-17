@@ -15,9 +15,13 @@ struct VertexOutput {
 
 @group(0) @binding(0) var<uniform> view: mat4x4f;
 @group(0) @binding(1) var<uniform> projection: mat4x4f;
+// @group(0) @binding(2) var<uniform> inverseView: mat4x4f;
+@group(0) @binding(3) var<uniform> viewPos: vec3f;
 
 @group(1) @binding(0) var texture: texture_2d<f32>;
 @group(1) @binding(1) var textureSampler: sampler;
+
+@group(2) @binding(0) var<uniform> sunDir: vec3f;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -25,7 +29,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
   var out: VertexOutput;
   out.position = projection * viewPos;
-  out.fragPos = viewPos.xyz;
+  out.fragPos = in.position;
   out.normal = in.normal;
   out.uv = in.uv;
   out.extraData = in.extraData;
@@ -39,7 +43,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   let texLoc = vec2f(f32(in.extraData & 0x0Fu), f32((in.extraData >> 4u) & 0x0Fu));
   let uv = (in.uv + texLoc) / 16.0;
 
-  let out = textureSample(texture, textureSampler, uv);
+  let color = textureSample(texture, textureSampler, uv);
+
+  // let diffuse = max(dot(in.normal, sunDir), 0.0);
+
+  let viewDir = normalize(viewPos - in.fragPos);
+  let reflectDir = reflect(-sunDir, in.normal);
+  let specular = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+
+  var out = color * (1.0 + specular * 0.5);
+  // let out = specular * vec4f(1.0, 0.0, 0.0, 1.0);
 
   return out;
 }

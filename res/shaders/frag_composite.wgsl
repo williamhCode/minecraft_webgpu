@@ -27,7 +27,6 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let ambientOcclusion = textureSampleLevel(ssaoTexture, ssaoSampler, uv, 0.0).r;
 
   var waterColor = textureSampleLevel(waterTexture, gBufferSampler, uv, 0.0);
-  // waterColor.a *= 0.5;
 
   albedo = vec3f(albedo * ambientOcclusion);
 

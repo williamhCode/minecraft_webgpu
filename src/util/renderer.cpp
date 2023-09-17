@@ -25,15 +25,23 @@ std::vector<QuadVertex> GetQuadVertices() {
 }
 
 Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) {
+  // init shared resources
   m_blocksTextureBindGroup = game::CreateBlocksTexture(*m_ctx);
 
-  // init quad buffer
   auto quadVertices = GetQuadVertices();
   m_quadBuffer = util::CreateVertexBuffer(
     m_ctx->device, quadVertices.size() * sizeof(QuadVertex), quadVertices.data()
   );
 
   Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
+
+  // lighting
+  Buffer sunDirBuffer =
+    util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &m_state->sunDir);
+  m_sunDirBindGroup = dawn::utils::MakeBindGroup(
+    m_ctx->device, m_ctx->pipeline.lightingBGL, {{0, sunDirBuffer}}
+  );
+
   // gbuffer pass -----------------------------------------------------
   // create textures: position (view-space), normal, color
   m_gBufferTextureViews[0] =
@@ -212,12 +220,6 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     m_ctx->device, m_ctx->pipeline.waterTextureBGL, {{0, waterTextureView}}
   );
 
-  Buffer sunDirBuffer =
-    util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &m_state->sunDir);
-  m_sunDirBindGroup = dawn::utils::MakeBindGroup(
-    m_ctx->device, m_ctx->pipeline.lightingBGL, {{0, sunDirBuffer}}
-  );
-
   {
     m_compositePassDesc = {
       .colorAttachmentCount = 1,
@@ -333,6 +335,7 @@ void Renderer::Render() {
     passEncoder.SetPipeline(m_ctx->pipeline.waterRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
+    passEncoder.SetBindGroup(2, m_sunDirBindGroup);
     m_state->chunkManager->RenderWater(passEncoder);
     passEncoder.End();
   }
