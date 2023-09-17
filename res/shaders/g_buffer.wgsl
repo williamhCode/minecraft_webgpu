@@ -27,9 +27,11 @@ struct GBufferOutput {
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
+  let viewPos = view * vec4f(in.position, 1.0);
+
   var out: VertexOutput;
-  out.position = projection * view * vec4f(in.position, 1.0);
-  out.fragPos = in.position.xyz;
+  out.position = projection * viewPos;
+  out.fragPos = viewPos.xyz;
   out.normal = in.normal;
   out.uv = in.uv;
   out.extraData = in.extraData;

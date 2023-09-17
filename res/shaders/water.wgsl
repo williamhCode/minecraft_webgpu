@@ -30,7 +30,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   // change normal based on new position
 
   var out: VertexOutput;
-  out.position = projection * view * vec4f(in.position, 1.0);
+  out.position = projection * view * vec4f(in.position, 1.0);;
   out.fragPos = in.position;
   out.normal = in.normal;
   out.uv = in.uv;
