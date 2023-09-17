@@ -58,6 +58,7 @@ Game::Game() {
   // glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 
   m_state.size = {1400, 1000};
+  // m_state.size = {960, 540};
   m_window =
     glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {

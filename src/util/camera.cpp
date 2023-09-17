@@ -20,12 +20,13 @@ Camera::Camera(
   float far
 )
     : m_ctx(ctx), position(position), orientation(orientation), fov(fov) {
+  m_projection = glm::perspective(fov, aspect, near, far);
+
   // create bind group
   size_t size = sizeof(glm::mat4);
   m_viewBuffer = util::CreateUniformBuffer(m_ctx->device, size);
-  m_projectionBuffer = util::CreateUniformBuffer(m_ctx->device, size);
+  m_projectionBuffer = util::CreateUniformBuffer(m_ctx->device, size, &m_projection);
   m_inverseViewBuffer = util::CreateUniformBuffer(m_ctx->device, size);
-  m_viewPosBuffer = util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &position);
 
   bindGroup = dawn::utils::MakeBindGroup(
     ctx->device, ctx->pipeline.cameraBGL,
@@ -33,12 +34,8 @@ Camera::Camera(
       {0, m_viewBuffer},
       {1, m_projectionBuffer},
       {2, m_inverseViewBuffer},
-      {3, m_viewPosBuffer},
     }
   );
-
-  m_projection = glm::perspective(fov, aspect, near, far);
-  m_ctx->queue.WriteBuffer(m_projectionBuffer, 0, &m_projection, sizeof(m_projection));
 
   Update();
 }
@@ -56,7 +53,6 @@ void Camera::Update() {
 
   m_ctx->queue.WriteBuffer(m_viewBuffer, 0, &m_view, sizeof(m_view));
   m_ctx->queue.WriteBuffer(m_inverseViewBuffer, 0, &inverseView, sizeof(inverseView));
-  m_ctx->queue.WriteBuffer(m_viewPosBuffer, 0, &position, sizeof(position));
 }
 
 } // namespace util

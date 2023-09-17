@@ -37,7 +37,6 @@ Pipeline::Pipeline(Context &ctx) {
       {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
       {1, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
       {2, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
-      {3, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
     }
   );
   // texture layout
