@@ -121,7 +121,10 @@ Pipeline::Pipeline(Context &ctx) {
       static std::vector<ColorTargetState> targets{
         {.format = TextureFormat::RGBA16Float}, // position
         {.format = TextureFormat::RGBA16Float}, // normal
-        {.format = TextureFormat::BGRA8Unorm},  // albedo
+        {
+          .format = TextureFormat::BGRA8Unorm,
+          .blend = &UBlendState::ALPHA_BLENDING,
+        }, // albedo
       };
       return FragmentState{
         .module = shaderGBuffer,
@@ -242,6 +245,10 @@ Pipeline::Pipeline(Context &ctx) {
     ctx.device, {{0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat}}
   );
 
+  lightingBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}
+  );
+
   compositeRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
     .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
@@ -249,6 +256,7 @@ Pipeline::Pipeline(Context &ctx) {
         gBufferBGL,
         ssaoTextureBGL,
         waterTextureBGL,
+        lightingBGL,
       }
     ),
     .vertex =

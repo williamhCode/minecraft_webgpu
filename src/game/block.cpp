@@ -8,7 +8,7 @@ namespace game {
 
 using namespace wgpu;
 
-const std::array<BlockType, 6> g_BLOCK_TYPES = {
+const std::array<BlockType, 7> g_BLOCK_TYPES = {
   // Air
   BlockType{},
   // Dirt
@@ -42,6 +42,12 @@ const std::array<BlockType, 6> g_BLOCK_TYPES = {
       return {0, 1};
     },
   },
+  // Leaf
+  BlockType{
+    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+      return {4, 1};
+    },
+  },
   // Water
   BlockType{
     .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
@@ -56,7 +62,7 @@ BindGroup CreateBlocksTexture(util::Context &ctx) {
   TextureViewDescriptor viewDesc{
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5
     // anything after 5th mipmap blurs the different face textures
-    .mipLevelCount = 5,
+    .mipLevelCount = 1,
   };
   TextureView blocksTextureView = blocksTexture.CreateView(&viewDesc);
 

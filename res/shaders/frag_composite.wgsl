@@ -8,6 +8,8 @@
 
 @group(2) @binding(0) var waterTexture: texture_2d<f32>;
 
+@group(3) @binding(0) var<uniform> sunDir: vec3f;
+
 fn blend(src: vec4f, dst: vec4f) -> vec4f {
   let srcAlpha = src.a;
   let dstAlpha = dst.a;
@@ -21,17 +23,15 @@ fn blend(src: vec4f, dst: vec4f) -> vec4f {
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0);
-  let albedo = textureSampleLevel(gBufferAlbedo, gBufferSampler, uv, 0.0).rgb;
+  var albedo = textureSampleLevel(gBufferAlbedo, gBufferSampler, uv, 0.0).rgb;
   let ambientOcclusion = textureSampleLevel(ssaoTexture, ssaoSampler, uv, 0.0).r;
 
   var waterColor = textureSampleLevel(waterTexture, gBufferSampler, uv, 0.0);
+  // waterColor.a *= 0.5;
 
-  let ambient = vec3f(albedo * ambientOcclusion);
+  albedo = vec3f(albedo * ambientOcclusion);
 
-  var color = ambient;
-  if (normal.w == 1.0) {
-    color *= max(0.6, dot(normal.xyz, normalize(vec3f(1.0, 2.0, 3.0))));
-  }
+  var color = albedo * 0.7 + albedo * 0.3 * dot(normal.xyz, normalize(sunDir));
 
   var finalColor = vec4f(color, 1.0);
   finalColor = blend(waterColor, finalColor);

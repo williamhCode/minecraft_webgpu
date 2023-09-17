@@ -7,7 +7,7 @@ namespace game {
 class Player {
 public:
   util::Camera camera;
-  float speed = 20;
+  float speed = 10;
 
   Player() = default;
   Player(util::Camera &camera);

@@ -57,10 +57,11 @@ public:
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
   bool ShouldRender(glm::ivec3 position, Direction direction);
+  bool ShouldRender(glm::ivec3 position);
   bool WaterShouldRender(glm::ivec3 position, Direction direction);
+  bool WaterShouldRender(glm::ivec3 position);
   // bool HasNeighbor(glm::ivec3 position, Direction direction);
   bool HasBlock(glm::ivec3 position);
-  bool WaterHasBlock(glm::ivec3 position);
   BlockId GetBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockID);
   auto &GetBlockIdData() {

@@ -70,6 +70,7 @@ private:
 
   // composite
   wgpu::BindGroup m_waterTextureBindGroup;
+  wgpu::BindGroup m_sunDirBindGroup;
   wgpu::RenderPassDescriptor m_compositePassDesc;
 
 public:

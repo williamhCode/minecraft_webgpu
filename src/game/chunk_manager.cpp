@@ -138,7 +138,7 @@ bool ChunkManager::ShouldRender(glm::ivec3 position) {
     return false;
   }
   auto &[chunkPtr, localPos] = *chunk;
-  return !chunkPtr->HasBlock(localPos);
+  return chunkPtr->ShouldRender(localPos);
 }
 
 bool ChunkManager::WaterShouldRender(glm::ivec3 position) {
@@ -147,7 +147,7 @@ bool ChunkManager::WaterShouldRender(glm::ivec3 position) {
     return false;
   }
   auto &[chunkPtr, localPos] = *chunk;
-  return !chunkPtr->WaterHasBlock(localPos);
+  return chunkPtr->WaterShouldRender(localPos);
 }
 
 bool ChunkManager::HasBlock(glm::ivec3 position) {

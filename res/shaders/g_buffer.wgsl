@@ -1,16 +1,16 @@
 struct VertexInput {
-	@location(0) position: vec3f,
-	@location(1) normal: vec3f,
-	@location(2) uv: vec2f,
-	@location(3) extraData: u32,
+  @location(0) position: vec3f,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f,
+  @location(3) extraData: u32,
 };
 
 struct VertexOutput {
-	@builtin(position) position: vec4f,
+  @builtin(position) position: vec4f,
   @location(0) fragPos: vec3f,
-	@location(1) normal: vec3f,
-	@location(2) uv: vec2f,
-	@location(3) @interpolate(flat) extraData: u32,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f,
+  @location(3) @interpolate(flat) extraData: u32,
 };
 
 struct GBufferOutput {
@@ -36,7 +36,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   out.uv = in.uv;
   out.extraData = in.extraData;
 
-	return out;
+  return out;
 }
 
 @fragment
@@ -46,7 +46,9 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
   let uv = (in.uv + texLoc) / 16.0;
 
   var out: GBufferOutput;
-  out.albedo = vec4f(textureSample(texture, textureSampler, uv).rgb, 1.0);
+  var color = vec4f(textureSample(texture, textureSampler, uv).rgba);
+  // color.a = color.a - (1.0 - color.a) * 1000.0;
+  out.albedo = color;
   out.position = vec4f(in.fragPos, 1.0);
   out.normal = vec4f(in.normal, 1.0);
 

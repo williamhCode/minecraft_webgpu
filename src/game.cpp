@@ -57,7 +57,7 @@ Game::Game() {
   // disable high-dpi for macOS
   // glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 
-  m_state.size = {1100, 800};
+  m_state.size = {1400, 1000};
   m_window =
     glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
@@ -110,6 +110,7 @@ Game::Game() {
     glm::radians(50.0f), (float)m_state.size.x / m_state.size.y, 0.1, 2000
   );
   m_state.player = game::Player(camera);
+  m_state.sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.5));
 
   game::InitMesh();
   game::Chunk::InitSharedData();
@@ -176,10 +177,10 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
     }
     // any ctrl key
     if (mods & GLFW_MOD_CONTROL) {
-      if (m_state.player.speed == 20)
+      if (m_state.player.speed == 10)
         m_state.player.speed = 100;
       else
-        m_state.player.speed = 20;
+        m_state.player.speed = 10;
     }
   }
 }
@@ -205,7 +206,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       if (castData) {
         auto [pos, dir] = *castData;
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_state.chunkManager->SetBlock(placePos, game::BlockId::Grass);
+        m_state.chunkManager->SetBlock(placePos, game::BlockId::Leaf);
       }
     }
   }

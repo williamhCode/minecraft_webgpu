@@ -135,8 +135,14 @@ bool Chunk::ShouldRender(glm::ivec3 position, Direction direction) {
            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
     return m_chunkManager->ShouldRender(neighborPos + m_worldOffset);
   } else {
-    return !HasBlock(neighborPos);
+    return ShouldRender(neighborPos);
   }
+}
+
+bool Chunk::ShouldRender(glm::ivec3 position) {
+  auto blockId = GetBlock(position);
+  return blockId == BlockId::Air || blockId == BlockId::Water ||
+         blockId == BlockId::Leaf;
 }
 
 bool Chunk::WaterShouldRender(glm::ivec3 position, Direction direction) {
@@ -151,8 +157,13 @@ bool Chunk::WaterShouldRender(glm::ivec3 position, Direction direction) {
            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
     return m_chunkManager->WaterShouldRender(neighborPos + m_worldOffset);
   } else {
-    return !WaterHasBlock(neighborPos);
+    return WaterShouldRender(neighborPos);
   }
+}
+
+bool Chunk::WaterShouldRender(glm::ivec3 position) {
+  auto blockId = GetBlock(position);
+  return blockId == BlockId::Air;
 }
 
 // bool Chunk::HasNeighbor(glm::ivec3 position, Direction direction) {
@@ -209,11 +220,6 @@ void Chunk::SetBlock(glm::ivec3 position, BlockId blockID) {
 bool Chunk::HasBlock(glm::ivec3 position) {
   auto blockId = GetBlock(position);
   return blockId != BlockId::Air && blockId != BlockId::Water;
-}
-
-bool Chunk::WaterHasBlock(glm::ivec3 position) {
-  auto blockId = GetBlock(position);
-  return blockId != BlockId::Air;
 }
 
 }; // namespace game

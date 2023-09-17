@@ -12,6 +12,8 @@ struct GameState {
   glm::uvec2 size;
   glm::uvec2 fbSize;
 
+  glm::vec3 sunDir;
+
   bool focused = true;
 
   bool showStats = false;

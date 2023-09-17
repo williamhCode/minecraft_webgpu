@@ -212,6 +212,12 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     m_ctx->device, m_ctx->pipeline.waterTextureBGL, {{0, waterTextureView}}
   );
 
+  Buffer sunDirBuffer =
+    util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &m_state->sunDir);
+  m_sunDirBindGroup = dawn::utils::MakeBindGroup(
+    m_ctx->device, m_ctx->pipeline.lightingBGL, {{0, sunDirBuffer}}
+  );
+
   {
     m_compositePassDesc = {
       .colorAttachmentCount = 1,
@@ -358,6 +364,7 @@ void Renderer::Render() {
     passEncoder.SetBindGroup(0, m_gBufferBindGroup);
     passEncoder.SetBindGroup(1, m_ssaoTextureBindGroups[1]);
     passEncoder.SetBindGroup(2, m_waterTextureBindGroup);
+    passEncoder.SetBindGroup(3, m_sunDirBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
     ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), passEncoder.Get());

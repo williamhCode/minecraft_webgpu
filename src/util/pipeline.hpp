@@ -17,6 +17,7 @@ struct Pipeline {
   wgpu::BindGroupLayout ssaoTextureBGL;
 
   wgpu::BindGroupLayout waterTextureBGL;
+  wgpu::BindGroupLayout lightingBGL;
 
   wgpu::RenderPipeline gBufferRPL;
   wgpu::RenderPipeline waterRPL;

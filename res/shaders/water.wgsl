@@ -1,16 +1,16 @@
 struct VertexInput {
-	@location(0) position: vec3f,
-	@location(1) normal: vec3f,
-	@location(2) uv: vec2f,
-	@location(3) extraData: u32,
+  @location(0) position: vec3f,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f,
+  @location(3) extraData: u32,
 };
 
 struct VertexOutput {
-	@builtin(position) position: vec4f,
+  @builtin(position) position: vec4f,
   @location(0) fragPos: vec3f,
-	@location(1) normal: vec3f,
-	@location(2) uv: vec2f,
-	@location(3) @interpolate(flat) extraData: u32,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f,
+  @location(3) @interpolate(flat) extraData: u32,
 };
 
 @group(0) @binding(0) var<uniform> view: mat4x4f;
@@ -30,7 +30,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   out.uv = in.uv;
   out.extraData = in.extraData;
 
-	return out;
+  return out;
 }
 
 @fragment

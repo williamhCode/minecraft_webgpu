@@ -25,6 +25,21 @@ wgpu::Buffer CreateUniformBuffer(wgpu::Device &device, size_t size, const void *
 wgpu::Texture CreateTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format, const void *data = nullptr);
 wgpu::Texture CreateRenderTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format);
 
+namespace UBlendState {
+  const wgpu::BlendState ALPHA_BLENDING = {
+    .color{
+      .operation = wgpu::BlendOperation::Add,
+      .srcFactor = wgpu::BlendFactor::SrcAlpha,
+      .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+    },
+    .alpha{
+      .operation = wgpu::BlendOperation::Add,
+      .srcFactor = wgpu::BlendFactor::One,
+      .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+    },
+  };
+}
+
 } // namespace util
 
 template <typename T>

@@ -16,6 +16,7 @@ enum BlockId : uint8_t {
   Grass,
   Stone,
   Sand,
+  Leaf,
   Water,
 };
 
@@ -23,7 +24,7 @@ struct BlockType {
   glm::ivec2 (*GetTextureLoc)(Direction dir);
 };
 
-const extern std::array<BlockType, 6> g_BLOCK_TYPES;
+const extern std::array<BlockType, 7> g_BLOCK_TYPES;
 
 wgpu::BindGroup CreateBlocksTexture(util::Context &ctx);
 
