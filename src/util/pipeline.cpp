@@ -235,17 +235,21 @@ Pipeline::Pipeline(Context &ctx) {
   ShaderModule shaderFragComposite =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/frag_composite.wgsl", ctx.device);
 
-  waterTextureBGL = dawn::utils::MakeBindGroupLayout(
-    ctx.device, {{0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat}}
+  compositeBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {1, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+    }
   );
 
   compositeRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
     .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
+        cameraBGL,
         gBufferBGL,
-        ssaoTextureBGL,
-        waterTextureBGL,
+        compositeBGL,
         lightingBGL,
       }
     ),

@@ -32,7 +32,7 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
   // device limits
   SupportedLimits supportedLimits;
   adapter.GetLimits(&supportedLimits);
-  deviceLimits = supportedLimits.limits;
+  // PrintLimits(supportedLimits.limits);
 
   // device
   DeviceDescriptor deviceDesc{

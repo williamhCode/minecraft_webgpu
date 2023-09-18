@@ -18,6 +18,8 @@ void SetUncapturedErrorCallback(wgpu::Device &device);
 
 wgpu::ShaderModule LoadShaderModule(const fs::path &path, wgpu::Device &device);
 
+void PrintLimits(wgpu::Limits const &limits);
+
 wgpu::Buffer CreateBuffer(wgpu::Device &device, wgpu::BufferUsage usage, size_t size, const void *data = nullptr);
 wgpu::Buffer CreateVertexBuffer(wgpu::Device &device, size_t size, const void *data = nullptr);
 wgpu::Buffer CreateIndexBuffer(wgpu::Device &device, size_t size, const void *data = nullptr);

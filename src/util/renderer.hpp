@@ -69,8 +69,8 @@ private:
   wgpu::RenderPassDescriptor m_blurPassDesc;
 
   // composite
-  wgpu::BindGroup m_waterTextureBindGroup;
-  wgpu::BindGroup m_sunDirBindGroup;
+  wgpu::BindGroup m_compositeBindGroup;
+  wgpu::BindGroup m_lightingBindGroup;
   wgpu::RenderPassDescriptor m_compositePassDesc;
 
 public:

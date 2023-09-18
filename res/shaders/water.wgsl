@@ -24,10 +24,9 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-  var position = in.position;
-  let scale = 0.3;
-  position += vec3f(0.0, 0.0, (sin(position.x * scale) + sin(position.y * scale)) * 1.0);
-  // change normal based on new position
+  // var position = in.position;
+  // let scale = 0.3;
+  // position += vec3f(0.0, 0.0, (sin(position.x * scale) + sin(position.y * scale)) * 1.0);
 
   var out: VertexOutput;
   out.position = projection * view * vec4f(in.position, 1.0);;
@@ -53,9 +52,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   let viewPos = inverseView[3].xyz;
   let viewDir = normalize(viewPos - in.fragPos);
   let reflectDir = reflect(-sunDir, in.normal);
-  let specular = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+  let specular = 0.4 * pow(max(dot(viewDir, reflectDir), 0.0), 100.0);
 
-  var out = color * (diffuse + specular * 0.5);
+  var out = color * diffuse + vec4f(1.0, 1.0, 1.0, 0.4) * specular;
   // let out = specular * vec4f(1.0, 0.0, 0.0, 1.0);
 
   return out;

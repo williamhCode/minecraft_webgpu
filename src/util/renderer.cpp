@@ -38,7 +38,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   // lighting
   Buffer sunDirBuffer =
     util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &m_state->sunDir);
-  m_sunDirBindGroup = dawn::utils::MakeBindGroup(
+  m_lightingBindGroup = dawn::utils::MakeBindGroup(
     m_ctx->device, m_ctx->pipeline.lightingBGL, {{0, sunDirBuffer}}
   );
 
@@ -216,8 +216,12 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   // composite pass ---------------------------------------------------
-  m_waterTextureBindGroup = dawn::utils::MakeBindGroup(
-    m_ctx->device, m_ctx->pipeline.waterTextureBGL, {{0, waterTextureView}}
+  m_compositeBindGroup = dawn::utils::MakeBindGroup(
+    m_ctx->device, m_ctx->pipeline.compositeBGL,
+    {
+      {0, ssaoTextureViews[1]},
+      {1, waterTextureView},
+    }
   );
 
   {
@@ -335,7 +339,7 @@ void Renderer::Render() {
     passEncoder.SetPipeline(m_ctx->pipeline.waterRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
-    passEncoder.SetBindGroup(2, m_sunDirBindGroup);
+    passEncoder.SetBindGroup(2, m_lightingBindGroup);
     m_state->chunkManager->RenderWater(passEncoder);
     passEncoder.End();
   }
@@ -364,10 +368,10 @@ void Renderer::Render() {
     RenderPassEncoder passEncoder =
       commandEncoder.BeginRenderPass(&m_compositePassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.compositeRPL);
-    passEncoder.SetBindGroup(0, m_gBufferBindGroup);
-    passEncoder.SetBindGroup(1, m_ssaoTextureBindGroups[1]);
-    passEncoder.SetBindGroup(2, m_waterTextureBindGroup);
-    passEncoder.SetBindGroup(3, m_sunDirBindGroup);
+    passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
+    passEncoder.SetBindGroup(1, m_gBufferBindGroup);
+    passEncoder.SetBindGroup(2, m_compositeBindGroup);
+    passEncoder.SetBindGroup(3, m_lightingBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
     ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), passEncoder.Get());
