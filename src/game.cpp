@@ -207,7 +207,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       if (castData) {
         auto [pos, dir] = *castData;
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_state.chunkManager->SetBlock(placePos, game::BlockId::Leaf);
+        m_state.chunkManager->SetBlock(placePos, game::BlockId::Glass);
       }
     }
   }

@@ -70,6 +70,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   );
   m_gBufferPassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
   m_gBufferPassDesc.cColorAttachments[0].clearValue = {0.0, 0.0, -10000, 0.0};
+  m_gBufferPassDesc.cColorAttachments[1].clearValue = {0.0, 0.0, 0.0, 0.0};
   m_gBufferPassDesc.cColorAttachments[2].clearValue = {0.5, 0.8, 0.9, 1.0};
 
   // water pass ---------------------------------------------------
@@ -175,7 +176,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   // pass desc
   {
     static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
-      RenderPassColorAttachment{
+      {
         .view = ssaoTextureViews[0],
         .loadOp = LoadOp::Clear,
         .storeOp = StoreOp::Store,
@@ -202,7 +203,7 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
 
   {
     static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
-      RenderPassColorAttachment{
+      {
         .view = ssaoTextureViews[1],
         .loadOp = LoadOp::Clear,
         .storeOp = StoreOp::Store,

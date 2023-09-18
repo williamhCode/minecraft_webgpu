@@ -47,8 +47,7 @@ void Camera::Update() {
   glm::mat4 rotation = yaw * pitch * roll;
 
   direction = rotation * m_forward;
-  glm::vec3 up = rotation * m_up;
-  m_view = glm::lookAt(position, position + direction, up);
+  m_view = glm::lookAt(position, position + direction, m_up);
   glm::mat4 inverseView = glm::inverse(m_view);
 
   m_ctx->queue.WriteBuffer(m_viewBuffer, 0, &m_view, sizeof(m_view));

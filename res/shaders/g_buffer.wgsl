@@ -52,7 +52,10 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
   }
   out.albedo = color;
   out.position = vec4f(in.fragPos, 1.0);
-  out.normal = vec4f(in.normal, 1.0);
+  out.normal = vec4f(in.normal, 0.0);
+  if (all(vec2i(texLoc) == vec2i(1, 1))) {
+    out.normal = vec4f(in.normal, 1.0);
+  }
 
   return out;
 }

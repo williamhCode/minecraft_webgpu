@@ -12,11 +12,15 @@ namespace game {
 
 enum class BlockId : uint8_t {
   Air = 0,
+  // opaque
   Dirt,
   Grass,
   Stone,
   Sand,
+  // transparent
   Leaf,
+  Glass,
+
   Water,
 };
 
@@ -33,7 +37,7 @@ struct BlockType {
   bool transparent = false;
 };
 
-const extern std::array<BlockType, 7> g_BLOCK_TYPES;
+const extern std::array<BlockType, 8> g_BLOCK_TYPES;
 // const extern std::array<
 
 wgpu::BindGroup CreateBlocksTexture(util::Context &ctx);
