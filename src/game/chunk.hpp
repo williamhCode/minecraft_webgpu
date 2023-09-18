@@ -7,12 +7,16 @@
 #include "game/direction.hpp"
 #include "glm/ext/vector_int2.hpp"
 #include "glm/ext/vector_int3.hpp"
+#include "util/webgpu-util.hpp"
 
 #include "util/context.hpp"
 #include "util/frustum.hpp"
 #include "game/block.hpp"
 #include "mesh.hpp"
 #include <inttypes.h>
+
+// forward decl
+struct GameState;
 
 namespace game {
 
@@ -28,6 +32,8 @@ public:
 
 private:
   util::Context *m_ctx;
+  GameState *m_state;
+
   ChunkManager *m_chunkManager;
   glm::ivec3 m_worldOffset;
 
@@ -36,31 +42,58 @@ private:
 
   std::array<BlockId, VOLUME> m_blockIdData; // block data
 
-  std::vector<Face> m_faces;
-  std::vector<FaceIndex> m_indices;
-  wgpu::Buffer m_vertexBuffer;
-  wgpu::Buffer m_indexBuffer;
+  struct MeshData {
+    std::vector<Face> faces;
+    std::vector<FaceIndex> indices;
+    wgpu::Buffer vbo;
+    wgpu::Buffer ebo;
+    size_t faceNum;
 
-  std::vector<Face> m_waterFaces;
-  std::vector<FaceIndex> m_waterIndices;
-  wgpu::Buffer m_waterVbo;
-  wgpu::Buffer m_waterEbo;
+    void Clear() {
+      faces.clear();
+      indices.clear();
+      faceNum = 0;
+    }
+
+    void AddFace(Face face, FaceIndex index) {
+      faces.push_back(face);
+      indices.push_back(index);
+      faceNum++;
+    }
+
+    void CreateBuffers(wgpu::Device &device) {
+      vbo = util::CreateVertexBuffer(device, faces.size() * sizeof(Face), faces.data());
+      ebo = util::CreateIndexBuffer(
+        device, indices.size() * sizeof(FaceIndex), indices.data()
+      );
+    }
+  };
+
+  MeshData m_opaqueData;
+  MeshData m_transparentData;
+  MeshData m_waterData;
+
+  MeshData &GetMeshData(BlockId id) {
+    if (id == BlockId::Water) return m_waterData;
+    if (g_BLOCK_TYPES[(size_t)id].transparent) return m_transparentData;
+    return m_opaqueData;
+  }
 
 public:
-  Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset);
+  Chunk(
+    util::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
+  );
   static void InitSharedData();
 
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder &passEncoder);
+  void RenderTransparent(const wgpu::RenderPassEncoder &passEncoder);
   void RenderWater(const wgpu::RenderPassEncoder &passEncoder);
 
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
-  bool ShouldRender(glm::ivec3 position, Direction direction);
-  bool ShouldRender(glm::ivec3 position);
-  bool WaterShouldRender(glm::ivec3 position, Direction direction);
-  bool WaterShouldRender(glm::ivec3 position);
-  // bool HasNeighbor(glm::ivec3 position, Direction direction);
+  bool ShouldRender(BlockId id, glm::ivec3 position, Direction direction);
+  bool ShouldRender(BlockId id, glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);
   BlockId GetBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockID);

@@ -1,4 +1,4 @@
-@group(0) @binding(0) var<uniform> view: mat4x4f;
+// @group(0) @binding(0) var<uniform> view: mat4x4f;
 // @group(0) @binding(1) var<uniform> projection: mat4x4f;
 @group(0) @binding(2) var<uniform> inverseView: mat4x4f;
 
@@ -29,7 +29,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
 
   var waterColor = textureSampleLevel(waterTexture, gBufferSampler, uv, 0.0);
 
-  albedo = vec3f(albedo * ambientOcclusion);
+  albedo *= ambientOcclusion;
 
   let ambient = 0.7;
 
@@ -45,6 +45,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
 
   var finalColor = vec4f(color, 1.0);
   finalColor = blend(waterColor, finalColor);
+  // finalColor = vec4f(ambientOcclusion, ambientOcclusion, ambientOcclusion, 1.0);
 
   return finalColor;
 }

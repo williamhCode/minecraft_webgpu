@@ -44,18 +44,18 @@ void GenChunkData(Chunk &chunk) {
       }
 
       BlockId topBlock;
-      BlockId centerBlock = Stone;
+      BlockId centerBlock = BlockId::Stone;
       switch (biome) {
       case Ocean:
-        topBlock = Stone;
+        topBlock = BlockId::Stone;
         break;
       case Beach:
-        topBlock = Sand;
-        centerBlock = Sand;
+        topBlock = BlockId::Sand;
+        centerBlock = BlockId::Sand;
         break;
       case Plains:
-        topBlock = Grass;
-        centerBlock = Dirt;
+        topBlock = BlockId::Grass;
+        centerBlock = BlockId::Dirt;
         break;
       }
 

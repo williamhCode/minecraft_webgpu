@@ -47,6 +47,7 @@ const std::array<BlockType, 7> g_BLOCK_TYPES = {
     .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
       return {4, 1};
     },
+    .transparent = true,
   },
   // Water
   BlockType{
@@ -57,7 +58,6 @@ const std::array<BlockType, 7> g_BLOCK_TYPES = {
 };
 
 BindGroup CreateBlocksTexture(util::Context &ctx) {
-  // g_blocksTexture = util::LoadTexture(ctx, ROOT_DIR "/res/blocks.png");
   Texture blocksTexture = util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5

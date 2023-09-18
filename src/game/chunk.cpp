@@ -5,15 +5,20 @@
 #include "game/mesh.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "util/webgpu-util.hpp"
+#include "game.hpp"
 #include <iostream>
+#include <numeric>
 #include <vector>
 
 namespace game {
 
 using namespace wgpu;
 
-Chunk::Chunk(util::Context *ctx, ChunkManager *chunkManager, glm::ivec2 offset)
-    : dirty(true), chunkOffset(offset), m_ctx(ctx), m_chunkManager(chunkManager) {
+Chunk::Chunk(
+  util::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
+)
+    : dirty(true), chunkOffset(offset), m_ctx(ctx), m_state(state),
+      m_chunkManager(chunkManager) {
   m_worldOffset = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
 }
 
@@ -35,27 +40,19 @@ void Chunk::InitSharedData() {
 }
 
 void Chunk::UpdateMesh() {
-  m_faces.clear();
-  m_indices.clear();
+  m_opaqueData.Clear();
+  m_transparentData.Clear();
+  m_waterData.Clear();
 
-  m_waterFaces.clear();
-  m_waterIndices.clear();
-
-  size_t numFace = 0;
-  size_t numWaterFace = 0;
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
     BlockId id = m_blockIdData[i_block];
     if (id == BlockId::Air) continue;
-    BlockType blockType = g_BLOCK_TYPES[id];
+    BlockType blockType = g_BLOCK_TYPES[(size_t)id];
     auto posOffset = IndexToPos(i_block);
 
     Cube &cube = m_cubeData[i_block];
     for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
-      if (id == BlockId::Water) {
-        if (!WaterShouldRender(posOffset, (Direction)i_face)) continue;
-      } else {
-        if (!ShouldRender(posOffset, (Direction)i_face)) continue;
-      }
+      if (!ShouldRender(id, posOffset, (Direction)i_face)) continue;
 
       Face face = cube.faces[i_face];
       for (auto &vertex : face.vertices) {
@@ -67,50 +64,59 @@ void Chunk::UpdateMesh() {
 
       FaceIndex faceIndex;
       for (size_t i = 0; i < g_FACE_INDICES.size(); i++) {
-        if (id == BlockId::Water)
-          faceIndex.indices[i] = numWaterFace * 4 + g_FACE_INDICES[i];
-        else
-          faceIndex.indices[i] = numFace * 4 + g_FACE_INDICES[i];
+        faceIndex.indices[i] = GetMeshData(id).faceNum * 4 + g_FACE_INDICES[i];
       }
-
-      if (id == BlockId::Water) {
-        m_waterFaces.push_back(face);
-        m_waterIndices.push_back(faceIndex);
-        numWaterFace++;
-      } else {
-        m_faces.push_back(face);
-        m_indices.push_back(faceIndex);
-        numFace++;
-      }
+      GetMeshData(id).AddFace(face, faceIndex);
     }
   }
 
-  m_vertexBuffer = util::CreateVertexBuffer(
-    m_ctx->device, m_faces.size() * sizeof(Face), m_faces.data()
-  );
-  m_indexBuffer = util::CreateIndexBuffer(
-    m_ctx->device, m_indices.size() * sizeof(FaceIndex), m_indices.data()
-  );
-  m_waterVbo = util::CreateVertexBuffer(
-    m_ctx->device, m_waterFaces.size() * sizeof(Face), m_waterFaces.data()
-  );
-  m_waterEbo = util::CreateIndexBuffer(
-    m_ctx->device, m_waterIndices.size() * sizeof(FaceIndex), m_waterIndices.data()
-  );
+  m_opaqueData.CreateBuffers(m_ctx->device);
+  m_transparentData.CreateBuffers(m_ctx->device);
+  m_waterData.CreateBuffers(m_ctx->device);
 }
 
 void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
-  passEncoder.SetVertexBuffer(0, m_vertexBuffer, 0, m_vertexBuffer.GetSize());
+  passEncoder.SetVertexBuffer(0, m_opaqueData.vbo, 0, m_opaqueData.vbo.GetSize());
   passEncoder.SetIndexBuffer(
-    m_indexBuffer, IndexFormat::Uint32, 0, m_indexBuffer.GetSize()
+    m_opaqueData.ebo, IndexFormat::Uint32, 0, m_opaqueData.ebo.GetSize()
   );
-  passEncoder.DrawIndexed(m_indices.size() * 6);
+  passEncoder.DrawIndexed(m_opaqueData.indices.size() * 6);
+}
+
+void Chunk::RenderTransparent(const wgpu::RenderPassEncoder &passEncoder) {
+  // sort indices based on distance from current position;
+  // auto position = glm::vec3(m_state->player.GetPosition());
+  // std::vector<FaceIndex> sortedIndices = m_transparentData.indices;
+  // std::sort(
+  //   sortedIndices.begin(), sortedIndices.end(),
+  //   [&](FaceIndex a, FaceIndex b) {
+  //     auto aPos = m_transparentData.faces[a.indices[0]].vertices[0].position;
+  //     auto bPos = m_transparentData.faces[b.indices[0]].vertices[0].position;
+  //     return glm::distance(aPos, position) > glm::distance(bPos, position);
+  //   }
+  // );
+  // wgpu::Buffer ebo = util::CreateIndexBuffer(
+  //   m_ctx->device, sortedIndices.size() * sizeof(FaceIndex), sortedIndices.data()
+  // );
+
+  // render
+  passEncoder.SetVertexBuffer(
+    0, m_transparentData.vbo, 0, m_transparentData.vbo.GetSize()
+  );
+  passEncoder.SetIndexBuffer(
+    m_transparentData.ebo, IndexFormat::Uint32, 0, m_transparentData.ebo.GetSize()
+  );
+  passEncoder.DrawIndexed(m_transparentData.indices.size() * 6);
+  // passEncoder.SetIndexBuffer(ebo, IndexFormat::Uint32, 0, ebo.GetSize());
+  // passEncoder.DrawIndexed(sortedIndices.size() * 6);
 }
 
 void Chunk::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
-  passEncoder.SetVertexBuffer(0, m_waterVbo, 0, m_waterVbo.GetSize());
-  passEncoder.SetIndexBuffer(m_waterEbo, IndexFormat::Uint32, 0, m_waterEbo.GetSize());
-  passEncoder.DrawIndexed(m_waterIndices.size() * 6);
+  passEncoder.SetVertexBuffer(0, m_waterData.vbo, 0, m_waterData.vbo.GetSize());
+  passEncoder.SetIndexBuffer(
+    m_waterData.ebo, IndexFormat::Uint32, 0, m_waterData.ebo.GetSize()
+  );
+  passEncoder.DrawIndexed(m_waterData.indices.size() * 6);
 }
 
 size_t Chunk::PosToIndex(glm::ivec3 pos) {
@@ -123,7 +129,7 @@ glm::ivec3 Chunk::IndexToPos(size_t index) {
   );
 }
 
-bool Chunk::ShouldRender(glm::ivec3 position, Direction direction) {
+bool Chunk::ShouldRender(BlockId id, glm::ivec3 position, Direction direction) {
   glm::ivec3 neighborPos = position + g_DIR_OFFSETS[direction];
 
   if (neighborPos.z < 0) {
@@ -133,53 +139,22 @@ bool Chunk::ShouldRender(glm::ivec3 position, Direction direction) {
   }
   else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-    return m_chunkManager->ShouldRender(neighborPos + m_worldOffset);
+    return m_chunkManager->ShouldRender(id, neighborPos + m_worldOffset);
   } else {
-    return ShouldRender(neighborPos);
+    return ShouldRender(id, neighborPos);
   }
 }
 
-bool Chunk::ShouldRender(glm::ivec3 position) {
-  auto blockId = GetBlock(position);
-  return blockId == BlockId::Air || blockId == BlockId::Water ||
-         blockId == BlockId::Leaf;
-}
-
-bool Chunk::WaterShouldRender(glm::ivec3 position, Direction direction) {
-  glm::ivec3 neighborPos = position + g_DIR_OFFSETS[direction];
-
-  if (neighborPos.z < 0) {
-    return false;
-  } else if (neighborPos.z >= SIZE.z) {
-    return true;
-  }
-  else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x || 
-           neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-    return m_chunkManager->WaterShouldRender(neighborPos + m_worldOffset);
-  } else {
-    return WaterShouldRender(neighborPos);
+bool Chunk::ShouldRender(BlockId id, glm::ivec3 position) {
+  auto neighborId = GetBlock(position);
+  switch (id) {
+  case BlockId::Water:
+    return neighborId == BlockId::Air;
+  default:
+    return neighborId == BlockId::Air || neighborId == BlockId::Water ||
+           neighborId == BlockId::Leaf;
   }
 }
-
-bool Chunk::WaterShouldRender(glm::ivec3 position) {
-  auto blockId = GetBlock(position);
-  return blockId == BlockId::Air;
-}
-
-// bool Chunk::HasNeighbor(glm::ivec3 position, Direction direction) {
-//   glm::ivec3 neighborPos = position + g_DIR_OFFSETS[direction];
-
-//   if (neighborPos.z < 0 || neighborPos.z >= SIZE.z) {
-//     return false;
-//   }
-//   else if (neighborPos.x < 0 || neighborPos.x >= SIZE.x ||
-//            neighborPos.y < 0 || neighborPos.y >= SIZE.y) {
-//     return m_chunkManager->HasBlock(neighborPos + m_offsetPos);
-//   } else {
-//     auto index = PosToIndex(neighborPos);
-//     return m_blockIdData[index] != BlockId::Air;
-//   }
-// }
 
 BlockId Chunk::GetBlock(glm::ivec3 position) {
   return m_blockIdData[PosToIndex(position)];

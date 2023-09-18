@@ -17,6 +17,9 @@ private:
   util::Context *m_ctx;
   GameState *m_state;
 
+  std::vector<glm::ivec2> m_frustumOffsets;
+  std::vector<glm::ivec2> m_sortedFrustumOffsets;
+
 public:
   int radius = 32;
   int max_gens = 4;
@@ -31,8 +34,7 @@ public:
   std::optional<Chunk *> GetChunk(glm::ivec2 offset);
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);
   std::optional<std::tuple<Chunk *, glm::ivec3>> GetChunkAndPos(glm::ivec3 position);
-  bool ShouldRender(glm::ivec3 position);
-  bool WaterShouldRender(glm::ivec3 position);
+  bool ShouldRender(BlockId id, glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockId);
 };

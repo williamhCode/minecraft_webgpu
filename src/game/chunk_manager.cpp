@@ -21,7 +21,7 @@ ChunkManager::ChunkManager(util::Context *ctx, GameState *state)
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
       if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
       const auto offset = glm::ivec2(x, y);
-      auto chunk = new Chunk(m_ctx, this, offset);
+      auto chunk = new Chunk(m_ctx, m_state, this, offset);
       GenChunkData(*chunk);
       chunks.emplace(offset, chunk);
     }
@@ -50,7 +50,7 @@ void ChunkManager::Update(glm::vec2 position) {
       if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
       const auto offset = glm::ivec2(x, y);
       if (!chunks.contains(offset)) {
-        auto chunk = new Chunk(m_ctx, this, offset);
+        auto chunk = new Chunk(m_ctx, m_state, this, offset);
         GenChunkData(*chunk);
         chunks.emplace(offset, chunk);
         for (auto neighbor : GetChunkNeighbors(offset)) {
@@ -62,6 +62,29 @@ void ChunkManager::Update(glm::vec2 position) {
   }
 exit:
 
+  // store offsets of chunks inside frustum/camera's view
+  m_frustumOffsets.clear();
+  auto frustum = m_state->player.camera.GetFrustum();
+  for (auto &[offset, chunk] : chunks) {
+    auto boundingBox = chunk->GetBoundingBox();
+    if (frustum.Intersects(boundingBox)) {
+      m_frustumOffsets.push_back(offset);
+    }
+  }
+
+  // sort offsets back to front based on distance to camera for transparent objects
+  /* m_sortedFrustumOffsets = m_frustumOffsets;
+  glm::vec2 pos = glm::vec2(m_state->player.GetPosition()) / glm::vec2(Chunk::SIZE);
+  std::sort(
+    m_sortedFrustumOffsets.begin(), m_sortedFrustumOffsets.end(),
+    // implicit conversion from ivec2 to vec2
+    [&](glm::vec2 a, glm::vec2 b) {
+      a += glm::vec2(0.5);
+      b += glm::vec2(0.5);
+      return glm::distance(a, pos) > glm::distance(b, pos);
+    }
+  ); */
+
   // update dirty chunks
   for (auto &[offset, chunk] : chunks) {
     if (chunk->dirty) {
@@ -72,20 +95,21 @@ exit:
 }
 
 void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder) {
-  auto frustum = m_state->player.camera.GetFrustum();
-
-  for (auto &[offset, chunk] : chunks) {
-    auto boundingBox = chunk->GetBoundingBox();
-    if (frustum.Intersects(boundingBox)) chunk->Render(passEncoder);
+  // opaque objects
+  for (auto offset : m_frustumOffsets) {
+    chunks[offset]->Render(passEncoder);
+    chunks[offset]->RenderTransparent(passEncoder);
   }
+
+  // transparent objects
+  // for (auto offset : m_sortedFrustumOffsets) {
+  //   chunks[offset]->RenderTransparent(passEncoder);
+  // }
 }
 
 void ChunkManager::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
-  auto frustum = m_state->player.camera.GetFrustum();
-
-  for (auto &[offset, chunk] : chunks) {
-    auto boundingBox = chunk->GetBoundingBox();
-    if (frustum.Intersects(boundingBox)) chunk->RenderWater(passEncoder);
+  for (auto offset : m_frustumOffsets) {
+    chunks[offset]->RenderWater(passEncoder);
   }
 }
 
@@ -117,8 +141,9 @@ std::vector<Chunk *> ChunkManager::GetChunkNeighbors(glm::ivec2 offset) {
   return neighbors;
 }
 
-std::optional<std::tuple<Chunk *, glm::ivec3>>
-ChunkManager::GetChunkAndPos(glm::ivec3 position) {
+std::optional<std::tuple<Chunk *, glm::ivec3>> ChunkManager::GetChunkAndPos(
+  glm::ivec3 position
+) {
   if (position.z < 0 || position.z >= Chunk::SIZE.z) {
     return std::nullopt;
   }
@@ -132,22 +157,13 @@ ChunkManager::GetChunkAndPos(glm::ivec3 position) {
 }
 
 // in context when called from a chunk
-bool ChunkManager::ShouldRender(glm::ivec3 position) {
+bool ChunkManager::ShouldRender(BlockId id, glm::ivec3 position) {
   auto chunk = GetChunkAndPos(position);
   if (!chunk) {
     return false;
   }
   auto &[chunkPtr, localPos] = *chunk;
-  return chunkPtr->ShouldRender(localPos);
-}
-
-bool ChunkManager::WaterShouldRender(glm::ivec3 position) {
-  auto chunk = GetChunkAndPos(position);
-  if (!chunk) {
-    return false;
-  }
-  auto &[chunkPtr, localPos] = *chunk;
-  return chunkPtr->WaterShouldRender(localPos);
+  return chunkPtr->ShouldRender(id, localPos);
 }
 
 bool ChunkManager::HasBlock(glm::ivec3 position) {

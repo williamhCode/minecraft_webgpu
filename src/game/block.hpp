@@ -10,7 +10,7 @@
 
 namespace game {
 
-enum BlockId : uint8_t {
+enum class BlockId : uint8_t {
   Air = 0,
   Dirt,
   Grass,
@@ -20,11 +20,21 @@ enum BlockId : uint8_t {
   Water,
 };
 
+// enum class RenderType : uint8_t {
+//   None = 0,
+//   Solid,
+//   Leaves,
+//   Transparent,
+//   Water,
+// };
+
 struct BlockType {
   glm::ivec2 (*GetTextureLoc)(Direction dir);
+  bool transparent = false;
 };
 
 const extern std::array<BlockType, 7> g_BLOCK_TYPES;
+// const extern std::array<
 
 wgpu::BindGroup CreateBlocksTexture(util::Context &ctx);
 
