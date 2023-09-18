@@ -12,6 +12,7 @@ namespace game {
 
 enum class BlockId : uint8_t {
   Air = 0,
+  Water,
   // opaque
   Dirt,
   Grass,
@@ -20,8 +21,6 @@ enum class BlockId : uint8_t {
   // transparent
   Leaf,
   Glass,
-
-  Water,
 };
 
 // enum class RenderType : uint8_t {
@@ -34,7 +33,12 @@ enum class BlockId : uint8_t {
 
 struct BlockType {
   glm::ivec2 (*GetTextureLoc)(Direction dir);
-  bool transparent = false;
+  bool opaque = true;
+  // 0 = default,
+  // 1 = translucent,
+  // 2 = transparent,
+  // 3 = fully transparent (for ssao),
+  unsigned char transparency = 0;
 };
 
 const extern std::array<BlockType, 8> g_BLOCK_TYPES;

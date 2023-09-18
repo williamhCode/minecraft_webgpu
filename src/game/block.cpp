@@ -10,7 +10,14 @@ using namespace wgpu;
 
 const std::array<BlockType, 8> g_BLOCK_TYPES = {
   // Air
-  BlockType{},
+  BlockType{.opaque = false},
+  // Water
+  BlockType{
+    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+      return {0, 15};
+    },
+    .opaque = false,
+  },
   // Dirt
   BlockType{
     .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
@@ -47,20 +54,16 @@ const std::array<BlockType, 8> g_BLOCK_TYPES = {
     .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
       return {4, 1};
     },
-    .transparent = true,
+    .opaque = false,
+    .transparency = 2,
   },
   // Glass
   BlockType{
     .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
       return {1, 1};
     },
-    .transparent = true,
-  },
-  // Water
-  BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
-      return {0, 15};
-    },
+    .opaque = false,
+    .transparency = 3,
   },
 };
 

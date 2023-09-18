@@ -1,5 +1,6 @@
 #include "chunk.hpp"
 #include "chunk_manager.hpp"
+#include "dawn/utils/Timer.h"
 #include "game/block.hpp"
 #include "game/direction.hpp"
 #include "game/mesh.hpp"
@@ -41,7 +42,7 @@ void Chunk::InitSharedData() {
 
 void Chunk::UpdateMesh() {
   m_opaqueData.Clear();
-  m_transparentData.Clear();
+  // m_translucentData.Clear();
   m_waterData.Clear();
 
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
@@ -59,6 +60,8 @@ void Chunk::UpdateMesh() {
         glm::ivec2 texLoc = blockType.GetTextureLoc((Direction)i_face);
         // convert texLoc to 1 byte (2x 4 bits), store in end of extraData
         vertex.extraData = texLoc.x | (texLoc.y << 4);
+        // store transparency of face (2 bits)
+        vertex.extraData |= (blockType.transparency << 8);
         vertex.position += m_worldOffset;
       }
 
@@ -71,7 +74,7 @@ void Chunk::UpdateMesh() {
   }
 
   m_opaqueData.CreateBuffers(m_ctx->device);
-  m_transparentData.CreateBuffers(m_ctx->device);
+  // m_translucentData.CreateBuffers(m_ctx->device);
   m_waterData.CreateBuffers(m_ctx->device);
 }
 
@@ -83,27 +86,34 @@ void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
   passEncoder.DrawIndexed(m_opaqueData.indices.size() * 6);
 }
 
-void Chunk::RenderTransparent(const wgpu::RenderPassEncoder &passEncoder) {
+void Chunk::RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder) {
+  // record time
+  // auto timer = dawn::utils::CreateTimer();
+  // timer->Start();
+
   // sort indices based on distance from current position;
   auto position = glm::vec3(m_state->player.GetPosition());
-  std::vector<FaceIndex> sortedIndices = m_transparentData.indices;
+  std::vector<FaceIndex> sortedIndices = m_translucentData.indices;
   std::sort(sortedIndices.begin(), sortedIndices.end(), [&](FaceIndex a, FaceIndex b) {
-    auto aPos = m_transparentData.faces[a.indices[0]].vertices[0].position;
-    auto bPos = m_transparentData.faces[b.indices[0]].vertices[0].position;
+    auto aPos = m_translucentData.faces[a.indices[0]].vertices[0].position;
+    auto bPos = m_translucentData.faces[b.indices[0]].vertices[0].position;
     return glm::distance(aPos, position) > glm::distance(bPos, position);
   });
   wgpu::Buffer ebo = util::CreateIndexBuffer(
     m_ctx->device, sortedIndices.size() * sizeof(FaceIndex), sortedIndices.data()
   );
 
+  // std::cout << timer->GetElapsedTime() << "\n";
+  // delete timer;
+
   // render
   passEncoder.SetVertexBuffer(
-    0, m_transparentData.vbo, 0, m_transparentData.vbo.GetSize()
+    0, m_translucentData.vbo, 0, m_translucentData.vbo.GetSize()
   );
   // passEncoder.SetIndexBuffer(
-  //   m_transparentData.ebo, IndexFormat::Uint32, 0, m_transparentData.ebo.GetSize()
+  //   m_translucentData.ebo, IndexFormat::Uint32, 0, m_translucentData.ebo.GetSize()
   // );
-  // passEncoder.DrawIndexed(m_transparentData.indices.size() * 6);
+  // passEncoder.DrawIndexed(m_translucentData.indices.size() * 6);
 
   passEncoder.SetIndexBuffer(ebo, IndexFormat::Uint32, 0, ebo.GetSize());
   passEncoder.DrawIndexed(sortedIndices.size() * 6);
@@ -146,16 +156,12 @@ bool Chunk::ShouldRender(BlockId id, glm::ivec3 position, Direction direction) {
 bool Chunk::ShouldRender(BlockId id, glm::ivec3 position) {
   auto neighborId = GetBlock(position);
   switch (id) {
+  // blocks that don't render when it's facing its own type (blocks 'link' together)
   case BlockId::Water:
-    return neighborId == BlockId::Air || g_BLOCK_TYPES[(size_t)neighborId].transparent;
-  // transparent blocks that don't render its own type (blocks 'link' together)
   case BlockId::Glass:
-    return (neighborId == BlockId::Air || neighborId == BlockId::Water ||
-            g_BLOCK_TYPES[(size_t)neighborId].transparent) &&
-           neighborId != id;
+    return !g_BLOCK_TYPES[(size_t)neighborId].opaque && neighborId != id;
   default:
-    return neighborId == BlockId::Air || neighborId == BlockId::Water ||
-           g_BLOCK_TYPES[(size_t)neighborId].transparent;
+    return !g_BLOCK_TYPES[(size_t)neighborId].opaque;
   }
 }
 

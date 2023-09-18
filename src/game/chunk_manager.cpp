@@ -98,12 +98,11 @@ void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder) {
   // opaque objects
   for (auto offset : m_frustumOffsets) {
     chunks[offset]->Render(passEncoder);
-    chunks[offset]->RenderTransparent(passEncoder);
   }
 
-  // transparent objects
+  // translucent objects
   // for (auto offset : m_sortedFrustumOffsets) {
-  //   chunks[offset]->RenderTransparent(passEncoder);
+  //   chunks[offset]->RenderTranslucent(passEncoder);
   // }
 }
 

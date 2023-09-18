@@ -70,12 +70,12 @@ private:
   };
 
   MeshData m_opaqueData;
-  MeshData m_transparentData;
+  MeshData m_translucentData;
   MeshData m_waterData;
 
   MeshData &GetMeshData(BlockId id) {
     if (id == BlockId::Water) return m_waterData;
-    if (g_BLOCK_TYPES[(size_t)id].transparent) return m_transparentData;
+    if (g_BLOCK_TYPES[(size_t)id].transparency == 1) return m_translucentData;
     return m_opaqueData;
   }
 
@@ -87,7 +87,7 @@ public:
 
   void UpdateMesh();
   void Render(const wgpu::RenderPassEncoder &passEncoder);
-  void RenderTransparent(const wgpu::RenderPassEncoder &passEncoder);
+  void RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder);
   void RenderWater(const wgpu::RenderPassEncoder &passEncoder);
 
   static size_t PosToIndex(glm::ivec3 pos);

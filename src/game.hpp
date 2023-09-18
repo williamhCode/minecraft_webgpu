@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include "game/block.hpp"
 #include "game/chunk_manager.hpp"
 #include "glm-include.hpp"
 
@@ -22,6 +23,8 @@ struct GameState {
 
   game::Player player;
   std::unique_ptr<game::ChunkManager> chunkManager;
+
+  game::BlockId currBlock;
 };
 
 class Game {

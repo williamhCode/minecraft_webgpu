@@ -117,6 +117,8 @@ Game::Game() {
   game::Chunk::InitSharedData();
   m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx, &m_state);
 
+  m_state.currBlock = game::BlockId::Glass;
+
   // setup rendering
   util::Renderer renderer(&m_ctx, &m_state);
 
@@ -183,6 +185,11 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
       else
         m_state.player.speed = 10;
     }
+
+    if (key == GLFW_KEY_1)
+      m_state.currBlock = game::BlockId::Glass;
+    if (key == GLFW_KEY_2)
+      m_state.currBlock = game::BlockId::Leaf;
   }
 }
 
@@ -207,7 +214,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       if (castData) {
         auto [pos, dir] = *castData;
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_state.chunkManager->SetBlock(placePos, game::BlockId::Glass);
+        m_state.chunkManager->SetBlock(placePos, m_state.currBlock);
       }
     }
   }

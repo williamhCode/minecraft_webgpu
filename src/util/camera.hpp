@@ -11,7 +11,7 @@ class Camera {
 private:
   Context *m_ctx;
   constexpr static glm::vec4 m_forward = glm::vec4(1.0, 0.0, 0.0, 1.0);
-  constexpr static glm::vec3 m_up = glm::vec4(0.0, 0.0, 1.0, 1.0);
+  constexpr static glm::vec4 m_up = glm::vec4(0.0, 0.0, 1.0, 1.0);
   glm::mat4 m_view;
   glm::mat4 m_projection;
   wgpu::Buffer m_viewBuffer;

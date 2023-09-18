@@ -7,7 +7,7 @@ Player::Player(util::Camera &camera) : camera(camera) {
 
 void Player::Look(glm::vec2 delta) {
   camera.orientation += glm::vec3(0, delta.y, -delta.x);
-  float pi_4 = glm::radians(90.0f);
+  float pi_4 = glm::radians(89.9f);
   camera.orientation.y = std::max(-pi_4, std::min(camera.orientation.y, pi_4));
 }
 

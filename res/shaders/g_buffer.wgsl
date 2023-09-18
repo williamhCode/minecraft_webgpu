@@ -40,22 +40,31 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 @fragment
+// @
 fn fs_main(in: VertexOutput) -> GBufferOutput {
   // get last byte (2x 4 bits), put in vec2f
   let texLoc = vec2f(f32(in.extraData & 0x0Fu), f32((in.extraData >> 4u) & 0x0Fu));
   let uv = (in.uv + texLoc) / 16.0;
+  // get transparency (2 bits)
+  let transparency = (in.extraData >> 8u) & 0x03u;
 
   var out: GBufferOutput;
-  var color = vec4f(textureSample(texture, textureSampler, uv).rgba);
+  var color: vec4f;
+
+  // dont use mipmap if object is transparent 
+  // this is to prevent messing up the alpha, since only translucent, not transparent objects are sorted
+  if (transparency >= 2) {
+    color = vec4f(textureSampleLevel(texture, textureSampler, uv, 0.0).rgba);
+  } else @diagnostic(off,derivative_uniformity) {
+    color = vec4f(textureSample(texture, textureSampler, uv).rgba);
+  }
   if (color.a < 0.01) {
     discard;
   }
   out.albedo = color;
   out.position = vec4f(in.fragPos, 1.0);
-  out.normal = vec4f(in.normal, 0.0);
-  if (all(vec2i(texLoc) == vec2i(1, 1))) {
-    out.normal = vec4f(in.normal, 1.0);
-  }
+  // store is fully transparent in w component of normal, for use in ssao
+  out.normal = vec4f(in.normal, f32(transparency == 3));
 
   return out;
 }
