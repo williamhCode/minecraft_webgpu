@@ -7,12 +7,9 @@
 namespace game {
 
 struct Vertex {
-  glm::vec3 position;
-  glm::vec3 normal;
-  glm::vec2 uv;
-  // 4 bytes
-  // none, none, u, v
-  uint32_t extraData;
+  glm::ivec3 position;
+  glm::ivec3 normal;
+  glm::uvec2 uv;
 };
 
 struct Face {
@@ -27,7 +24,7 @@ struct FaceIndex {
   std::array<uint32_t, 6> indices;
 };
 
-extern std::array<Face, 6> g_MESH_FACES;
+extern Cube g_CUBE;
 extern const std::array<uint32_t, 6> g_FACE_INDICES;
 
 void InitMesh();

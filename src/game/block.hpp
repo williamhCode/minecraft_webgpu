@@ -32,7 +32,7 @@ enum class BlockId : uint8_t {
 // };
 
 struct BlockType {
-  glm::ivec2 (*GetTextureLoc)(Direction dir);
+  glm::uvec2 (*GetTextureLoc)(Direction dir);
   bool opaque = true;
   // 0 = default,
   // 1 = translucent,

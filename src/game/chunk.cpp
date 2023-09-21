@@ -4,8 +4,10 @@
 #include "game/block.hpp"
 #include "game/direction.hpp"
 #include "game/mesh.hpp"
+#include "glm/ext/vector_uint3.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "util/webgpu-util.hpp"
+#include "dawn/utils/WGPUHelpers.h"
 #include "game.hpp"
 #include <iostream>
 #include <numeric>
@@ -21,22 +23,31 @@ Chunk::Chunk(
     : dirty(true), chunkOffset(offset), m_ctx(ctx), m_state(state),
       m_chunkManager(chunkManager) {
   m_worldOffset = glm::ivec3(offset * glm::ivec2(SIZE.x, SIZE.y), 0);
+
+  glm::vec3 worldOffset = m_worldOffset;
+  worldPosBuffer =
+    util::CreateUniformBuffer(ctx->device, sizeof(glm::vec3), &worldOffset);
+
+  bindGroup = dawn::utils::MakeBindGroup(
+    ctx->device, ctx->pipeline.chunkBGL,
+    {
+      {0, worldPosBuffer},
+    }
+  );
 }
 
 std::array<Cube, Chunk::VOLUME> Chunk::m_cubeData;
 
 void Chunk::InitSharedData() {
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
-    Cube &cube = m_cubeData[i_block];
-    glm::vec3 posOffset = IndexToPos(i_block);
-
-    for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
-      Face face = g_MESH_FACES[i_face];
-      for (size_t i_vertex = 0; i_vertex < face.vertices.size(); i_vertex++) {
-        face.vertices[i_vertex].position += posOffset;
+    glm::ivec3 posOffset = IndexToPos(i_block);
+    Cube cube = g_CUBE;
+    for (game::Face &face : cube.faces) {
+      for (Vertex &vertex : face.vertices) {
+        vertex.position += posOffset;
       }
-      cube.faces[i_face] = face;
     }
+    m_cubeData[i_block] = cube;
   }
 }
 
@@ -46,23 +57,45 @@ void Chunk::UpdateMesh() {
   m_waterData.Clear();
 
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
+    const Cube &cube = m_cubeData[i_block];
     BlockId id = m_blockIdData[i_block];
     if (id == BlockId::Air) continue;
     BlockType blockType = g_BLOCK_TYPES[(size_t)id];
     auto posOffset = IndexToPos(i_block);
 
-    Cube &cube = m_cubeData[i_block];
-    for (size_t i_face = 0; i_face < g_MESH_FACES.size(); i_face++) {
+    for (size_t i_face = 0; i_face < cube.faces.size(); i_face++) {
       if (!ShouldRender(id, posOffset, (Direction)i_face)) continue;
 
-      Face face = cube.faces[i_face];
-      for (auto &vertex : face.vertices) {
-        glm::ivec2 texLoc = blockType.GetTextureLoc((Direction)i_face);
-        // convert texLoc to 1 byte (2x 4 bits), store in end of extraData
-        vertex.extraData = texLoc.x | (texLoc.y << 4);
-        // store transparency of face (2 bits)
-        vertex.extraData |= (blockType.transparency << 8);
-        vertex.position += m_worldOffset;
+      const game::Face &faceSrc = cube.faces[i_face];
+      Chunk::Face face;
+      for (size_t i_vertex = 0; i_vertex < face.vertices.size(); i_vertex++) {
+        const Vertex &vertexSrc = faceSrc.vertices[i_vertex];
+        VertexAttribs &attribs = face.vertices[i_vertex];
+
+        // 0  position (5 bits, 5 bits, 10 bits)
+        // 20 uv (1 bit x 2)
+        // 22 texLoc (4 bits x 2)
+        // 30 transparency (2 bits)
+        glm::uvec3 position = vertexSrc.position;
+        attribs.data1 |= (u_int32_t)position.x;
+        attribs.data1 |= (u_int32_t)position.y << 5;
+        attribs.data1 |= (u_int32_t)position.z << 10;
+
+        attribs.data1 |= (u_int32_t)vertexSrc.uv.x << 20;
+        attribs.data1 |= (u_int32_t)vertexSrc.uv.y << 21;
+
+        glm::uvec2 texLoc = blockType.GetTextureLoc((Direction)i_face);
+        attribs.data1 |= (u_int32_t)texLoc.x << 22;
+        attribs.data1 |= (u_int32_t)texLoc.y << 26;
+
+        attribs.data1 |= (u_int32_t)blockType.transparency << 30;
+
+        // 0 normal (2 bit x 3)
+        // map (-1, 1) to (0, 2)
+        glm::uvec3 normal = vertexSrc.normal + 1;
+        attribs.data2 |= (u_int32_t)normal.x;
+        attribs.data2 |= (u_int32_t)normal.y << 2;
+        attribs.data2 |= (u_int32_t)normal.z << 4;
       }
 
       FaceIndex faceIndex;
@@ -79,6 +112,7 @@ void Chunk::UpdateMesh() {
 }
 
 void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
+  passEncoder.SetBindGroup(2, bindGroup);
   passEncoder.SetVertexBuffer(0, m_opaqueData.vbo, 0, m_opaqueData.vbo.GetSize());
   passEncoder.SetIndexBuffer(
     m_opaqueData.ebo, IndexFormat::Uint32, 0, m_opaqueData.ebo.GetSize()
@@ -92,34 +126,36 @@ void Chunk::RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder) {
   // timer->Start();
 
   // sort indices based on distance from current position;
-  auto position = glm::vec3(m_state->player.GetPosition());
-  std::vector<FaceIndex> sortedIndices = m_translucentData.indices;
-  std::sort(sortedIndices.begin(), sortedIndices.end(), [&](FaceIndex a, FaceIndex b) {
-    auto aPos = m_translucentData.faces[a.indices[0]].vertices[0].position;
-    auto bPos = m_translucentData.faces[b.indices[0]].vertices[0].position;
-    return glm::distance(aPos, position) > glm::distance(bPos, position);
-  });
-  wgpu::Buffer ebo = util::CreateIndexBuffer(
-    m_ctx->device, sortedIndices.size() * sizeof(FaceIndex), sortedIndices.data()
-  );
+  // auto position = glm::vec3(m_state->player.GetPosition());
+  // std::vector<FaceIndex> sortedIndices = m_translucentData.indices;
+  // std::sort(sortedIndices.begin(), sortedIndices.end(), [&](FaceIndex a, FaceIndex b)
+  // {
+  //   auto aPos = m_translucentData.faces[a.indices[0]].vertices[0].position;
+  //   auto bPos = m_translucentData.faces[b.indices[0]].vertices[0].position;
+  //   return glm::distance(aPos, position) > glm::distance(bPos, position);
+  // });
+  // wgpu::Buffer ebo = util::CreateIndexBuffer(
+  //   m_ctx->device, sortedIndices.size() * sizeof(FaceIndex), sortedIndices.data()
+  // );
 
   // std::cout << timer->GetElapsedTime() << "\n";
   // delete timer;
 
   // render
-  passEncoder.SetVertexBuffer(
-    0, m_translucentData.vbo, 0, m_translucentData.vbo.GetSize()
-  );
+  // passEncoder.SetVertexBuffer(
+  //   0, m_translucentData.vbo, 0, m_translucentData.vbo.GetSize()
+  // );
   // passEncoder.SetIndexBuffer(
   //   m_translucentData.ebo, IndexFormat::Uint32, 0, m_translucentData.ebo.GetSize()
   // );
   // passEncoder.DrawIndexed(m_translucentData.indices.size() * 6);
 
-  passEncoder.SetIndexBuffer(ebo, IndexFormat::Uint32, 0, ebo.GetSize());
-  passEncoder.DrawIndexed(sortedIndices.size() * 6);
+  // passEncoder.SetIndexBuffer(ebo, IndexFormat::Uint32, 0, ebo.GetSize());
+  // passEncoder.DrawIndexed(sortedIndices.size() * 6);
 }
 
 void Chunk::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
+  passEncoder.SetBindGroup(3, bindGroup);
   passEncoder.SetVertexBuffer(0, m_waterData.vbo, 0, m_waterData.vbo.GetSize());
   passEncoder.SetIndexBuffer(
     m_waterData.ebo, IndexFormat::Uint32, 0, m_waterData.ebo.GetSize()

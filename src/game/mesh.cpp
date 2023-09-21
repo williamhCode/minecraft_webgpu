@@ -3,7 +3,7 @@
 namespace game {
 
 // clang-format off
-const glm::vec3 CUBE_VERTICES[] = {
+const glm::ivec3 CUBE_VERTICES[] = {
   {0, 0, 0},
   {1, 0, 0},
   {1, 1, 0},
@@ -23,7 +23,7 @@ const uint32_t CUBE_INDICES[6][4] = {
   {3, 2, 1, 0}, // bottom (-z)
 };
 
-const glm::vec3 NORMALS[] = {
+const glm::ivec3 NORMALS[] = {
   {0,  1,  0},
   {0, -1,  0},
   {1,  0,  0},
@@ -32,7 +32,7 @@ const glm::vec3 NORMALS[] = {
   {0,  0, -1},
 };
 
-const glm::vec2 TEX_COORDS[] = {
+const glm::uvec2 TEX_COORDS[] = {
   {0, 1},
   {1, 1},
   {1, 0},
@@ -40,13 +40,13 @@ const glm::vec2 TEX_COORDS[] = {
 };
 // clang-format on
 
-std::array<Face, 6> g_MESH_FACES;
+Cube g_CUBE;
 const std::array<uint32_t, 6> g_FACE_INDICES = {0, 1, 3, 2, 3, 1};
 
 void InitMesh() {
-  for (size_t i = 0; i < g_MESH_FACES.size(); i++) {
-    Face &face = g_MESH_FACES[i];
-    glm::vec3 normal = NORMALS[i];
+  for (size_t i = 0; i < g_CUBE.faces.size(); i++) {
+    Face &face = g_CUBE.faces[i];
+    glm::ivec3 normal = NORMALS[i];
 
     for (size_t j = 0; j < face.vertices.size(); j++) {
       Vertex &vertex = face.vertices[j];

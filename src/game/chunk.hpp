@@ -24,12 +24,28 @@ class ChunkManager; // forward dec
 
 class Chunk {
 public:
+  struct VertexAttribs {
+    // 0  position (5 bits, 5 bits, 10 bits)
+    // 20 uv (1 bit x 2)
+    // 22 texLoc (4 bits x 2)
+    // 30 transparency (2 bits)
+    u_int32_t data1 = 0;
+    // 0 normal (2 bit x 3)
+    u_int32_t data2 = 0;
+  };
+
+  struct Face {
+    std::array<VertexAttribs, 4> vertices;
+  };
+
   static constexpr glm::ivec3 SIZE = glm::ivec3(16, 16, 128);
   static constexpr size_t VOLUME = SIZE.x * SIZE.y * SIZE.z;
 
   bool dirty;
   glm::ivec2 chunkOffset;
 
+  wgpu::Buffer worldPosBuffer;
+  wgpu::BindGroup bindGroup;
 private:
   util::Context *m_ctx;
   GameState *m_state;

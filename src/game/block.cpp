@@ -13,20 +13,20 @@ const std::array<BlockType, 8> g_BLOCK_TYPES = {
   BlockType{.opaque = false},
   // Water
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
       return {0, 15};
     },
     .opaque = false,
   },
   // Dirt
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
       return {2, 0};
     },
   },
   // Grass
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
       switch (dir) {
       case Direction::TOP:
         return {0, 0};
@@ -39,19 +39,19 @@ const std::array<BlockType, 8> g_BLOCK_TYPES = {
   },
   // Stone
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
       return {3, 0};
     },
   },
   // Sand
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
       return {0, 1};
     },
   },
   // Leaf
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
       return {4, 1};
     },
     .opaque = false,
@@ -59,7 +59,7 @@ const std::array<BlockType, 8> g_BLOCK_TYPES = {
   },
   // Glass
   BlockType{
-    .GetTextureLoc = [](Direction dir) -> glm::ivec2 {
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
       return {1, 1};
     },
     .opaque = false,

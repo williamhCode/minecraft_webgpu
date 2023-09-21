@@ -16,7 +16,7 @@ struct Options {
   sampleSize: i32,
   radius: f32,
   bias: f32,
-};
+}
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {

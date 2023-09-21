@@ -1,5 +1,6 @@
 #include "pipeline.hpp"
 #include "dawn/utils/WGPUHelpers.h"
+#include "game/chunk.hpp"
 #include "util/context.hpp"
 #include "util/renderer.hpp"
 #include "util/webgpu-util.hpp"
@@ -11,20 +12,18 @@
 namespace util {
 
 using namespace wgpu;
-using game::Vertex;
+using VertexAttribs = game::Chunk::VertexAttribs;
 
 Pipeline::Pipeline(Context &ctx) {
   // chunk vbo layout
   VertexBufferLayout chunkVBL;
   {
     static std::vector<VertexAttribute> vertexAttributes{
-      {VertexFormat::Float32x3, offsetof(Vertex, position), 0},
-      {VertexFormat::Float32x3, offsetof(Vertex, normal), 1},
-      {VertexFormat::Float32x2, offsetof(Vertex, uv), 2},
-      {VertexFormat::Uint32, offsetof(Vertex, extraData), 3},
+      {VertexFormat::Uint32, offsetof(VertexAttribs, data1), 0},
+      {VertexFormat::Uint32, offsetof(VertexAttribs, data2), 1},
     };
     chunkVBL = {
-      .arrayStride = sizeof(Vertex),
+      .arrayStride = sizeof(VertexAttribs),
       .attributeCount = vertexAttributes.size(),
       .attributes = vertexAttributes.data(),
     };
@@ -47,7 +46,13 @@ Pipeline::Pipeline(Context &ctx) {
       {1, ShaderStage::Fragment, SamplerBindingType::Filtering},
     }
   );
-
+  // chunk layout (world pos)
+  chunkBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
+    }
+  );
   // lighting layout
   lightingBGL = dawn::utils::MakeBindGroupLayout(
     ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}
@@ -63,6 +68,7 @@ Pipeline::Pipeline(Context &ctx) {
       {
         cameraBGL,
         textureBGL,
+        chunkBGL,
       }
     ),
     .vertex =
@@ -107,6 +113,7 @@ Pipeline::Pipeline(Context &ctx) {
         cameraBGL,
         textureBGL,
         lightingBGL,
+        chunkBGL,
       }
     ),
     .vertex =

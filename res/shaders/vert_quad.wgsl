@@ -1,7 +1,7 @@
 struct VertexInput {
   @location(0) position: vec2f,
   @location(1) uv: vec2f,
-};
+}
 
 struct VertexOutput {
   @builtin(position) position: vec4f,
