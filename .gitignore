@@ -4,3 +4,4 @@ compile_commands.json
 .ignore
 xcode
 imgui.ini
+tint

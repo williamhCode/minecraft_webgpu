@@ -57,8 +57,10 @@ Game::Game() {
   // disable high-dpi for macOS
   // glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 
-  m_state.size = {1400, 1000};
   // m_state.size = {960, 540};
+  // m_state.size = {1200, 800};
+  m_state.size = {1400, 1000};
+
   m_window =
     glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
   if (!m_window) {
@@ -70,7 +72,6 @@ Game::Game() {
   // glfwPollEvents();
 
   glfwSetWindowUserPointer(m_window, this);
-
   glfwSetKeyCallback(m_window, _KeyCallback);
   glfwSetMouseButtonCallback(m_window, _MouseButtonCallback);
   glfwSetCursorPosCallback(m_window, _CursorPosCallback);
@@ -186,10 +187,8 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
         m_state.player.speed = 10;
     }
 
-    if (key == GLFW_KEY_1)
-      m_state.currBlock = game::BlockId::Glass;
-    if (key == GLFW_KEY_2)
-      m_state.currBlock = game::BlockId::Leaf;
+    if (key == GLFW_KEY_1) m_state.currBlock = game::BlockId::Glass;
+    if (key == GLFW_KEY_2) m_state.currBlock = game::BlockId::Leaf;
   }
 }
 

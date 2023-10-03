@@ -4,8 +4,12 @@ BACKEND = dawn
 TYPE = release
 
 build:
-	-cmake --build build/$(BACKEND)/$(TYPE)
+	cmake --build build/$(BACKEND)/$(TYPE)
 	cp build/$(BACKEND)/$(TYPE)/compile_commands.json .
+
+build-tint:
+	cmake --build build/$(BACKEND)/$(TYPE) --target tint
+	cp build/$(BACKEND)/$(TYPE)/_deps/dawn-build/tint .
 
 build-setup:
 	cmake . -B build/dawn/debug -DCMAKE_BUILD_TYPE=Debug -GNinja

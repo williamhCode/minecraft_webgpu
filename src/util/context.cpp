@@ -57,7 +57,7 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
     .format = swapChainFormat,
     .width = size.x,
     .height = size.y,
-    .presentMode = PresentMode::Immediate,
+    .presentMode = PresentMode::Fifo,
   };
   swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 
