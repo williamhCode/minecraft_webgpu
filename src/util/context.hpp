@@ -1,7 +1,7 @@
 #pragma once
 
 #include "glm/ext/vector_uint2.hpp"
-#include "util/pipeline.hpp"
+#include "gfx/pipeline.hpp"
 #include <webgpu/webgpu_cpp.h>
 
 #include <GLFW/glfw3.h>
@@ -21,7 +21,7 @@ struct Context {
   wgpu::TextureFormat swapChainFormat;
   wgpu::TextureFormat depthFormat;
 
-  util::Pipeline pipeline;
+  gfx::Pipeline pipeline;
 
   Context() = default;
   Context(GLFWwindow *window, glm::uvec2 size);

@@ -4,13 +4,16 @@
 #include <vector>
 
 namespace util {
+  struct Context;
+}
 
-struct Context;
+namespace gfx {
 
 struct Pipeline {
   wgpu::BindGroupLayout cameraBGL;
   wgpu::BindGroupLayout textureBGL;
   wgpu::BindGroupLayout chunkBGL;
+  wgpu::BindGroupLayout lightingBGL;
 
   wgpu::BindGroupLayout gBufferBGL;
   wgpu::BindGroupLayout ssaoSamplingBGL;
@@ -18,8 +21,8 @@ struct Pipeline {
   wgpu::BindGroupLayout ssaoTextureBGL;
 
   wgpu::BindGroupLayout compositeBGL;
-  wgpu::BindGroupLayout lightingBGL;
 
+  wgpu::RenderPipeline shadowRPL;
   wgpu::RenderPipeline gBufferRPL;
   wgpu::RenderPipeline waterRPL;
   wgpu::RenderPipeline ssaoRPL;
@@ -27,7 +30,7 @@ struct Pipeline {
   wgpu::RenderPipeline compositeRPL;
 
   Pipeline() = default;
-  Pipeline(Context &ctx);
+  Pipeline(util::Context &ctx);
 };
 
 } // namespace util

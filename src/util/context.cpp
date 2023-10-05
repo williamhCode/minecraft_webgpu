@@ -61,7 +61,7 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
   };
   swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 
-  pipeline = Pipeline(*this);
+  pipeline = gfx::Pipeline(*this);
 }
 
 } // namespace util

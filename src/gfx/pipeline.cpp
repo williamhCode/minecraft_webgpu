@@ -2,19 +2,19 @@
 #include "dawn/utils/WGPUHelpers.h"
 #include "game/chunk.hpp"
 #include "util/context.hpp"
-#include "util/renderer.hpp"
+#include "gfx/renderer.hpp"
 #include "util/webgpu-util.hpp"
 #include "game/mesh.hpp"
 #include "glm-include.hpp"
 #include "game/mesh.hpp"
 #include <vector>
 
-namespace util {
+namespace gfx {
 
 using namespace wgpu;
 using VertexAttribs = game::Chunk::VertexAttribs;
 
-Pipeline::Pipeline(Context &ctx) {
+Pipeline::Pipeline(util::Context &ctx) {
   // chunk vbo layout
   VertexBufferLayout chunkVBL;
   {
@@ -53,10 +53,44 @@ Pipeline::Pipeline(Context &ctx) {
       {0, ShaderStage::Vertex, BufferBindingType::Uniform},
     }
   );
-  // lighting layout
+  // lighting layout (sunDir, sunViewProj)
   lightingBGL = dawn::utils::MakeBindGroupLayout(
-    ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, BufferBindingType::Uniform},
+      // {1, ShaderStage::Vertex, BufferBindingType::Uniform},
+    }
   );
+
+  // shadow pipeline --------------------------------------------------
+  // ShaderModule shaderVertShadow =
+  //   util::LoadShaderModule(ROOT_DIR "/res/shaders/vert_shadow.wgsl", ctx.device);
+
+  // shadowRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+  //   .layout = dawn::utils::MakePipelineLayout(
+  //     ctx.device,
+  //     {
+  //       lightingBGL,
+  //       chunkBGL,
+  //     }
+  //   ),
+  //   .vertex =
+  //     VertexState{
+  //       .module = shaderVertShadow,
+  //       .entryPoint = "vs_main",
+  //       .bufferCount = 1,
+  //       .buffers = &chunkVBL,
+  //     },
+  //   .primitive =
+  //     PrimitiveState{
+  //       .cullMode = CullMode::Back,
+  //     },
+  //   .depthStencil = ToPtr(DepthStencilState{
+  //     .format = ctx.depthFormat,
+  //     .depthWriteEnabled = true,
+  //     .depthCompare = CompareFunction::Less,
+  //   }),
+  // }));
 
   // g_buffer pipeline -------------------------------------------------
   ShaderModule shaderGBuffer =

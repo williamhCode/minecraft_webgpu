@@ -4,14 +4,14 @@
 #include "glm/ext/vector_uint2.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "context.hpp"
+#include "util/context.hpp"
 #include <array>
 #include "util/webgpu-util.hpp"
 
 // forward declaration
 struct GameState;
 
-namespace util {
+namespace gfx {
 
 struct QuadVertex {
   glm::vec2 position;
@@ -41,12 +41,16 @@ struct SSAO {
 
 class Renderer {
 private:
-  Context *m_ctx;
+  util::Context *m_ctx;
   GameState *m_state;
 
   wgpu::BindGroup m_blocksTextureBindGroup;
   wgpu::TextureView m_depthTextureView;
   wgpu::Buffer m_quadBuffer;
+
+  // shadow
+  wgpu::TextureView m_shadowMapTextureView;
+  util::RenderPassDescriptor m_shadowPassDesc;
 
   // gbuffer
   // position (view-space), normal, color
@@ -74,12 +78,8 @@ private:
   wgpu::BindGroup m_lightingBindGroup;
   wgpu::RenderPassDescriptor m_compositePassDesc;
 
-  // shadow map
-  wgpu::TextureView m_shadowMapTextureView;
-  util::RenderPassDescriptor m_shadowPassDesc;
-
 public:
-  Renderer(Context *ctx, GameState *state);
+  Renderer(util::Context *ctx, GameState *state);
   void ImguiRender();
   void Render();
   void Present();

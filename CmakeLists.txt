@@ -35,9 +35,9 @@ set(APP_SRC
   src/util/context.cpp
   src/util/load.cpp
   src/util/webgpu-util.cpp
-  src/util/pipeline.cpp
+  src/gfx/pipeline.cpp
   src/util/texture.cpp
-  src/util/renderer.cpp
+  src/gfx/renderer.cpp
   src/util/timer.cpp
   src/util/frustum.cpp
 

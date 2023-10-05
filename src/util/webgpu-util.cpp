@@ -90,33 +90,38 @@ ShaderModule LoadShaderModule(const fs::path &path, Device &device) {
 
 // clang-format off
 void PrintLimits(wgpu::Limits const &limits) {
-  std::cout << "Adapter limits:" << std::endl;
-  std::cout << " - maxTextureDimension1D: " << limits.maxTextureDimension1D << std::endl;
-  std::cout << " - maxTextureDimension2D: " << limits.maxTextureDimension2D << std::endl;
-  std::cout << " - maxTextureDimension3D: " << limits.maxTextureDimension3D << std::endl;
-  std::cout << " - maxTextureArrayLayers: " << limits.maxTextureArrayLayers << std::endl;
-  std::cout << " - maxBindGroups: " << limits.maxBindGroups << std::endl;
-  std::cout << " - maxDynamicUniformBuffersPerPipelineLayout: " << limits.maxDynamicUniformBuffersPerPipelineLayout << std::endl;
-  std::cout << " - maxDynamicStorageBuffersPerPipelineLayout: " << limits.maxDynamicStorageBuffersPerPipelineLayout << std::endl;
-  std::cout << " - maxSampledTexturesPerShaderStage: " << limits.maxSampledTexturesPerShaderStage << std::endl;
-  std::cout << " - maxSamplersPerShaderStage: " << limits.maxSamplersPerShaderStage << std::endl;
-  std::cout << " - maxStorageBuffersPerShaderStage: " << limits.maxStorageBuffersPerShaderStage << std::endl;
-  std::cout << " - maxStorageTexturesPerShaderStage: " << limits.maxStorageTexturesPerShaderStage << std::endl;
-  std::cout << " - maxUniformBuffersPerShaderStage: " << limits.maxUniformBuffersPerShaderStage << std::endl;
-  std::cout << " - maxUniformBufferBindingSize: " << limits.maxUniformBufferBindingSize << std::endl;
-  std::cout << " - maxStorageBufferBindingSize: " << limits.maxStorageBufferBindingSize << std::endl;
-  std::cout << " - minUniformBufferOffsetAlignment: " << limits.minUniformBufferOffsetAlignment << std::endl;
-  std::cout << " - minStorageBufferOffsetAlignment: " << limits.minStorageBufferOffsetAlignment << std::endl;
-  std::cout << " - maxVertexBuffers: " << limits.maxVertexBuffers << std::endl;
-  std::cout << " - maxVertexAttributes: " << limits.maxVertexAttributes << std::endl;
-  std::cout << " - maxVertexBufferArrayStride: " << limits.maxVertexBufferArrayStride << std::endl;
-  std::cout << " - maxInterStageShaderComponents: " << limits.maxInterStageShaderComponents << std::endl;
-  std::cout << " - maxComputeWorkgroupStorageSize: " << limits.maxComputeWorkgroupStorageSize << std::endl;
-  std::cout << " - maxComputeInvocationsPerWorkgroup: " << limits.maxComputeInvocationsPerWorkgroup << std::endl;
-  std::cout << " - maxComputeWorkgroupSizeX: " << limits.maxComputeWorkgroupSizeX << std::endl;
-  std::cout << " - maxComputeWorkgroupSizeY: " << limits.maxComputeWorkgroupSizeY << std::endl;
-  std::cout << " - maxComputeWorkgroupSizeZ: " << limits.maxComputeWorkgroupSizeZ << std::endl;
-  std::cout << " - maxComputeWorkgroupsPerDimension: " << limits.maxComputeWorkgroupsPerDimension << std::endl;
+  std::cout << " - maxTextureDimension1D: " << limits.maxTextureDimension1D << "\n";
+  std::cout << " - maxTextureDimension2D: " << limits.maxTextureDimension2D << "\n";
+  std::cout << " - maxTextureDimension3D: " << limits.maxTextureDimension3D << "\n";
+  std::cout << " - maxTextureArrayLayers: " << limits.maxTextureArrayLayers << "\n";
+  std::cout << " - maxBindGroups: " << limits.maxBindGroups << "\n";
+  std::cout << " - maxBindGroupsPlusVertexBuffers: " << limits.maxBindGroupsPlusVertexBuffers << "\n";
+  std::cout << " - maxBindingsPerBindGroup: " << limits.maxBindingsPerBindGroup << "\n";
+  std::cout << " - maxDynamicUniformBuffersPerPipelineLayout: " << limits.maxDynamicUniformBuffersPerPipelineLayout << "\n";
+  std::cout << " - maxDynamicStorageBuffersPerPipelineLayout: " << limits.maxDynamicStorageBuffersPerPipelineLayout << "\n";
+  std::cout << " - maxSampledTexturesPerShaderStage: " << limits.maxSampledTexturesPerShaderStage << "\n";
+  std::cout << " - maxSamplersPerShaderStage: " << limits.maxSamplersPerShaderStage << "\n";
+  std::cout << " - maxStorageBuffersPerShaderStage: " << limits.maxStorageBuffersPerShaderStage << "\n";
+  std::cout << " - maxStorageTexturesPerShaderStage: " << limits.maxStorageTexturesPerShaderStage << "\n";
+  std::cout << " - maxUniformBuffersPerShaderStage: " << limits.maxUniformBuffersPerShaderStage << "\n";
+  std::cout << " - maxUniformBufferBindingSize: " << limits.maxUniformBufferBindingSize << "\n";
+  std::cout << " - maxStorageBufferBindingSize: " << limits.maxStorageBufferBindingSize << "\n";
+  std::cout << " - minUniformBufferOffsetAlignment: " << limits.minUniformBufferOffsetAlignment << "\n";
+  std::cout << " - minStorageBufferOffsetAlignment: " << limits.minStorageBufferOffsetAlignment << "\n";
+  std::cout << " - maxVertexBuffers: " << limits.maxVertexBuffers << "\n";
+  std::cout << " - maxBufferSize: " << limits.maxBufferSize << "\n";
+  std::cout << " - maxVertexAttributes: " << limits.maxVertexAttributes << "\n";
+  std::cout << " - maxVertexBufferArrayStride: " << limits.maxVertexBufferArrayStride << "\n";
+  std::cout << " - maxInterStageShaderComponents: " << limits.maxInterStageShaderComponents << "\n";
+  std::cout << " - maxInterStageShaderVariables: " << limits.maxInterStageShaderVariables << "\n";
+  std::cout << " - maxColorAttachments: " << limits.maxColorAttachments << "\n";
+  std::cout << " - maxColorAttachmentBytesPerSample: " << limits.maxColorAttachmentBytesPerSample << "\n";
+  std::cout << " - maxComputeWorkgroupStorageSize: " << limits.maxComputeWorkgroupStorageSize << "\n";
+  std::cout << " - maxComputeInvocationsPerWorkgroup: " << limits.maxComputeInvocationsPerWorkgroup << "\n";
+  std::cout << " - maxComputeWorkgroupSizeX: " << limits.maxComputeWorkgroupSizeX << "\n";
+  std::cout << " - maxComputeWorkgroupSizeY: " << limits.maxComputeWorkgroupSizeY << "\n";
+  std::cout << " - maxComputeWorkgroupSizeZ: " << limits.maxComputeWorkgroupSizeZ << "\n";
+  std::cout << " - maxComputeWorkgroupsPerDimension: " << limits.maxComputeWorkgroupsPerDimension << "\n";
 }
 // clang-format on
 
@@ -185,15 +190,15 @@ wgpu::Texture CreateRenderTexture(
 
 util::RenderPassDescriptor::RenderPassDescriptor(
   std::vector<wgpu::RenderPassColorAttachment> colorAttachments,
-  const wgpu::RenderPassDepthStencilAttachment *depthStencilAttachment
+  wgpu::RenderPassDepthStencilAttachment depthStencilAttachment
 )
     : cColorAttachments(std::move(colorAttachments)) {
 
   colorAttachmentCount = cColorAttachments.size();
   this->colorAttachments = cColorAttachments.data();
 
-  if (depthStencilAttachment) {
-    cDepthStencilAttachmentInfo = *depthStencilAttachment;
+  if (depthStencilAttachment.view.Get() != nullptr) {
+    cDepthStencilAttachmentInfo = std::move(depthStencilAttachment);
     this->depthStencilAttachment = &cDepthStencilAttachmentInfo;
   }
 }

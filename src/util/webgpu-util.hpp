@@ -34,7 +34,7 @@ struct RenderPassDescriptor : public wgpu::RenderPassDescriptor{
   RenderPassDescriptor() = default;
   RenderPassDescriptor(
     std::vector<wgpu::RenderPassColorAttachment> colorAttachments,
-    const wgpu::RenderPassDepthStencilAttachment *depthStencilAttachment = nullptr
+    wgpu::RenderPassDepthStencilAttachment depthStencilAttachment = wgpu::RenderPassDepthStencilAttachment{}
   );
 
   std::vector<wgpu::RenderPassColorAttachment> cColorAttachments;

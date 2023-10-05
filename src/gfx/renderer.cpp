@@ -12,7 +12,7 @@
 #include "imgui_impl_wgpu.h"
 #include "util/context.hpp"
 
-namespace util {
+namespace gfx {
 
 using namespace wgpu;
 
@@ -23,8 +23,8 @@ std::vector<QuadVertex> GetQuadVertices() {
   };
 }
 
-Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) {
-  // init shared resources
+Renderer::Renderer(util::Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) {
+  // shared resources -----------------------------------------
   m_blocksTextureBindGroup = game::CreateBlocksTexture(*m_ctx);
 
   auto quadVertices = GetQuadVertices();
@@ -39,6 +39,22 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &m_state->sunDir);
   m_lightingBindGroup = dawn::utils::MakeBindGroup(
     m_ctx->device, m_ctx->pipeline.lightingBGL, {{0, sunDirBuffer}}
+  );
+
+  // shadow pass ----------------------------------------------
+  Extent3D shadowMapSize{1024, 1024};
+  m_shadowMapTextureView =
+    util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::R32Float)
+      .CreateView();
+
+  m_shadowPassDesc = util::RenderPassDescriptor(
+    {},
+    {
+      .view = m_shadowMapTextureView,
+      .depthLoadOp = LoadOp::Clear,
+      .depthStoreOp = StoreOp::Store,
+      .depthClearValue = 1.0,
+    }
   );
 
   // gbuffer pass -----------------------------------------------------
@@ -214,21 +230,6 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     .colorAttachmentCount = 1,
     .colorAttachments = nullptr,
   };
-
-  // shadow map pass ----------------------------------------------
-  Extent3D shadowMapSize = {1024, 1024};
-  m_shadowMapTextureView =
-    util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::R32Float)
-      .CreateView();
-
-  m_shadowPassDesc = util::RenderPassDescriptor({
-    {
-      .view = m_shadowMapTextureView,
-      .loadOp = LoadOp::Clear,
-      .storeOp = StoreOp::Store,
-      .clearValue = {1.0, 0.0, 0.0, 0.0},
-    },
-  });
 }
 
 void Renderer::ImguiRender() {

@@ -7,7 +7,7 @@
 
 #include "game/player.hpp"
 #include "util/context.hpp"
-#include "util/renderer.hpp"
+#include "gfx/renderer.hpp"
 
 struct GameState {
   glm::uvec2 size;

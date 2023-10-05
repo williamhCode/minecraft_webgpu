@@ -18,11 +18,11 @@
 #include "game/ray.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "util/context.hpp"
-#include "util/renderer.hpp"
+#include "gfx/renderer.hpp"
 #include "util/timer.hpp"
 #include "util/webgpu-util.hpp"
 #include "util/load.hpp"
-#include "util/pipeline.hpp"
+#include "gfx/pipeline.hpp"
 
 #include <array>
 #include <fstream>
@@ -121,7 +121,7 @@ Game::Game() {
   m_state.currBlock = game::BlockId::Glass;
 
   // setup rendering
-  util::Renderer renderer(&m_ctx, &m_state);
+  gfx::Renderer renderer(&m_ctx, &m_state);
 
   // game loop
   util::Timer timer;
