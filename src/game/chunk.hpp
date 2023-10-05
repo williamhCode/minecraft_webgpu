@@ -99,6 +99,7 @@ public:
   Chunk(
     util::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
   );
+
   static void InitSharedData();
 
   void UpdateMesh();

@@ -183,4 +183,19 @@ wgpu::Texture CreateRenderTexture(
   return device.CreateTexture(&textureDesc);
 }
 
+util::RenderPassDescriptor::RenderPassDescriptor(
+  std::vector<wgpu::RenderPassColorAttachment> colorAttachments,
+  const wgpu::RenderPassDepthStencilAttachment *depthStencilAttachment
+)
+    : cColorAttachments(std::move(colorAttachments)) {
+
+  colorAttachmentCount = cColorAttachments.size();
+  this->colorAttachments = cColorAttachments.data();
+
+  if (depthStencilAttachment) {
+    cDepthStencilAttachmentInfo = *depthStencilAttachment;
+    this->depthStencilAttachment = &cDepthStencilAttachmentInfo;
+  }
+}
+
 } // namespace util

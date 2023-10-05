@@ -6,6 +6,7 @@
 #include "webgpu/webgpu_cpp.h"
 #include "context.hpp"
 #include <array>
+#include "util/webgpu-util.hpp"
 
 // forward declaration
 struct GameState;
@@ -61,17 +62,21 @@ private:
 
   wgpu::BindGroup m_gBufferBindGroup;
   wgpu::BindGroup m_ssaoSamplingBindGroup;
-  wgpu::RenderPassDescriptor m_ssaoPassDesc;
+  util::RenderPassDescriptor m_ssaoPassDesc;
 
   // blur
   // pre-blur and blurred (used in composite)
   std::array<wgpu::BindGroup, 2> m_ssaoTextureBindGroups;
-  wgpu::RenderPassDescriptor m_blurPassDesc;
+  util::RenderPassDescriptor m_blurPassDesc;
 
   // composite
   wgpu::BindGroup m_compositeBindGroup;
   wgpu::BindGroup m_lightingBindGroup;
   wgpu::RenderPassDescriptor m_compositePassDesc;
+
+  // shadow map
+  wgpu::TextureView m_shadowMapTextureView;
+  util::RenderPassDescriptor m_shadowPassDesc;
 
 public:
   Renderer(Context *ctx, GameState *state);

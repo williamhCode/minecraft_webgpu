@@ -1,6 +1,8 @@
 #pragma once
 
 #include "util/context.hpp"
+#include <functional>
+#include <optional>
 #include <vector>
 #include <webgpu/webgpu_cpp.h>
 #include <fstream>
@@ -27,9 +29,20 @@ wgpu::Buffer CreateUniformBuffer(wgpu::Device &device, size_t size, const void *
 
 wgpu::Texture CreateTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format, const void *data = nullptr);
 wgpu::Texture CreateRenderTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format);
+
+struct RenderPassDescriptor : public wgpu::RenderPassDescriptor{
+  RenderPassDescriptor() = default;
+  RenderPassDescriptor(
+    std::vector<wgpu::RenderPassColorAttachment> colorAttachments,
+    const wgpu::RenderPassDepthStencilAttachment *depthStencilAttachment = nullptr
+  );
+
+  std::vector<wgpu::RenderPassColorAttachment> cColorAttachments;
+  wgpu::RenderPassDepthStencilAttachment cDepthStencilAttachmentInfo;
+};
 // clang-format on
 
-namespace UBlendState {
+namespace BlendState {
 const wgpu::BlendState ALPHA_BLENDING = {
   .color{
     .operation = wgpu::BlendOperation::Add,

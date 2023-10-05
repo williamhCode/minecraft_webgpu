@@ -96,7 +96,7 @@ Pipeline::Pipeline(Context &ctx) {
         {.format = TextureFormat::RGBA16Float}, // normal
         {
           .format = TextureFormat::BGRA8Unorm,
-          .blend = &UBlendState::ALPHA_BLENDING,
+          .blend = &util::BlendState::ALPHA_BLENDING,
         }, // albedo
       }),
     }),

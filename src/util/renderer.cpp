@@ -8,10 +8,9 @@
 #include <vector>
 #include "glm/gtx/compatibility.hpp"
 #include "imgui.h"
-#include "imgui_impl_glfw.h" 
+#include "imgui_impl_glfw.h"
 #include "imgui_impl_wgpu.h"
 #include "util/context.hpp"
-#include "util/webgpu-util.hpp"
 
 namespace util {
 
@@ -174,20 +173,13 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
   }
 
   // pass desc
-  {
-    static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
-      {
-        .view = ssaoTextureViews[0],
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {1.0, 0.0, 0.0, 0.0},
-      },
-    };
-    m_ssaoPassDesc = {
-      .colorAttachmentCount = colorAttachments.size(),
-      .colorAttachments = colorAttachments.data(),
-    };
-  }
+  m_ssaoPassDesc = util::RenderPassDescriptor({
+    {
+      .view = ssaoTextureViews[0],
+      .loadOp = LoadOp::Clear,
+      .storeOp = StoreOp::Store,
+    },
+  });
 
   // blur pass ---------------------------------------------------
   // ssao texture bindgroups
@@ -201,20 +193,13 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     );
   }
 
-  {
-    static std::vector<wgpu::RenderPassColorAttachment> colorAttachments{
-      {
-        .view = ssaoTextureViews[1],
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 0.0},
-      },
-    };
-    m_blurPassDesc = {
-      .colorAttachmentCount = colorAttachments.size(),
-      .colorAttachments = colorAttachments.data(),
-    };
-  }
+  m_blurPassDesc = util::RenderPassDescriptor({
+    {
+      .view = ssaoTextureViews[1],
+      .loadOp = LoadOp::Clear,
+      .storeOp = StoreOp::Store,
+    },
+  });
 
   // composite pass ---------------------------------------------------
   m_compositeBindGroup = dawn::utils::MakeBindGroup(
@@ -225,12 +210,25 @@ Renderer::Renderer(Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) 
     }
   );
 
-  {
-    m_compositePassDesc = {
-      .colorAttachmentCount = 1,
-      .colorAttachments = nullptr,
-    };
-  }
+  m_compositePassDesc = {
+    .colorAttachmentCount = 1,
+    .colorAttachments = nullptr,
+  };
+
+  // shadow map pass ----------------------------------------------
+  Extent3D shadowMapSize = {1024, 1024};
+  m_shadowMapTextureView =
+    util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::R32Float)
+      .CreateView();
+
+  m_shadowPassDesc = util::RenderPassDescriptor({
+    {
+      .view = m_shadowMapTextureView,
+      .loadOp = LoadOp::Clear,
+      .storeOp = StoreOp::Store,
+      .clearValue = {1.0, 0.0, 0.0, 0.0},
+    },
+  });
 }
 
 void Renderer::ImguiRender() {
