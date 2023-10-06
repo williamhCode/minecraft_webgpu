@@ -1,7 +1,7 @@
 #pragma once
 
 #include <webgpu/webgpu_cpp.h>
-#include "context.hpp"
+#include "gfx/context.hpp"
 #include "glm/vec3.hpp"
 #include "glm/vec2.hpp"
 

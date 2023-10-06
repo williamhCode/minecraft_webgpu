@@ -17,7 +17,7 @@
 #include "game/mesh.hpp"
 #include "game/ray.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include "gfx/renderer.hpp"
 #include "util/timer.hpp"
 #include "util/webgpu-util.hpp"
@@ -89,7 +89,7 @@ Game::Game() {
   // end window ----------------------------------
 
   // init wgpu context
-  m_ctx = util::Context(m_window, m_state.fbSize);
+  m_ctx = gfx::Context(m_window, m_state.fbSize);
 
   // setup imgui -----------------------------------------
   // Setup Dear ImGui context

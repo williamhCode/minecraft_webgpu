@@ -3,7 +3,7 @@
 #include "game/chunk.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include <glm/gtx/hash.hpp>
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include <unordered_map>
 #include <vector>
 
@@ -14,7 +14,7 @@ namespace game {
 
 class ChunkManager {
 private:
-  util::Context *m_ctx;
+  gfx::Context *m_ctx;
   GameState *m_state;
 
   std::vector<glm::ivec2> m_frustumOffsets;
@@ -27,7 +27,7 @@ public:
 
   // no default constructor,
   // we need its pointer to be stable because it is passed on
-  ChunkManager(util::Context *ctx, GameState *state);
+  ChunkManager(gfx::Context *ctx, GameState *state);
   void Update(glm::vec2 position);
   void Render(const wgpu::RenderPassEncoder &passEncoder);
   void RenderWater(const wgpu::RenderPassEncoder &passEncoder);

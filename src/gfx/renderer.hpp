@@ -4,7 +4,7 @@
 #include "glm/ext/vector_uint2.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include <array>
 #include "util/webgpu-util.hpp"
 
@@ -41,7 +41,7 @@ struct SSAO {
 
 class Renderer {
 private:
-  util::Context *m_ctx;
+  gfx::Context *m_ctx;
   GameState *m_state;
 
   wgpu::BindGroup m_blocksTextureBindGroup;
@@ -79,7 +79,7 @@ private:
   wgpu::RenderPassDescriptor m_compositePassDesc;
 
 public:
-  Renderer(util::Context *ctx, GameState *state);
+  Renderer(gfx::Context *ctx, GameState *state);
   void ImguiRender();
   void Render();
   void Present();

@@ -10,7 +10,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_wgpu.h"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 
 namespace gfx {
 
@@ -23,7 +23,7 @@ std::vector<QuadVertex> GetQuadVertices() {
   };
 }
 
-Renderer::Renderer(util::Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) {
+Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(state) {
   // shared resources -----------------------------------------
   m_blocksTextureBindGroup = game::CreateBlocksTexture(*m_ctx);
 
@@ -260,7 +260,7 @@ void Renderer::ImguiRender() {
   if (!m_state->focused) {
     static bool isFirstFrame = true;
     if (isFirstFrame) {
-      // ImGui::SetNextWindowPos(ImVec2(m_state->size.x - 300, 30));
+      ImGui::SetNextWindowPos(ImVec2(m_state->size.x - 300, 30));
       // ImGui::SetNextWindowSize(ImVec2(270, 200));
       isFirstFrame = false;
     }

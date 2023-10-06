@@ -1,7 +1,7 @@
 #include "chunk_manager.hpp"
 #include "gen.hpp"
 #include "glm/common.hpp"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include <iostream>
 #include <ostream>
 #include <unordered_map>
@@ -11,7 +11,7 @@ namespace game {
 
 using namespace wgpu;
 
-ChunkManager::ChunkManager(util::Context *ctx, GameState *state)
+ChunkManager::ChunkManager(gfx::Context *ctx, GameState *state)
     : m_ctx(ctx), m_state(state) {
   const glm::ivec2 centerPos = glm::floor(glm::vec2(0, 0) / glm::vec2(Chunk::SIZE)),
                    minOffset = centerPos - glm::ivec2(radius, radius),

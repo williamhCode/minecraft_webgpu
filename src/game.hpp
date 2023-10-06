@@ -6,7 +6,7 @@
 #include "glm-include.hpp"
 
 #include "game/player.hpp"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include "gfx/renderer.hpp"
 
 struct GameState {
@@ -31,7 +31,7 @@ class Game {
 private:
   GLFWwindow *m_window;
 
-  util::Context m_ctx;
+  gfx::Context m_ctx;
   GameState m_state;
 
   glm::vec2 m_lastMousePos;

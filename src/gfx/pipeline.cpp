@@ -1,7 +1,7 @@
 #include "pipeline.hpp"
 #include "dawn/utils/WGPUHelpers.h"
 #include "game/chunk.hpp"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include "gfx/renderer.hpp"
 #include "util/webgpu-util.hpp"
 #include "game/mesh.hpp"
@@ -14,7 +14,7 @@ namespace gfx {
 using namespace wgpu;
 using VertexAttribs = game::Chunk::VertexAttribs;
 
-Pipeline::Pipeline(util::Context &ctx) {
+Pipeline::Pipeline(gfx::Context &ctx) {
   // chunk vbo layout
   VertexBufferLayout chunkVBL;
   {

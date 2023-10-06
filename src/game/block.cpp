@@ -1,7 +1,7 @@
 #include "block.hpp"
 #include "dawn/utils/WGPUHelpers.h"
 #include "game/direction.hpp"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include "util/texture.hpp"
 
 namespace game {
@@ -67,7 +67,7 @@ const std::array<BlockType, 8> g_BLOCK_TYPES = {
   },
 };
 
-BindGroup CreateBlocksTexture(util::Context &ctx) {
+BindGroup CreateBlocksTexture(gfx::Context &ctx) {
   Texture blocksTexture = util::LoadTextureMipmap(ctx, ROOT_DIR "/res/blocks.png");
   TextureViewDescriptor viewDesc{
     // 16 x 16 textures, so len([16, 8, 4, 2, 1]) = 5

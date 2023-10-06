@@ -1,3 +1,2 @@
 #include "sun.hpp"
 
-namespace 

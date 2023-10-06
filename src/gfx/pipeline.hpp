@@ -3,11 +3,9 @@
 #include <webgpu/webgpu_cpp.h>
 #include <vector>
 
-namespace util {
-  struct Context;
-}
-
 namespace gfx {
+
+struct Context;
 
 struct Pipeline {
   wgpu::BindGroupLayout cameraBGL;
@@ -30,7 +28,7 @@ struct Pipeline {
   wgpu::RenderPipeline compositeRPL;
 
   Pipeline() = default;
-  Pipeline(util::Context &ctx);
+  Pipeline(gfx::Context &ctx);
 };
 
 } // namespace util

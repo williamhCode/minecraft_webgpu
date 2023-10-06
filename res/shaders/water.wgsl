@@ -4,7 +4,7 @@ struct VertexInput {
   // 22 texLoc (4 bits x 2)
   // 30 transparency (2 bits)
   @location(0) data1: u32,
-  // 0 normal (1 bit x 3)
+  // 0 normal (2 bit x 3)
   @location(1) data2: u32,
 }
 

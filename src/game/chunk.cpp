@@ -18,7 +18,7 @@ namespace game {
 using namespace wgpu;
 
 Chunk::Chunk(
-  util::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
+  gfx::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
 )
     : dirty(true), chunkOffset(offset), m_ctx(ctx), m_state(state),
       m_chunkManager(chunkManager) {

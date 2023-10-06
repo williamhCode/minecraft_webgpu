@@ -32,14 +32,16 @@ set(APP_SRC
 	src/game.cpp
 
   src/util/camera.cpp
-  src/util/context.cpp
   src/util/load.cpp
   src/util/webgpu-util.cpp
-  src/gfx/pipeline.cpp
   src/util/texture.cpp
-  src/gfx/renderer.cpp
   src/util/timer.cpp
   src/util/frustum.cpp
+
+  src/gfx/context.cpp
+  src/gfx/renderer.cpp
+  src/gfx/pipeline.cpp
+  src/gfx/sun.cpp
 
   src/game/chunk.cpp
   src/game/chunk_manager.cpp

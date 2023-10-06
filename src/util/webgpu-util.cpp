@@ -1,6 +1,6 @@
 #include "webgpu-util.hpp"
 #include "dawn/utils/WGPUHelpers.h"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include <iostream>
 #include <map>
 #include <ostream>

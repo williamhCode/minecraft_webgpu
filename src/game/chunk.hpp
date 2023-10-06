@@ -9,7 +9,7 @@
 #include "glm/ext/vector_int3.hpp"
 #include "util/webgpu-util.hpp"
 
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 #include "util/frustum.hpp"
 #include "game/block.hpp"
 #include "mesh.hpp"
@@ -47,7 +47,7 @@ public:
   wgpu::Buffer worldPosBuffer;
   wgpu::BindGroup bindGroup;
 private:
-  util::Context *m_ctx;
+  gfx::Context *m_ctx;
   GameState *m_state;
 
   ChunkManager *m_chunkManager;
@@ -97,7 +97,7 @@ private:
 
 public:
   Chunk(
-    util::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
+    gfx::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
   );
 
   static void InitSharedData();

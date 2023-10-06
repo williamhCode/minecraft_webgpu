@@ -6,7 +6,7 @@
 
 #include <array>
 #include "direction.hpp"
-#include "util/context.hpp"
+#include "gfx/context.hpp"
 
 namespace game {
 
@@ -44,6 +44,6 @@ struct BlockType {
 const extern std::array<BlockType, 8> g_BLOCK_TYPES;
 // const extern std::array<
 
-wgpu::BindGroup CreateBlocksTexture(util::Context &ctx);
+wgpu::BindGroup CreateBlocksTexture(gfx::Context &ctx);
 
 }; // namespace game

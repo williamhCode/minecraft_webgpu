@@ -11,7 +11,7 @@ namespace util {
 using namespace wgpu;
 
 Camera::Camera(
-  Context *ctx,
+  gfx::Context *ctx,
   glm::vec3 position,
   glm::vec3 orientation,
   float fov,

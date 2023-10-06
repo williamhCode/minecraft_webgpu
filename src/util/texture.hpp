@@ -2,11 +2,11 @@
 
 #include <filesystem>
 #include <webgpu/webgpu_cpp.h>
-#include "context.hpp"
+#include "gfx/context.hpp"
 
 namespace util {
 
-wgpu::Texture LoadTexture(Context &ctx, std::filesystem::path path);
-wgpu::Texture LoadTextureMipmap(Context &ctx, std::filesystem::path path);
+wgpu::Texture LoadTexture(gfx::Context &ctx, std::filesystem::path path);
+wgpu::Texture LoadTextureMipmap(gfx::Context &ctx, std::filesystem::path path);
 
 } // namespace util

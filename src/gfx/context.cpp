@@ -7,7 +7,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace util {
+namespace gfx {
 
 using namespace wgpu;
 
@@ -35,12 +35,7 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
   // PrintLimits(supportedLimits.limits);
 
   // device
-  DeviceDescriptor deviceDesc{
-    .label = "My Device",
-    .requiredFeaturesCount = 0,
-    .requiredLimits = nullptr,
-    .defaultQueue{.label = "The default queue"},
-  };
+  DeviceDescriptor deviceDesc{};
   device = util::RequestDevice(adapter, &deviceDesc);
   util::SetUncapturedErrorCallback(device);
 
@@ -57,7 +52,7 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
     .format = swapChainFormat,
     .width = size.x,
     .height = size.y,
-    .presentMode = PresentMode::Fifo,
+    .presentMode = PresentMode::Immediate,
   };
   swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 

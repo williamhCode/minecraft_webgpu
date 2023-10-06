@@ -2,14 +2,14 @@
 
 #include "glm-include.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "context.hpp"
+#include "gfx/context.hpp"
 #include "frustum.hpp"
 
 namespace util {
 
 class Camera {
 private:
-  Context *m_ctx;
+  gfx::Context *m_ctx;
   constexpr static glm::vec4 m_forward = glm::vec4(1.0, 0.0, 0.0, 1.0);
   constexpr static glm::vec m_up = glm::vec3(0.0, 0.0, 1.0);
   glm::mat4 m_view;
@@ -27,7 +27,7 @@ public:
 
   Camera() = default;
   Camera(
-    Context *ctx,
+    gfx::Context *ctx,
     glm::vec3 position,
     glm::vec3 orientation,
     float fov,

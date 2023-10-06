@@ -16,7 +16,7 @@ namespace util {
 
 using namespace wgpu;
 
-Texture LoadTexture(Context &ctx, std::filesystem::path path) {
+Texture LoadTexture(gfx::Context &ctx, std::filesystem::path path) {
   int width, height, channels;
   unsigned char *pixelData =
     stbi_load(path.string().c_str(), &width, &height, &channels, 4);
@@ -47,7 +47,7 @@ Texture LoadTexture(Context &ctx, std::filesystem::path path) {
   return texture;
 }
 
-Texture LoadTextureMipmap(Context &ctx, std::filesystem::path path) {
+Texture LoadTextureMipmap(gfx::Context &ctx, std::filesystem::path path) {
   int width, height, channels;
   uint8_t *pixelData = stbi_load(path.string().c_str(), &width, &height, &channels, 4);
 
