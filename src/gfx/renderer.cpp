@@ -42,20 +42,20 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
   );
 
   // shadow pass ----------------------------------------------
-  Extent3D shadowMapSize{1024, 1024};
-  m_shadowMapTextureView =
-    util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::R32Float)
-      .CreateView();
+  // Extent3D shadowMapSize{1024, 1024};
+  // m_shadowMapTextureView =
+  //   util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::R32Float)
+  //     .CreateView();
 
-  m_shadowPassDesc = util::RenderPassDescriptor(
-    {},
-    {
-      .view = m_shadowMapTextureView,
-      .depthLoadOp = LoadOp::Clear,
-      .depthStoreOp = StoreOp::Store,
-      .depthClearValue = 1.0,
-    }
-  );
+  // m_shadowPassDesc = util::RenderPassDescriptor(
+  //   {},
+  //   {
+  //     .view = m_shadowMapTextureView,
+  //     .depthLoadOp = LoadOp::Clear,
+  //     .depthStoreOp = StoreOp::Store,
+  //     .depthClearValue = 1.0,
+  //   }
+  // );
 
   // gbuffer pass -----------------------------------------------------
   // create textures: position (view-space), normal, color
