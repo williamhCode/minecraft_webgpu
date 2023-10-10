@@ -17,9 +17,18 @@ ChunkManager::ChunkManager(gfx::Context *ctx, GameState *state)
                    minOffset = centerPos - glm::ivec2(radius, radius),
                    maxOffset = centerPos + glm::ivec2(radius, radius);
 
+  // for (int x = minOffset.x; x <= maxOffset.x; x++) {
+  //   for (int y = minOffset.y; y <= maxOffset.y; y++) {
+  //     if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
+  //     const auto offset = glm::ivec2(x, y);
+  //     auto chunk = new Chunk(m_ctx, m_state, this, offset);
+  //     GenChunkData(*chunk);
+  //     chunks.emplace(offset, chunk);
+  //   }
+  // }
+
   for (int x = minOffset.x; x <= maxOffset.x; x++) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
-      if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
       const auto offset = glm::ivec2(x, y);
       auto chunk = new Chunk(m_ctx, m_state, this, offset);
       GenChunkData(*chunk);
@@ -34,33 +43,33 @@ void ChunkManager::Update(glm::vec2 position) {
                    maxOffset = centerPos + glm::ivec2(radius, radius);
 
   // remove chunks not in radius
-  std::erase_if(chunks, [&](auto &pair) {
-    const auto &[offset, chunk] = pair;
-    if (glm::distance(glm::vec2(offset), glm::vec2(centerPos)) > radius - 0.1) {
-      return true;
-    }
-    return false;
-  });
+  // std::erase_if(chunks, [&](auto &pair) {
+  //   const auto &[offset, chunk] = pair;
+  //   if (glm::distance(glm::vec2(offset), glm::vec2(centerPos)) > radius - 0.1) {
+  //     return true;
+  //   }
+  //   return false;
+  // });
 
   // add chunks in radius
-  int gens = 0;
-  for (int x = minOffset.x; x <= maxOffset.x; x++) {
-    for (int y = minOffset.y; y <= maxOffset.y; y++) {
-      if (gens >= max_gens) goto exit;
-      if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
-      const auto offset = glm::ivec2(x, y);
-      if (!chunks.contains(offset)) {
-        auto chunk = new Chunk(m_ctx, m_state, this, offset);
-        GenChunkData(*chunk);
-        chunks.emplace(offset, chunk);
-        for (auto neighbor : GetChunkNeighbors(offset)) {
-          neighbor->dirty = true;
-        }
-        gens++;
-      }
-    }
-  }
-exit:
+//   int gens = 0;
+//   for (int x = minOffset.x; x <= maxOffset.x; x++) {
+//     for (int y = minOffset.y; y <= maxOffset.y; y++) {
+//       if (gens >= max_gens) goto exit;
+//       if (glm::distance(glm::vec2(x, y), glm::vec2(centerPos)) > radius - 0.1) continue;
+//       const auto offset = glm::ivec2(x, y);
+//       if (!chunks.contains(offset)) {
+//         auto chunk = new Chunk(m_ctx, m_state, this, offset);
+//         GenChunkData(*chunk);
+//         chunks.emplace(offset, chunk);
+//         for (auto neighbor : GetChunkNeighbors(offset)) {
+//           neighbor->dirty = true;
+//         }
+//         gens++;
+//       }
+//     }
+//   }
+// exit:
 
   // store offsets of chunks inside frustum/camera's view
   m_frustumOffsets.clear();
@@ -94,21 +103,21 @@ exit:
   }
 }
 
-void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder) {
+void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
   // opaque objects
   for (auto offset : m_frustumOffsets) {
-    chunks[offset]->Render(passEncoder);
+    chunks[offset]->Render(passEncoder, groupIndex);
   }
 
   // translucent objects
   // for (auto offset : m_sortedFrustumOffsets) {
-  //   chunks[offset]->RenderTranslucent(passEncoder);
+  //   chunks[offset]->RenderTranslucent(passEncoder, groupIndex);
   // }
 }
 
-void ChunkManager::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
+void ChunkManager::RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
   for (auto offset : m_frustumOffsets) {
-    chunks[offset]->RenderWater(passEncoder);
+    chunks[offset]->RenderWater(passEncoder, groupIndex);
   }
 }
 

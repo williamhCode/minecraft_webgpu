@@ -10,8 +10,6 @@ namespace util {
 class Camera {
 private:
   gfx::Context *m_ctx;
-  constexpr static glm::vec4 m_forward = glm::vec4(1.0, 0.0, 0.0, 1.0);
-  constexpr static glm::vec m_up = glm::vec3(0.0, 0.0, 1.0);
   glm::mat4 m_view;
   glm::mat4 m_projection;
   wgpu::Buffer m_viewBuffer;
@@ -19,6 +17,8 @@ private:
   wgpu::Buffer m_inverseViewBuffer;
 
 public:
+  constexpr static auto forward = glm::vec4(1.0, 0.0, 0.0, 1.0);
+  constexpr static auto up = glm::vec3(0.0, 0.0, 1.0);
   wgpu::BindGroup bindGroup;
   glm::vec3 position;
   glm::vec3 direction;

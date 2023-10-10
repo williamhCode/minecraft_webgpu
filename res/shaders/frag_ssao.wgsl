@@ -25,11 +25,11 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
   }
 
   // get input for SSAO algorithm
-  let fragPos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
-  if (fragPos.w == 0.0) {
+  let fragViewPos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
+  if (fragViewPos.w == 0.0) {
     return 1.0;
   }
-  let fragWorldPos = (inverseView * fragPos).xyz;
+  let fragWorldPos = (inverseView * fragViewPos).xyz;
   let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0).xyz;
   let noiseScale = vec2f(textureDimensions(gBufferPosition)) / 4.0;
   let randomVec = textureSampleLevel(noiseTexture, noiseSampler, uv * noiseScale, 0.0).xyz;
@@ -56,7 +56,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
     }
     let sampleDepth = textureSampleLevel(gBufferPosition, gBufferSampler, screenOffset, 0.0).z;
      // range check & accumulate
-    let rangeCheck = smoothstep(0.0, 1.0, opts.radius / abs(fragPos.z - sampleDepth));
+    let rangeCheck = smoothstep(0.0, 1.0, opts.radius / abs(fragViewPos.z - sampleDepth));
     occlusion += select(0.0, 1.0, sampleDepth >= samplePos.z + opts.bias) * rangeCheck;
   }
   occlusion = 1.0 - (occlusion / f32(opts.sampleSize));

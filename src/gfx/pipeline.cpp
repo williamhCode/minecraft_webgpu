@@ -54,43 +54,43 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     }
   );
   // lighting layout (sunDir, sunViewProj)
-  lightingBGL = dawn::utils::MakeBindGroupLayout(
+  sunBGL = dawn::utils::MakeBindGroupLayout(
     ctx.device,
     {
       {0, ShaderStage::Fragment, BufferBindingType::Uniform},
-      // {1, ShaderStage::Vertex, BufferBindingType::Uniform},
+      {1, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
     }
   );
 
   // shadow pipeline --------------------------------------------------
-  // ShaderModule shaderVertShadow =
-  //   util::LoadShaderModule(ROOT_DIR "/res/shaders/vert_shadow.wgsl", ctx.device);
+  ShaderModule shaderVertShadow =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/vert_shadow.wgsl", ctx.device);
 
-  // shadowRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
-  //   .layout = dawn::utils::MakePipelineLayout(
-  //     ctx.device,
-  //     {
-  //       lightingBGL,
-  //       chunkBGL,
-  //     }
-  //   ),
-  //   .vertex =
-  //     VertexState{
-  //       .module = shaderVertShadow,
-  //       .entryPoint = "vs_main",
-  //       .bufferCount = 1,
-  //       .buffers = &chunkVBL,
-  //     },
-  //   .primitive =
-  //     PrimitiveState{
-  //       .cullMode = CullMode::Back,
-  //     },
-  //   .depthStencil = ToPtr(DepthStencilState{
-  //     .format = ctx.depthFormat,
-  //     .depthWriteEnabled = true,
-  //     .depthCompare = CompareFunction::Less,
-  //   }),
-  // }));
+  shadowRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        sunBGL,
+        chunkBGL,
+      }
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderVertShadow,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &chunkVBL,
+      },
+    .primitive =
+      PrimitiveState{
+        .cullMode = CullMode::Back,
+      },
+    .depthStencil = ToPtr(DepthStencilState{
+      .format = TextureFormat::Depth32Float,
+      .depthWriteEnabled = true,
+      .depthCompare = CompareFunction::Less,
+    }),
+  }));
 
   // g_buffer pipeline -------------------------------------------------
   ShaderModule shaderGBuffer =
@@ -146,7 +146,7 @@ Pipeline::Pipeline(gfx::Context &ctx) {
       {
         cameraBGL,
         textureBGL,
-        lightingBGL,
+        sunBGL,
         chunkBGL,
       }
     ),
@@ -281,6 +281,8 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     {
       {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
       {1, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {2, ShaderStage::Fragment, TextureSampleType::Depth},
+      {3, ShaderStage::Fragment, SamplerBindingType::Comparison},
     }
   );
 
@@ -290,8 +292,8 @@ Pipeline::Pipeline(gfx::Context &ctx) {
       {
         cameraBGL,
         gBufferBGL,
+        sunBGL,
         compositeBGL,
-        lightingBGL,
       }
     ),
     .vertex =

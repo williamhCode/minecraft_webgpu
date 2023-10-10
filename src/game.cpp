@@ -112,11 +112,13 @@ Game::Game() {
     glm::radians(50.0f), (float)m_state.size.x / m_state.size.y, 0.1, 2000
   );
   m_state.player = game::Player(camera);
-  m_state.sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.5));
 
   game::InitMesh();
   game::Chunk::InitSharedData();
   m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx, &m_state);
+
+  auto sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.5));
+  m_state.sun = gfx::Sun(&m_ctx, &m_state, sunDir);
 
   m_state.currBlock = game::BlockId::Glass;
 
@@ -148,6 +150,7 @@ Game::Game() {
       m_state.player.Move(moveDir * m_state.dt);
     }
     m_state.player.Update();
+    m_state.sun.Update();
 
     m_state.chunkManager->Update(glm::vec2(m_state.player.GetPosition()));
 
@@ -189,6 +192,7 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
 
     if (key == GLFW_KEY_1) m_state.currBlock = game::BlockId::Glass;
     if (key == GLFW_KEY_2) m_state.currBlock = game::BlockId::Leaf;
+    if (key == GLFW_KEY_3) m_state.currBlock = game::BlockId::Stone;
   }
 }
 

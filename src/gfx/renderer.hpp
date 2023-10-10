@@ -45,16 +45,13 @@ private:
   GameState *m_state;
 
   wgpu::BindGroup m_blocksTextureBindGroup;
-  wgpu::TextureView m_depthTextureView;
   wgpu::Buffer m_quadBuffer;
 
   // shadow
-  wgpu::TextureView m_shadowMapTextureView;
   util::RenderPassDescriptor m_shadowPassDesc;
 
   // gbuffer
   // position (view-space), normal, color
-  std::array<wgpu::TextureView, 3> m_gBufferTextureViews;
   dawn::utils::ComboRenderPassDescriptor m_gBufferPassDesc;
 
   // water
@@ -75,7 +72,6 @@ private:
 
   // composite
   wgpu::BindGroup m_compositeBindGroup;
-  wgpu::BindGroup m_lightingBindGroup;
   wgpu::RenderPassDescriptor m_compositePassDesc;
 
 public:

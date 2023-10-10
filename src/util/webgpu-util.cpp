@@ -193,14 +193,38 @@ util::RenderPassDescriptor::RenderPassDescriptor(
   wgpu::RenderPassDepthStencilAttachment depthStencilAttachment
 )
     : cColorAttachments(std::move(colorAttachments)) {
-
   colorAttachmentCount = cColorAttachments.size();
   this->colorAttachments = cColorAttachments.data();
 
   if (depthStencilAttachment.view.Get() != nullptr) {
-    cDepthStencilAttachmentInfo = std::move(depthStencilAttachment);
+    cDepthStencilAttachmentInfo = depthStencilAttachment;
     this->depthStencilAttachment = &cDepthStencilAttachmentInfo;
+  } else {
+    this->depthStencilAttachment = nullptr;
   }
+}
+
+RenderPassDescriptor::RenderPassDescriptor(const RenderPassDescriptor &other) {
+  *this = other;
+}
+
+const RenderPassDescriptor &RenderPassDescriptor::operator=(
+  const RenderPassDescriptor &otherRenderPass
+) {
+  cDepthStencilAttachmentInfo = otherRenderPass.cDepthStencilAttachmentInfo;
+  cColorAttachments = otherRenderPass.cColorAttachments;
+  colorAttachmentCount = otherRenderPass.colorAttachmentCount;
+
+  colorAttachments = cColorAttachments.data();
+
+  if (otherRenderPass.depthStencilAttachment != nullptr) {
+    // Assign desc.depthStencilAttachment to this->depthStencilAttachmentInfo;
+    depthStencilAttachment = &cDepthStencilAttachmentInfo;
+  } else {
+    depthStencilAttachment = nullptr;
+  }
+
+  return *this;
 }
 
 } // namespace util

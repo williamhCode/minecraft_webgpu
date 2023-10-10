@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bitset>
+#include <sys/types.h>
 #include <vector>
 #include <array>
 #include <webgpu/webgpu_cpp.h>
@@ -103,9 +104,9 @@ public:
   static void InitSharedData();
 
   void UpdateMesh();
-  void Render(const wgpu::RenderPassEncoder &passEncoder);
-  void RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder);
-  void RenderWater(const wgpu::RenderPassEncoder &passEncoder);
+  void Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+  void RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+  void RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
 
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);

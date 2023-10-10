@@ -21,7 +21,7 @@ private:
   std::vector<glm::ivec2> m_sortedFrustumOffsets;
 
 public:
-  int radius = 32;
+  int radius = 10;
   int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
@@ -29,8 +29,8 @@ public:
   // we need its pointer to be stable because it is passed on
   ChunkManager(gfx::Context *ctx, GameState *state);
   void Update(glm::vec2 position);
-  void Render(const wgpu::RenderPassEncoder &passEncoder);
-  void RenderWater(const wgpu::RenderPassEncoder &passEncoder);
+  void Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+  void RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
 
   std::optional<Chunk *> GetChunk(glm::ivec2 offset);
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);

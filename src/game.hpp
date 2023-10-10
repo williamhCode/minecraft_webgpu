@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "game/block.hpp"
 #include "game/chunk_manager.hpp"
+#include "gfx/sun.hpp"
 #include "glm-include.hpp"
 
 #include "game/player.hpp"
@@ -13,8 +14,6 @@ struct GameState {
   glm::uvec2 size;
   glm::uvec2 fbSize;
 
-  glm::vec3 sunDir;
-
   bool focused = true;
 
   bool showStats = false;
@@ -23,6 +22,8 @@ struct GameState {
 
   game::Player player;
   std::unique_ptr<game::ChunkManager> chunkManager;
+
+  gfx::Sun sun;
 
   game::BlockId currBlock;
 };

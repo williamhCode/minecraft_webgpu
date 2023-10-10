@@ -111,8 +111,8 @@ void Chunk::UpdateMesh() {
   m_waterData.CreateBuffers(m_ctx->device);
 }
 
-void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
-  passEncoder.SetBindGroup(2, bindGroup);
+void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
+  passEncoder.SetBindGroup(groupIndex, bindGroup);
   passEncoder.SetVertexBuffer(0, m_opaqueData.vbo, 0, m_opaqueData.vbo.GetSize());
   passEncoder.SetIndexBuffer(
     m_opaqueData.ebo, IndexFormat::Uint32, 0, m_opaqueData.ebo.GetSize()
@@ -120,7 +120,7 @@ void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder) {
   passEncoder.DrawIndexed(m_opaqueData.indices.size() * 6);
 }
 
-void Chunk::RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder) {
+void Chunk::RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
   // record time
   // auto timer = dawn::utils::CreateTimer();
   // timer->Start();
@@ -154,8 +154,8 @@ void Chunk::RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder) {
   // passEncoder.DrawIndexed(sortedIndices.size() * 6);
 }
 
-void Chunk::RenderWater(const wgpu::RenderPassEncoder &passEncoder) {
-  passEncoder.SetBindGroup(3, bindGroup);
+void Chunk::RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
+  passEncoder.SetBindGroup(groupIndex, bindGroup);
   passEncoder.SetVertexBuffer(0, m_waterData.vbo, 0, m_waterData.vbo.GetSize());
   passEncoder.SetIndexBuffer(
     m_waterData.ebo, IndexFormat::Uint32, 0, m_waterData.ebo.GetSize()

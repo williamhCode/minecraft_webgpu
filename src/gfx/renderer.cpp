@@ -33,55 +33,45 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
   );
 
   Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
-
-  // lighting
-  Buffer sunDirBuffer =
-    util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &m_state->sunDir);
-  m_lightingBindGroup = dawn::utils::MakeBindGroup(
-    m_ctx->device, m_ctx->pipeline.lightingBGL, {{0, sunDirBuffer}}
-  );
+  TextureView depthTextureView =
+    util::CreateRenderTexture(m_ctx->device, textureSize, m_ctx->depthFormat)
+      .CreateView();
 
   // shadow pass ----------------------------------------------
-  // Extent3D shadowMapSize{1024, 1024};
-  // m_shadowMapTextureView =
-  //   util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::R32Float)
-  //     .CreateView();
+  Extent3D shadowMapSize{4096, 4096};
+  TextureView shadowMapTextureView =
+    util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::Depth32Float)
+      .CreateView();
 
-  // m_shadowPassDesc = util::RenderPassDescriptor(
-  //   {},
-  //   {
-  //     .view = m_shadowMapTextureView,
-  //     .depthLoadOp = LoadOp::Clear,
-  //     .depthStoreOp = StoreOp::Store,
-  //     .depthClearValue = 1.0,
-  //   }
-  // );
+  m_shadowPassDesc = util::RenderPassDescriptor(
+    {},
+    {
+      .view = shadowMapTextureView,
+      .depthLoadOp = LoadOp::Clear,
+      .depthStoreOp = StoreOp::Store,
+      .depthClearValue = 1.0,
+    }
+  );
 
   // gbuffer pass -----------------------------------------------------
   // create textures: position (view-space), normal, color
-  m_gBufferTextureViews[0] =
+  std::array<wgpu::TextureView, 3> gBufferTextureViews{
     util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::RGBA16Float)
-      .CreateView();
-  m_gBufferTextureViews[1] =
+      .CreateView(),
     util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::RGBA16Float)
-      .CreateView();
-  m_gBufferTextureViews[2] =
+      .CreateView(),
     util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::BGRA8Unorm)
-      .CreateView();
-
-  // create depth texture
-  m_depthTextureView =
-    util::CreateRenderTexture(m_ctx->device, textureSize, m_ctx->depthFormat)
-      .CreateView();
+      .CreateView(),
+  };
 
   // pass desc
   m_gBufferPassDesc = dawn::utils::ComboRenderPassDescriptor(
     {
-      m_gBufferTextureViews[0],
-      m_gBufferTextureViews[1],
-      m_gBufferTextureViews[2],
+      gBufferTextureViews[0],
+      gBufferTextureViews[1],
+      gBufferTextureViews[2],
     },
-    m_depthTextureView
+    depthTextureView
   );
   m_gBufferPassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
   m_gBufferPassDesc.cColorAttachments[0].clearValue = {0.0, 0.0, -10000, 0.0};
@@ -95,7 +85,7 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
 
   // pass desc
   m_waterPassDesc =
-    dawn::utils::ComboRenderPassDescriptor({waterTextureView}, m_depthTextureView);
+    dawn::utils::ComboRenderPassDescriptor({waterTextureView}, depthTextureView);
   m_waterPassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
   m_waterPassDesc.cDepthStencilAttachmentInfo.depthLoadOp = LoadOp::Load;
   m_waterPassDesc.cDepthStencilAttachmentInfo.depthStoreOp = StoreOp::Discard;
@@ -163,9 +153,9 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
   m_gBufferBindGroup = dawn::utils::MakeBindGroup(
     m_ctx->device, m_ctx->pipeline.gBufferBGL,
     {
-      {0, m_gBufferTextureViews[0]},
-      {1, m_gBufferTextureViews[1]},
-      {2, m_gBufferTextureViews[2]},
+      {0, gBufferTextureViews[0]},
+      {1, gBufferTextureViews[1]},
+      {2, gBufferTextureViews[2]},
       {3, nearestClampSampler},
     }
   );
@@ -218,11 +208,19 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
   });
 
   // composite pass ---------------------------------------------------
+  Sampler shadowSampler = m_ctx->device.CreateSampler( //
+    ToPtr(SamplerDescriptor{
+      .compare = CompareFunction::Less,
+    })
+  );
+
   m_compositeBindGroup = dawn::utils::MakeBindGroup(
     m_ctx->device, m_ctx->pipeline.compositeBGL,
     {
       {0, ssaoTextureViews[1]},
       {1, waterTextureView},
+      {2, shadowMapTextureView},
+      {3, shadowSampler},
     }
   );
 
@@ -324,13 +322,21 @@ void Renderer::Render() {
   m_compositePassDesc.colorAttachments = &colorAttachment;
 
   CommandEncoder commandEncoder = m_ctx->device.CreateCommandEncoder();
+  // shadow pass
+  {
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_shadowPassDesc);
+    passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
+    passEncoder.SetBindGroup(0, m_state->sun.bindGroup);
+    m_state->chunkManager->Render(passEncoder, 1);
+    passEncoder.End();
+  }
   // gbuffer pass
   {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.gBufferRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
-    m_state->chunkManager->Render(passEncoder);
+    m_state->chunkManager->Render(passEncoder, 2);
     passEncoder.End();
   }
   // water pass
@@ -339,8 +345,8 @@ void Renderer::Render() {
     passEncoder.SetPipeline(m_ctx->pipeline.waterRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
-    passEncoder.SetBindGroup(2, m_lightingBindGroup);
-    m_state->chunkManager->RenderWater(passEncoder);
+    passEncoder.SetBindGroup(2, m_state->sun.bindGroup);
+    m_state->chunkManager->RenderWater(passEncoder, 3);
     passEncoder.End();
   }
   // ssao pass
@@ -370,8 +376,8 @@ void Renderer::Render() {
     passEncoder.SetPipeline(m_ctx->pipeline.compositeRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_gBufferBindGroup);
-    passEncoder.SetBindGroup(2, m_compositeBindGroup);
-    passEncoder.SetBindGroup(3, m_lightingBindGroup);
+    passEncoder.SetBindGroup(2, m_state->sun.bindGroup);
+    passEncoder.SetBindGroup(3, m_compositeBindGroup);
     passEncoder.SetVertexBuffer(0, m_quadBuffer);
     passEncoder.Draw(6);
     ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), passEncoder.Get());
@@ -386,4 +392,4 @@ void Renderer::Present() {
   m_ctx->swapChain.Present();
 }
 
-} // namespace util
+} // namespace gfx

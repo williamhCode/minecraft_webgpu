@@ -14,7 +14,35 @@ enum Biome {
 
 constexpr int WATER_LEVEL = 64;
 
+void GenTerrain(Chunk &chunk);
+void GenTest(Chunk &chunk);
+
 void GenChunkData(Chunk &chunk) {
+  // GenTerrain(chunk);
+  GenTest(chunk);
+}
+
+void GenTest(Chunk &chunk) {
+  auto &data = chunk.GetBlockIdData();
+
+  for (int x = 0; x < Chunk::SIZE.x; x++) {
+    for (int y = 0; y < Chunk::SIZE.y; y++) {
+      for (int z = 0; z < Chunk::SIZE.z; z++) {
+        auto index = Chunk::PosToIndex({x, y, z});
+        int height = 100;
+        if (z < height) {
+          data[index] = BlockId::Dirt;
+        } else if (z == height) {
+          data[index] = BlockId::Grass;
+        } else {
+          data[index] = BlockId::Air;
+        }
+      }
+    }
+  }
+}
+
+void GenTerrain(Chunk &chunk) {
   auto &data = chunk.GetBlockIdData();
 
   // static const siv::PerlinNoise::seed_type seed = 4;

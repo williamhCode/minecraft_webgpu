@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 #include <vector>
+#include <array>
 #include <webgpu/webgpu_cpp.h>
 #include <fstream>
 
@@ -31,14 +32,17 @@ wgpu::Texture CreateTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::Tex
 wgpu::Texture CreateRenderTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format);
 
 struct RenderPassDescriptor : public wgpu::RenderPassDescriptor{
-  RenderPassDescriptor() = default;
   RenderPassDescriptor(
-    std::vector<wgpu::RenderPassColorAttachment> colorAttachments,
+    std::vector<wgpu::RenderPassColorAttachment> colorAttachments = {},
     wgpu::RenderPassDepthStencilAttachment depthStencilAttachment = wgpu::RenderPassDepthStencilAttachment{}
   );
+  ~RenderPassDescriptor() = default;
+
+  RenderPassDescriptor(const RenderPassDescriptor& otherRenderPass);
+  const RenderPassDescriptor& operator=(const RenderPassDescriptor& otherRenderPass);
 
   std::vector<wgpu::RenderPassColorAttachment> cColorAttachments;
-  wgpu::RenderPassDepthStencilAttachment cDepthStencilAttachmentInfo;
+  wgpu::RenderPassDepthStencilAttachment cDepthStencilAttachmentInfo = {};
 };
 // clang-format on
 

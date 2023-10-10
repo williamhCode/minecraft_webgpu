@@ -24,6 +24,7 @@ struct VertexOutput {
 @group(1) @binding(1) var textureSampler: sampler;
 
 @group(2) @binding(0) var<uniform> sunDir: vec3f;
+// @group(2) @binding(1) var<uniform> sunViewProj: mat4x4f;
 
 @group(3) @binding(0) var<uniform> worldOffset: vec3f;
 
