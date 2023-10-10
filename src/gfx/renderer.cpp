@@ -324,7 +324,7 @@ void Renderer::Render() {
 
   CommandEncoder commandEncoder = m_ctx->device.CreateCommandEncoder();
   // shadow pass
-  {
+  if (m_state->sun.ShouldRender()) {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_shadowPassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
     passEncoder.SetBindGroup(0, m_state->sun.bindGroup);

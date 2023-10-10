@@ -11,8 +11,6 @@ namespace gfx {
 
 class Sun {
 private:
-  static constexpr float m_area = 16 * 40;
-
   gfx::Context *m_ctx;
   GameState *m_state;
 
@@ -22,13 +20,23 @@ private:
   wgpu::Buffer m_sunDirBuffer;
   wgpu::Buffer m_sunViewProjBuffer;
 
+  bool shouldRender = false;
+  float minTime = 0.3;
+
   glm::mat4 MakeView();
 
 public:
+  static constexpr float area = 16 * 40;
   wgpu::BindGroup bindGroup;
+
+  float timeSinceUpdate = 1;
 
   Sun() = default;
   Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir);
+
+  void TryUpdate();
+  bool ShouldRender();
+
   void Update();
   glm::vec3 GetDir() {
     return m_dir;

@@ -70,6 +70,8 @@ void ChunkManager::Update(glm::vec2 position) {
     }
   }
 exit:
+  // update shadow map if chunks are added
+  if (gens > 0) m_state->sun.TryUpdate();
 
   // store offsets of chunks inside frustum/camera's view
   m_frustumOffsets.clear();
@@ -83,7 +85,8 @@ exit:
 
   m_shadowOffsets.clear();
   for (auto &[offset, chunk] : chunks) {
-    if (glm::distance(glm::vec2(offset), glm::vec2(centerPos)) > 16 - 0.1) continue;
+    if (glm::distance(glm::vec2(offset), glm::vec2(centerPos)) > m_state->sun.area / (16 * 1.5) - 0.1)
+      continue;
     m_shadowOffsets.push_back(offset);
   }
 
@@ -109,16 +112,17 @@ exit:
   }
 }
 
-void ChunkManager::RenderShadowMap(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
-  // for (auto offset : m_shadowOffsets) {
-  //   chunks[offset]->Render(passEncoder, groupIndex);
-  // }
-  for (auto offset : m_frustumOffsets) {
+void ChunkManager::RenderShadowMap(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
+  for (auto offset : m_shadowOffsets) {
     chunks[offset]->Render(passEncoder, groupIndex);
   }
 }
 
-void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
+void ChunkManager::Render(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
   // opaque objects
   for (auto offset : m_frustumOffsets) {
     chunks[offset]->Render(passEncoder, groupIndex);
@@ -130,7 +134,9 @@ void ChunkManager::Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t g
   // }
 }
 
-void ChunkManager::RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
+void ChunkManager::RenderWater(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
   for (auto offset : m_frustumOffsets) {
     chunks[offset]->RenderWater(passEncoder, groupIndex);
   }
