@@ -23,7 +23,7 @@ fn Blend(src: vec4f, dst: vec4f) -> vec4f {
   return vec4f(outColor, outAlpha);
 }
 
-fn ShadowCalculation(lightSpacePos: vec4f) -> f32 {
+fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f) -> f32 {
   // map to texture coordinates
   var projCoords = vec3f(
     lightSpacePos.xy * vec2f(0.5, -0.5) + vec2f(0.5),
@@ -36,16 +36,18 @@ fn ShadowCalculation(lightSpacePos: vec4f) -> f32 {
   if (lightSpacePos.y > 1.0 || lightSpacePos.y < 0.0) {
     return 1.0;
   }
-
-  let depth = textureSampleCompareLevel(shadowMap, shadowSampler, projCoords.xy, projCoords.z - 0.001);
-  return 0.0;
-  // return depth;
+if (lightSpacePos.z > 1.0 || lightSpacePos.z < 0.0) {
+    return 1.0;
+  }
+  // let bias = max(0.001 * (1.0 - dot(normal, sunDir)), 0.0001);
+  let bias = 0.001;
+  let depth = textureSampleCompareLevel(shadowMap, shadowSampler, projCoords.xy, projCoords.z - bias);
+  return depth;
 }
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let samplePos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
-  let sampleW = samplePos.w;
   let position = (inverseView * samplePos).xyz;
   let sunSpacePos = sunViewProj * vec4f(position, 1.0);
 
@@ -57,10 +59,11 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   var waterColor = textureSampleLevel(waterTexture, gBufferSampler, uv, 0.0);
 
   // lighting calculations
-  let ambient = 0.6;
-  // let ambient = 0.0;
-  let diffuse = 0.4 * dot(normal.xyz, normalize(sunDir));
-  // let diffuse = 0.0;
+  let ambient = 0.4;
+  var diffuse = 0.6;
+  if (samplePos.w != 0.0) {
+    diffuse *= max(0.0, dot(normal.xyz, normalize(sunDir)));
+  }
 
   // let viewPos = inverseView[3].xyz;
   // let viewDir = normalize(viewPos - position);
@@ -69,15 +72,15 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let specular = 0.0;
 
   var shadow = 1.0;
-  if (sampleW != 0.0) {
-    shadow = ShadowCalculation(sunSpacePos);
+  if (samplePos.w != 0.0) {
+    shadow = ShadowCalculation(sunSpacePos, normal);
   }
 
-  if (shadow == 0) {
-    return vec4f(ambientOcclusion, ambientOcclusion, ambientOcclusion, 1.0);
-  }
+  // if (shadow == 0.0) {
+  //   return vec4f(ambientOcclusion, ambientOcclusion, ambientOcclusion, 1.0);
+  // }
 
-  let color = albedo * (ambient + diffuse * shadow) + vec3f(1.0) * specular;
+  let color = albedo * (ambient + diffuse * shadow);
   var finalColor = vec4f(color, 1.0);
 
   finalColor = Blend(waterColor, finalColor);

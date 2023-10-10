@@ -11,7 +11,7 @@ namespace gfx {
 
 class Sun {
 private:
-  static constexpr float m_area = 16 * 10;
+  static constexpr float m_area = 16 * 40;
 
   gfx::Context *m_ctx;
   GameState *m_state;

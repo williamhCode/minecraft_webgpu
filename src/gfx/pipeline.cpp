@@ -84,6 +84,7 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     .primitive =
       PrimitiveState{
         .cullMode = CullMode::Back,
+        // .cullMode = CullMode::Front,
       },
     .depthStencil = ToPtr(DepthStencilState{
       .format = TextureFormat::Depth32Float,

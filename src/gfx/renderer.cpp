@@ -38,7 +38,8 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
       .CreateView();
 
   // shadow pass ----------------------------------------------
-  Extent3D shadowMapSize{4096, 4096};
+  // Extent3D shadowMapSize{4096, 4096};
+  Extent3D shadowMapSize{8192, 8192};
   TextureView shadowMapTextureView =
     util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::Depth32Float)
       .CreateView();
@@ -327,7 +328,7 @@ void Renderer::Render() {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_shadowPassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
     passEncoder.SetBindGroup(0, m_state->sun.bindGroup);
-    m_state->chunkManager->Render(passEncoder, 1);
+    m_state->chunkManager->RenderShadowMap(passEncoder, 1);
     passEncoder.End();
   }
   // gbuffer pass

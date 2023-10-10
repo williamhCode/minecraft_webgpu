@@ -117,7 +117,8 @@ Game::Game() {
   game::Chunk::InitSharedData();
   m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx, &m_state);
 
-  auto sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.5));
+  auto sunDir = glm::normalize(glm::vec3(1, 0.5, 1));
+  // auto sunDir = glm::normalize(glm::vec3(0.1, 0.1, 1));
   m_state.sun = gfx::Sun(&m_ctx, &m_state, sunDir);
 
   m_state.currBlock = game::BlockId::Glass;

@@ -18,8 +18,8 @@ void GenTerrain(Chunk &chunk);
 void GenTest(Chunk &chunk);
 
 void GenChunkData(Chunk &chunk) {
-  // GenTerrain(chunk);
-  GenTest(chunk);
+  GenTerrain(chunk);
+  // GenTest(chunk);
 }
 
 void GenTest(Chunk &chunk) {

@@ -1,9 +1,11 @@
 #include "sun.hpp"
 #include "game.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "util/webgpu-util.hpp"
+#include <iostream>
 
 namespace gfx {
 
@@ -11,7 +13,7 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
     : m_ctx(ctx), m_state(state), m_dir(dir) {
   m_sunDirBuffer = util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &dir);
 
-  const glm::vec2 depth_range(0, 512);
+  const glm::vec2 depth_range(1, 1024);
   m_proj = glm::ortho(-m_area, m_area, -m_area, m_area, depth_range.x, depth_range.y);
 
   auto viewProj = m_proj * MakeView();
@@ -28,14 +30,22 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
 }
 
 glm::mat4 Sun::MakeView() {
-  const float distance = 64;
+  const float distance = 512;
 
-  // auto offset = glm::vec3(glm::vec2(-m_dir) * distance, 0.0);
-  // auto center = m_state->player.GetPosition() - offset;
-  auto center = m_state->player.GetPosition();
-  center.z = 100;
+  auto centerPos = m_state->player.GetPosition();
+  centerPos.z = 100;
+  auto eyePos = centerPos + m_dir * distance;
+  auto view = glm::lookAt(eyePos, centerPos, m_state->player.camera.up);
 
-  return glm::lookAt(center + m_dir * distance, center, m_state->player.camera.up);
+  // center the shadow map
+  auto viewProj = m_proj * view;
+  auto centerView = viewProj * glm::vec4(centerPos, 1.0);
+  auto centerFixed = glm::vec3(centerView.xy() - 0.5f, centerView.z);
+  auto centerFixedW =
+    (glm::inverse(viewProj) * glm::vec4(centerFixed, 1.0)).xyz();
+
+  eyePos = centerFixedW + m_dir * distance;
+  return glm::lookAt(eyePos, centerFixedW, m_state->player.camera.up);
 }
 
 void Sun::Update() {

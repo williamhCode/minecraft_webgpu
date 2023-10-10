@@ -58,7 +58,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   let viewPos = inverseView[3].xyz;
   let viewDir = normalize(viewPos - in.fragPos);
   let reflectDir = reflect(-sunDir, normal);
-  let specular = 0.4 * pow(max(dot(viewDir, reflectDir), 0.0), 100.0);
+  let specular = 0.5 * pow(max(dot(viewDir, reflectDir), 0.0), 128.0);
 
   var out = color * diffuse + vec4f(1.0, 1.0, 1.0, 0.4) * specular;
   // let out = specular * vec4f(1.0, 0.0, 0.0, 1.0);
