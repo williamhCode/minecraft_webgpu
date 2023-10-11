@@ -21,7 +21,8 @@ private:
   wgpu::Buffer m_sunViewProjBuffer;
 
   bool shouldRender = false;
-  float minTime = 0.3;
+  bool shouldUpdate = false;
+  float minTime = 0.2;
 
   glm::mat4 MakeView();
 
@@ -34,7 +35,7 @@ public:
   Sun() = default;
   Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir);
 
-  void TryUpdate();
+  void InvokeUpdate();
   bool ShouldRender();
 
   void Update();

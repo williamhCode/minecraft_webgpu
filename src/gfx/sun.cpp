@@ -26,7 +26,7 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
     }
   );
 
-  TryUpdate();
+  InvokeUpdate();
 }
 
 glm::mat4 Sun::MakeView() {
@@ -47,14 +47,8 @@ glm::mat4 Sun::MakeView() {
   return glm::lookAt(eyePos, centerFixedW, m_state->player.camera.up);
 }
 
-void Sun::TryUpdate() {
-  if (timeSinceUpdate < minTime) return;
-
-  auto viewProj = m_proj * MakeView();
-  m_ctx->queue.WriteBuffer(m_sunViewProjBuffer, 0, &viewProj, sizeof(viewProj));
-
-  timeSinceUpdate = 0;
-  shouldRender = true;
+void Sun::InvokeUpdate() {
+  shouldUpdate = true;
 }
 
 bool Sun::ShouldRender() {
@@ -67,6 +61,16 @@ bool Sun::ShouldRender() {
 
 void Sun::Update() {
   timeSinceUpdate += m_state->dt;
+
+  if (timeSinceUpdate > minTime && shouldUpdate) {
+    auto viewProj = m_proj * MakeView();
+    m_ctx->queue.WriteBuffer(m_sunViewProjBuffer, 0, &viewProj, sizeof(viewProj));
+
+    timeSinceUpdate = 0;
+    shouldUpdate = false;
+
+    shouldRender = true;
+  }
 }
 
 void Sun::SetDir(glm::vec3 dir) {

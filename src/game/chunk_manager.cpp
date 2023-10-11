@@ -71,7 +71,7 @@ void ChunkManager::Update(glm::vec2 position) {
   }
 exit:
   // update shadow map if chunks are added
-  if (gens > 0) m_state->sun.TryUpdate();
+  if (gens > 0) m_state->sun.InvokeUpdate();
 
   // store offsets of chunks inside frustum/camera's view
   m_frustumOffsets.clear();

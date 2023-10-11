@@ -209,7 +209,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       if (castData) {
         auto [pos, dir] = *castData;
         m_state.chunkManager->SetBlock(pos, game::BlockId::Air);
-        m_state.sun.TryUpdate();
+        m_state.sun.InvokeUpdate();
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
       auto castData = game::Raycast(
@@ -220,7 +220,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
         auto [pos, dir] = *castData;
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
         m_state.chunkManager->SetBlock(placePos, m_state.currBlock);
-        m_state.sun.TryUpdate();
+        m_state.sun.InvokeUpdate();
       }
     }
   }

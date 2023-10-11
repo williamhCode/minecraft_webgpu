@@ -38,8 +38,7 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
       .CreateView();
 
   // shadow pass ----------------------------------------------
-  // Extent3D shadowMapSize{4096, 4096};
-  Extent3D shadowMapSize{8192, 8192};
+  Extent3D shadowMapSize{16384, 16384};
   TextureView shadowMapTextureView =
     util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::Depth32Float)
       .CreateView();

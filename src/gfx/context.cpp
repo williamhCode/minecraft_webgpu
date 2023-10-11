@@ -32,10 +32,16 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
   // device limits
   SupportedLimits supportedLimits;
   adapter.GetLimits(&supportedLimits);
-  // PrintLimits(supportedLimits.limits);
+  // util::PrintLimits(supportedLimits.limits);
+
+  RequiredLimits requiredLimits{
+    .limits = supportedLimits.limits,
+  };
 
   // device
-  DeviceDescriptor deviceDesc{};
+  DeviceDescriptor deviceDesc{
+    .requiredLimits = &requiredLimits,
+  };
   device = util::RequestDevice(adapter, &deviceDesc);
   util::SetUncapturedErrorCallback(device);
 
