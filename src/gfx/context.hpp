@@ -27,4 +27,4 @@ struct Context {
   Context(GLFWwindow *window, glm::uvec2 size);
 };
 
-} // namespace util
+} // namespace gfx

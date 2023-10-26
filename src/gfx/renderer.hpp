@@ -81,4 +81,4 @@ public:
   void Present();
 };
 
-} // namespace util
+} // namespace gfx

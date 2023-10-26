@@ -262,6 +262,7 @@ void Renderer::ImguiRender() {
       // ImGui::SetNextWindowSize(ImVec2(270, 200));
       isFirstFrame = false;
     }
+
     ImGui::Begin("Options");
     {
       // ssao options ---------------------------------------------

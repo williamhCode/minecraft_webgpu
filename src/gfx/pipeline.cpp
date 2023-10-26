@@ -316,4 +316,4 @@ Pipeline::Pipeline(gfx::Context &ctx) {
   }));
 }
 
-} // namespace util
+} // namespace gfx

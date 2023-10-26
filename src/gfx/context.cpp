@@ -65,4 +65,4 @@ Context::Context(GLFWwindow *window, glm::uvec2 size) {
   pipeline = gfx::Pipeline(*this);
 }
 
-} // namespace util
+} // namespace gfx
