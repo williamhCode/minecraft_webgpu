@@ -117,11 +117,11 @@ Game::Game() {
   game::Chunk::InitSharedData();
   m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx, &m_state);
 
-  auto sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.1));
-  // auto sunDir = glm::normalize(glm::vec3(0.1, 0.1, 1));
+  // auto sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.1));
+  auto sunDir = glm::normalize(glm::vec3(1, 1, 1));
   m_state.sun = gfx::Sun(&m_ctx, &m_state, sunDir);
 
-  m_state.currBlock = game::BlockId::Glass;
+  m_state.currBlock = game::BlockId::Dirt;
 
   // setup rendering
   gfx::Renderer renderer(&m_ctx, &m_state);
@@ -191,9 +191,11 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
         m_state.player.speed = 10;
     }
 
-    if (key == GLFW_KEY_1) m_state.currBlock = game::BlockId::Glass;
-    if (key == GLFW_KEY_2) m_state.currBlock = game::BlockId::Leaf;
-    if (key == GLFW_KEY_3) m_state.currBlock = game::BlockId::Stone;
+    for (auto blockId = game::BlockId::Air; blockId < game::BlockId::Last;
+         blockId = (game::BlockId)((int)blockId + 1)) {
+      auto num = -1 + (int)blockId;
+      if (key == GLFW_KEY_0 + num && num < 10) m_state.currBlock = blockId;
+    }
   }
 }
 

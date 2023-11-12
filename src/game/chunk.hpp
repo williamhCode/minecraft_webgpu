@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bitset>
+#include <iostream>
 #include <sys/types.h>
 #include <vector>
 #include <array>
@@ -22,6 +23,30 @@ struct GameState;
 namespace game {
 
 class ChunkManager; // forward dec
+
+template <typename T>
+struct BitPackHelper {
+  T *data;
+  int bitOffset = 0;
+
+  struct Pair {
+    T data;
+    int bits;
+  };
+
+  BitPackHelper(T *data) : data(data) {}
+
+  void Set(T data, int bits) {
+    *this->data |= data << bitOffset;
+    bitOffset += bits;
+  }
+
+  void Set(std::vector<Pair> pairs) {
+    for (auto &pair : pairs) {
+      Set(pair.data, pair.bits);
+    }
+  }
+};
 
 class Chunk {
 public:
@@ -110,6 +135,7 @@ public:
 
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
+  static bool ValidIndex(size_t index);
   bool ShouldRender(BlockId id, glm::ivec3 position, Direction direction);
   bool ShouldRender(BlockId id, glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);

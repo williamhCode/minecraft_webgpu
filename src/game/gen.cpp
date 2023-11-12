@@ -1,21 +1,14 @@
 #include "gen.hpp"
 #include "chunk.hpp"
 #include <cmath>
+#include <random>
 #include "PerlinNoise.hpp"
 #include "game/block.hpp"
 
 namespace game {
 
-enum Biome {
-  Ocean,
-  Beach,
-  Plains,
-};
-
-constexpr int WATER_LEVEL = 64;
-
-void GenTerrain(Chunk &chunk);
 void GenTest(Chunk &chunk);
+void GenTerrain(Chunk &chunk);
 
 void GenChunkData(Chunk &chunk) {
   GenTerrain(chunk);
@@ -39,6 +32,45 @@ void GenTest(Chunk &chunk) {
         }
       }
     }
+  }
+}
+
+enum Biome {
+  Ocean,
+  Beach,
+  Plains,
+};
+constexpr int WATER_LEVEL = 64;
+
+void Tree(Chunk &chunk, glm::ivec3 pos) {
+  auto &data = chunk.GetBlockIdData();
+
+  static std::default_random_engine gen;
+  static std::uniform_int_distribution<int> randomInt(4, 7);
+  int height = randomInt(gen);
+
+  // generate leaves
+  static std::uniform_real_distribution<float> randomFloat(2, 3);
+  float radius = randomFloat(gen);
+  auto center = pos + glm::ivec3(0, 0, height);
+  // for (int x = -radius; x <= radius; x++) {
+  //   for (int y = -radius; y <= radius; y++) {
+  //     for (int z = -radius; z <= radius; z++) {
+  //       auto leafPos = center + glm::ivec3(x, y, z);
+  //       auto index = Chunk::PosToIndex(leafPos);
+  //       if (!Chunk::ValidIndex(index)) continue;
+  //       if (glm::length(glm::vec3(center - leafPos)) <= radius) {
+  //         data[index] = BlockId::Leaf;
+  //       }
+  //     }
+  //   }
+  // }
+
+  // generate stem
+  for (int i = 0; i < height; i++) {
+    auto index = Chunk::PosToIndex(pos + glm::ivec3(0, 0, i));
+    if (!Chunk::ValidIndex(index)) continue;
+    data[index] = BlockId::Wood;
   }
 }
 
@@ -99,6 +131,15 @@ void GenTerrain(Chunk &chunk) {
           data[index] = topBlock;
         } else {
           data[index] = BlockId::Air;
+        }
+      }
+
+      if (biome == Plains) {
+        static std::default_random_engine gen;
+        std::uniform_real_distribution<float> randomFloat(0, 1);
+        if (randomFloat(gen) < 0.005) {
+        // if (randomFloat(gen) < 0.05) {
+          Tree(chunk, {x, y, height});
         }
       }
     }

@@ -38,10 +38,10 @@ glm::mat4 Sun::MakeView() {
   auto view = glm::lookAt(eyePos, centerPos, m_state->player.camera.up);
 
   // center the shadow map
-  auto viewProj = m_proj * view;
-  auto centerView = viewProj * glm::vec4(centerPos, 1.0);
+  m_viewProj = m_proj * view;
+  auto centerView = m_viewProj * glm::vec4(centerPos, 1.0);
   auto centerFixed = glm::vec3(centerView.xy() - 0.5f, centerView.z);
-  auto centerFixedW = (glm::inverse(viewProj) * glm::vec4(centerFixed, 1.0)).xyz();
+  auto centerFixedW = (glm::inverse(m_viewProj) * glm::vec4(centerFixed, 1.0)).xyz();
 
   eyePos = centerFixedW + m_dir * distance;
   return glm::lookAt(eyePos, centerFixedW, m_state->player.camera.up);
@@ -63,8 +63,8 @@ void Sun::Update() {
   timeSinceUpdate += m_state->dt;
 
   if (timeSinceUpdate > minTime && shouldUpdate) {
-    auto viewProj = m_proj * MakeView();
-    m_ctx->queue.WriteBuffer(m_sunViewProjBuffer, 0, &viewProj, sizeof(viewProj));
+    m_viewProj = m_proj * MakeView();
+    m_ctx->queue.WriteBuffer(m_sunViewProjBuffer, 0, &m_viewProj, sizeof(m_viewProj));
 
     timeSinceUpdate = 0;
     shouldUpdate = false;

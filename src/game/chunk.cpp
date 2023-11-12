@@ -77,25 +77,26 @@ void Chunk::UpdateMesh() {
         // 22 texLoc (4 bits x 2)
         // 30 transparency (2 bits)
         glm::uvec3 position = vertexSrc.position;
-        attribs.data1 |= (u_int32_t)position.x;
-        attribs.data1 |= (u_int32_t)position.y << 5;
-        attribs.data1 |= (u_int32_t)position.z << 10;
-
-        attribs.data1 |= (u_int32_t)vertexSrc.uv.x << 20;
-        attribs.data1 |= (u_int32_t)vertexSrc.uv.y << 21;
-
         glm::uvec2 texLoc = blockType.GetTextureLoc((Direction)i_face);
-        attribs.data1 |= (u_int32_t)texLoc.x << 22;
-        attribs.data1 |= (u_int32_t)texLoc.y << 26;
-
-        attribs.data1 |= (u_int32_t)blockType.transparency << 30;
+        BitPackHelper(&attribs.data1).Set({
+          {position.x, 5},
+          {position.y, 5},
+          {position.z, 10},
+          {vertexSrc.uv.x, 1},
+          {vertexSrc.uv.y, 1},
+          {texLoc.x, 4},
+          {texLoc.y, 4},
+          {blockType.transparency, 2},
+        });
 
         // 0 normal (2 bit x 3)
         // map (-1, 1) to (0, 2)
         glm::uvec3 normal = vertexSrc.normal + 1;
-        attribs.data2 |= (u_int32_t)normal.x;
-        attribs.data2 |= (u_int32_t)normal.y << 2;
-        attribs.data2 |= (u_int32_t)normal.z << 4;
+        BitPackHelper(&attribs.data2).Set({
+          {normal.x, 2},
+          {normal.y, 2},
+          {normal.z, 2},
+        });
       }
 
       FaceIndex faceIndex;
@@ -120,7 +121,9 @@ void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupInd
   passEncoder.DrawIndexed(m_opaqueData.indices.size() * 6);
 }
 
-void Chunk::RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
+void Chunk::RenderTranslucent(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
   // record time
   // auto timer = dawn::utils::CreateTimer();
   // timer->Start();
@@ -154,7 +157,9 @@ void Chunk::RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder, uint32
   // passEncoder.DrawIndexed(sortedIndices.size() * 6);
 }
 
-void Chunk::RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
+void Chunk::RenderWater(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
   passEncoder.SetBindGroup(groupIndex, bindGroup);
   passEncoder.SetVertexBuffer(0, m_waterData.vbo, 0, m_waterData.vbo.GetSize());
   passEncoder.SetIndexBuffer(
@@ -171,6 +176,10 @@ glm::ivec3 Chunk::IndexToPos(size_t index) {
   return glm::ivec3(
     index % SIZE.x, (index / SIZE.x) % SIZE.y, index / (SIZE.x * SIZE.y)
   );
+}
+
+bool Chunk::ValidIndex(size_t index) {
+  return index >= 0 && index < VOLUME;
 }
 
 bool Chunk::ShouldRender(BlockId id, glm::ivec3 position, Direction direction) {

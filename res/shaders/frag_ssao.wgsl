@@ -51,9 +51,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
     clipOffset.y = -clipOffset.y;
     let screenOffset = (clipOffset.xy / clipOffset.w) * 0.5 + 0.5;
 
-    if (textureSampleLevel(gBufferNormal, gBufferSampler, screenOffset, 0.0).w == 1.0) {
-      continue;
-    }
+    if (textureSampleLevel(gBufferNormal, gBufferSampler, screenOffset, 0.0).w == 1.0) { continue; }
     let sampleDepth = textureSampleLevel(gBufferPosition, gBufferSampler, screenOffset, 0.0).z;
      // range check & accumulate
     let rangeCheck = smoothstep(0.0, 1.0, opts.radius / abs(fragViewPos.z - sampleDepth));

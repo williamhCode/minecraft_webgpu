@@ -84,10 +84,12 @@ exit:
   }
 
   m_shadowOffsets.clear();
+  frustum = m_state->sun.GetFrustum();
   for (auto &[offset, chunk] : chunks) {
-    if (glm::distance(glm::vec2(offset), glm::vec2(centerPos)) > m_state->sun.area / (16 * 1.5) - 0.1)
-      continue;
-    m_shadowOffsets.push_back(offset);
+    auto boundingBox = chunk->GetBoundingBox();
+    if (frustum.Intersects(boundingBox)) {
+      m_shadowOffsets.push_back(offset);
+    }
   }
 
   // sort offsets back to front based on distance to camera for transparent objects

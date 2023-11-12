@@ -3,6 +3,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "webgpu/webgpu_cpp.h"
+#include "util/frustum.hpp"
 #include <optional>
 
 struct GameState;
@@ -16,6 +17,7 @@ private:
 
   glm::vec3 m_dir;  // player -> sun
   glm::mat4 m_proj;
+  glm::mat4 m_viewProj;
 
   wgpu::Buffer m_sunDirBuffer;
   wgpu::Buffer m_sunViewProjBuffer;
@@ -27,7 +29,7 @@ private:
   glm::mat4 MakeView();
 
 public:
-  static constexpr float area = 16 * 40;
+  static constexpr float area = 16 * 20;
   wgpu::BindGroup bindGroup;
 
   float timeSinceUpdate = 1;
@@ -43,6 +45,10 @@ public:
     return m_dir;
   }
   void SetDir(glm::vec3 dir);
+
+  util::Frustum GetFrustum() {
+    return util::Frustum(m_viewProj);
+  }
 };
 
 } // namespace gfx
