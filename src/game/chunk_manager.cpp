@@ -82,6 +82,17 @@ exit:
       m_frustumOffsets.push_back(offset);
     }
   }
+  // sort front to back for performance
+  glm::vec2 pos = glm::vec2(m_state->player.GetPosition()) / glm::vec2(Chunk::SIZE);
+  std::sort(
+    m_frustumOffsets.begin(), m_frustumOffsets.end(),
+    // implicit conversion from ivec2 to vec2
+    [&](glm::vec2 a, glm::vec2 b) {
+      a += glm::vec2(0.5);
+      b += glm::vec2(0.5);
+      return glm::distance(a, pos) < glm::distance(b, pos);
+    }
+  );
 
   m_shadowOffsets.clear();
   frustum = m_state->sun.GetFrustum();
@@ -155,11 +166,11 @@ std::optional<Chunk *> ChunkManager::GetChunk(glm::ivec2 offset) {
 std::vector<Chunk *> ChunkManager::GetChunkNeighbors(glm::ivec2 offset) {
   std::vector<Chunk *> neighbors;
   // neighbor list
-  static std::array<glm::ivec2, 4> neighborOffsets = {
-    glm::ivec2(0, 1),
-    glm::ivec2(0, -1),
-    glm::ivec2(1, 0),
-    glm::ivec2(-1, 0),
+  static glm::ivec2 neighborOffsets[] = {
+    {0, 1},
+    {0, -1},
+    {1, 0},
+    {-1, 0},
   };
   for (auto neighborOffset : neighborOffsets) {
     neighborOffset += offset;

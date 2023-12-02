@@ -37,7 +37,8 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f) -> f32 {
   }
 
   // let bias = max(0.001 * (1.0 - dot(normal, sunDir)), 0.0001);
-  let bias = 0.0005;
+  // let bias = 0.0005;
+  let bias = 0.00005;
   let depth = textureSampleCompareLevel(shadowMap, shadowSampler, projCoords.xy, projCoords.z - bias);
   return depth;
 }

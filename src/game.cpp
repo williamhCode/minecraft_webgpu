@@ -57,12 +57,21 @@ Game::Game() {
   // disable high-dpi for macOS
   // glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 
+  // GLFWmonitor *primary = glfwGetPrimaryMonitor();
+  // const GLFWvidmode *mode = glfwGetVideoMode(primary);
+  // glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+  // glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+  // glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+  // glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+  // m_state.size = {2560, 1440};
+
+  GLFWmonitor* primary = NULL;
   // m_state.size = {960, 540};
   m_state.size = {1200, 800};
   // m_state.size = {1400, 1000};
 
   m_window =
-    glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", NULL, NULL);
+    glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", primary, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
@@ -81,7 +90,11 @@ Game::Game() {
 
   int FBWidth, FBHeight;
   glfwGetFramebufferSize(m_window, &FBWidth, &FBHeight);
+  // m_state.fbSize = {FBWidth, FBHeight};
   m_state.fbSize = {FBWidth, FBHeight};
+
+  std::cout << "Window size: " << glm::to_string(m_state.size) << std::endl;
+  std::cout << "Framebuffer size: " << glm::to_string(m_state.fbSize) << std::endl;
 
   double xpos, ypos;
   glfwGetCursorPos(m_window, &xpos, &ypos);
@@ -128,7 +141,6 @@ Game::Game() {
 
   // game loop
   util::Timer timer;
-  // float time = 0;
 
   while (!glfwWindowShouldClose(m_window)) {
     m_state.dt = timer.Tick();
@@ -152,8 +164,8 @@ Game::Game() {
     }
     m_state.player.Update();
 
-    m_state.chunkManager->Update(glm::vec2(m_state.player.GetPosition()));
     m_state.sun.Update();
+    m_state.chunkManager->Update(glm::vec2(m_state.player.GetPosition()));
 
     // render
     renderer.Render();

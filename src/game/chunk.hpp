@@ -72,6 +72,8 @@ public:
 
   wgpu::Buffer worldPosBuffer;
   wgpu::BindGroup bindGroup;
+
+  std::vector<glm::ivec3> outOfBoundLeafPositions;
 private:
   gfx::Context *m_ctx;
   GameState *m_state;
@@ -144,11 +146,14 @@ public:
   auto &GetBlockIdData() {
     return m_blockIdData;
   }
-  auto GetOffsetPos() {
+  auto GetWorldOffset() {
     return m_worldOffset;
   }
   util::AABB GetBoundingBox() {
     return util::AABB{m_worldOffset, m_worldOffset + SIZE};
+  }
+  auto GetChunkManager() {
+    return m_chunkManager;
   }
 };
 

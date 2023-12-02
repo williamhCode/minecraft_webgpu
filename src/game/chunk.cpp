@@ -34,6 +34,9 @@ Chunk::Chunk(
       {0, worldPosBuffer},
     }
   );
+
+  // set all blocks to air
+  std::fill(m_blockIdData.begin(), m_blockIdData.end(), BlockId::Air);
 }
 
 std::array<Cube, Chunk::VOLUME> Chunk::m_cubeData;

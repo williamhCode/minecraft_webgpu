@@ -1,6 +1,7 @@
 .PHONY: build
 
 BACKEND = dawn
+# TYPE = debug
 TYPE = release
 
 build:
@@ -12,7 +13,7 @@ build-tint:
 	cp build/$(BACKEND)/$(TYPE)/_deps/dawn-build/tint .
 
 build-setup:
-	cmake . -B build/dawn/debug -DCMAKE_BUILD_TYPE=Debug -GNinja
+	cmake . -B build/dawn/debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja
 	cmake . -B build/dawn/release -DCMAKE_BUILD_TYPE=Release -GNinja
 
 xcode-setup:

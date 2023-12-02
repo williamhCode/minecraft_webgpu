@@ -1,5 +1,6 @@
 #include "dawn/utils/WGPUHelpers.h"
 #include "game.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "renderer.hpp"
 #include "game/block.hpp"
 #include <iostream>
@@ -251,6 +252,7 @@ void Renderer::ImguiRender() {
         "##Frame Times", frameTimes, NUM_FRAMES, frameTimeIndex, nullptr, 0.0f,
         0.033333f, ImVec2(ImGui::GetWindowSize().x - 20, 150)
       );
+      ImGui::Text("Position: %s", glm::to_string(m_state->player.GetPosition()).c_str());
     }
     ImGui::End();
   }
