@@ -47,7 +47,7 @@ struct RenderPassDescriptor : public wgpu::RenderPassDescriptor{
 // clang-format on
 
 namespace BlendState {
-const wgpu::BlendState ALPHA_BLENDING = {
+const wgpu::BlendState AlphaBlending = {
   .color{
     .operation = wgpu::BlendOperation::Add,
     .srcFactor = wgpu::BlendFactor::SrcAlpha,
@@ -57,6 +57,18 @@ const wgpu::BlendState ALPHA_BLENDING = {
     .operation = wgpu::BlendOperation::Add,
     .srcFactor = wgpu::BlendFactor::One,
     .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+  },
+};
+const wgpu::BlendState SpecialBlending = {
+  .color{
+    .operation = wgpu::BlendOperation::Add,
+    .srcFactor = wgpu::BlendFactor::One,
+    .dstFactor = wgpu::BlendFactor::Zero,
+  },
+  .alpha{
+    .operation = wgpu::BlendOperation::Add,
+    .srcFactor = wgpu::BlendFactor::One,
+    .dstFactor = wgpu::BlendFactor::Zero,
   },
 };
 }

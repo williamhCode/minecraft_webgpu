@@ -25,12 +25,16 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
   }
 
   // get input for SSAO algorithm
-  let fragViewPos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
-  if (fragViewPos.w == 0.0) {
+  let sampleNormal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0);
+  // normal.w is 0 if it's the sky
+  if (sampleNormal.w == 0.0) {
     return 1.0;
   }
+
+  var fragViewPos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
+  fragViewPos.w = 1.0;  // w might be 0.5, set to 1.0 for correct matrix multiplication
   let fragWorldPos = (inverseView * fragViewPos).xyz;
-  let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0).xyz;
+  let normal = sampleNormal.xyz;
   let noiseScale = vec2f(textureDimensions(gBufferPosition)) / 4.0;
   let randomVec = textureSampleLevel(noiseTexture, noiseSampler, uv * noiseScale, 0.0).xyz;
 
@@ -51,8 +55,10 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
     clipOffset.y = -clipOffset.y;
     let screenOffset = (clipOffset.xy / clipOffset.w) * 0.5 + 0.5;
 
-    if (textureSampleLevel(gBufferNormal, gBufferSampler, screenOffset, 0.0).w == 1.0) { continue; }
-    let sampleDepth = textureSampleLevel(gBufferPosition, gBufferSampler, screenOffset, 0.0).z;
+    let sampleView = textureSampleLevel(gBufferPosition, gBufferSampler, screenOffset, 0.0);
+    // if object at position is fully transparent, will have w of 0.5
+    if (sampleView.w == 0.5) { continue; }
+    let sampleDepth = sampleView.z;
      // range check & accumulate
     let rangeCheck = smoothstep(0.0, 1.0, opts.radius / abs(fragViewPos.z - sampleDepth));
     occlusion += select(0.0, 1.0, sampleDepth >= samplePos.z + opts.bias) * rangeCheck;

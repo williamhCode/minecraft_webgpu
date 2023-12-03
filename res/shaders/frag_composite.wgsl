@@ -45,11 +45,13 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f) -> f32 {
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let samplePos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
+  var samplePos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
+  samplePos.w = 1.0;  // w might be 0.5, set to 1.0 for correct matrix multiplication
   let position = (inverseView * samplePos).xyz;
   let sunSpacePos = sunViewProj * vec4f(position, 1.0);
 
-  let normal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0).xyz;
+  let sampleNormal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0);
+  let normal = sampleNormal.xyz;
   var albedo = textureSampleLevel(gBufferAlbedo, gBufferSampler, uv, 0.0).rgb;
   let ambientOcclusion = textureSampleLevel(ssaoTexture, gBufferSampler, uv, 0.0).r;
   albedo *= ambientOcclusion;
@@ -57,10 +59,10 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   var waterColor = textureSampleLevel(waterTexture, gBufferSampler, uv, 0.0);
     
   // lighting calculations
-  let ambient = 0.4;
-  var diffuse = 0.6;
-  if (samplePos.w != 0.0) {
-    diffuse *= max(0.0, dot(normal.xyz, normalize(sunDir)));
+  let ambient = 0.5;
+  var diffuse = 0.5;
+  if (sampleNormal.w != 0.0) {
+    diffuse *= max(0.0, dot(normal, normalize(sunDir)));
   }
 
   // let viewPos = inverseView[3].xyz;
@@ -70,7 +72,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let specular = 0.0;
 
   var shadow = 1.0;
-  if (samplePos.w != 0.0) {
+  if (sampleNormal.w != 0.0) {
     shadow = ShadowCalculation(sunSpacePos, normal);
   }
 

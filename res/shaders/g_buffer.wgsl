@@ -66,9 +66,17 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
     discard;
   }
   out.albedo = color;
+
+  // dont store position of fully transparent object
+  if (transparency == 3u) {
+    // set w to 0.5 for ssao uses
+    out.position = vec4f(in.fragPos, 0.5);
+    out.normal = vec4f(normal, 1.0);
+    return out;
+  }
+  
   out.position = vec4f(in.fragPos, 1.0);
-  // store is fully transparent in w component of normal, for use in ssao
-  out.normal = vec4f(normal, f32(transparency == 3u));
+  out.normal = vec4f(normal, 1.0);
 
   return out;
 }

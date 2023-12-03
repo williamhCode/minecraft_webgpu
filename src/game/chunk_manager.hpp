@@ -22,7 +22,7 @@ private:
   std::vector<glm::ivec2> m_shadowOffsets;
 
 public:
-  int radius = 2;
+  int radius = 16;
   int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 

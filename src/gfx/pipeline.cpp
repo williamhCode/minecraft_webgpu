@@ -127,11 +127,16 @@ Pipeline::Pipeline(gfx::Context &ctx) {
       .entryPoint = "fs_main",
       .targetCount = 3,
       .targets = ToPtr<ColorTargetState>({
-        {.format = TextureFormat::RGBA16Float}, // position
-        {.format = TextureFormat::RGBA16Float}, // normal
+        {
+          .format = TextureFormat::RGBA16Float,
+          // .blend = &util::BlendState::SpecialBlending,
+        }, // position
+        {
+          .format = TextureFormat::RGBA16Float,
+        }, // normal
         {
           .format = TextureFormat::BGRA8Unorm,
-          .blend = &util::BlendState::ALPHA_BLENDING,
+          .blend = &util::BlendState::AlphaBlending,
         }, // albedo
       }),
     }),

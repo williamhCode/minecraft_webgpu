@@ -75,6 +75,7 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
     depthTextureView
   );
   m_gBufferPassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
+  // position (view-space), normal, color
   m_gBufferPassDesc.cColorAttachments[0].clearValue = {0.0, 0.0, -10000, 0.0};
   m_gBufferPassDesc.cColorAttachments[1].clearValue = {0.0, 0.0, 0.0, 0.0};
   m_gBufferPassDesc.cColorAttachments[2].clearValue = {0.5, 0.8, 0.9, 1.0};
