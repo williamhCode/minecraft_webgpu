@@ -59,18 +59,6 @@ const wgpu::BlendState AlphaBlending = {
     .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
   },
 };
-const wgpu::BlendState SpecialBlending = {
-  .color{
-    .operation = wgpu::BlendOperation::Add,
-    .srcFactor = wgpu::BlendFactor::One,
-    .dstFactor = wgpu::BlendFactor::Zero,
-  },
-  .alpha{
-    .operation = wgpu::BlendOperation::Add,
-    .srcFactor = wgpu::BlendFactor::One,
-    .dstFactor = wgpu::BlendFactor::Zero,
-  },
-};
 }
 
 } // namespace util

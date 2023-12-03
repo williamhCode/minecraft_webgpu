@@ -83,26 +83,11 @@ void Tree(Chunk &chunk, glm::ivec3 rootPos) {
     }
   }
 
-  // generate out of bound leaves from neighboring chunks
-  // for (int x = -1; x <= 1; x++) {
-  //   for (int y = -1; y <= 1; y++) {
-  //     auto neighborOffset = chunk.chunkOffset + glm::ivec2(x, y);
-  //     auto neighborChunk = chunk.GetChunkManager()->GetChunk(neighborOffset);
-  //     if (!neighborChunk) continue;
-  //     auto &neighborChunkRef = **neighborChunk;
-  //     for (auto &pos : neighborChunkRef.outOfBoundLeafPositions) {
-  //       auto localPos = pos - chunk.GetWorldOffset();
-  //       auto index = Chunk::PosToIndex(localPos);
-  //       data[index] = BlockId::Leaf;
-  //     }
-  //   }
-  // }
-
   // generate stem
   for (int i = 0; i < height; i++) {
-    auto index = Chunk::PosToIndex(rootPos + glm::ivec3(0, 0, i));
-    if (!Chunk::ValidIndex(index)) continue;
-    data[index] = BlockId::Wood;
+    auto pos = rootPos + glm::ivec3(0, 0, i);
+    if (!Chunk::ValidPos(pos)) continue;
+    data[Chunk::PosToIndex(pos)] = BlockId::Wood;
   }
 }
 

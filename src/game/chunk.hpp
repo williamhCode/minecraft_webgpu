@@ -137,6 +137,7 @@ public:
 
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
+  static bool ValidPos(glm::ivec3 pos);
   static bool ValidIndex(size_t index);
   bool ShouldRender(BlockId id, glm::ivec3 position, Direction direction);
   bool ShouldRender(BlockId id, glm::ivec3 position);

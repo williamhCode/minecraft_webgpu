@@ -55,6 +55,31 @@ void Chunk::InitSharedData() {
 }
 
 void Chunk::UpdateMesh() {
+  // generate out of bound meshes from neighboring chunks
+  for (int x = -1; x <= 1; x++) {
+    for (int y = -1; y <= 1; y++) {
+      if (!x && !y) continue;
+      auto neighborOffset = chunkOffset + glm::ivec2(x, y);
+      auto neighborChunk = m_chunkManager->GetChunk(neighborOffset);
+      if (!neighborChunk) continue;
+      auto &neighborChunkRef = **neighborChunk;
+
+      for (
+        auto it = neighborChunkRef.outOfBoundLeafPositions.begin();
+        it != neighborChunkRef.outOfBoundLeafPositions.end();
+      ) {
+        auto localPos = *it - m_worldOffset;
+        if (!ValidPos(localPos)) {
+          it++;
+          continue;
+        }
+        auto index = Chunk::PosToIndex(localPos);
+        m_blockIdData[index] = BlockId::Leaf;
+        it = neighborChunkRef.outOfBoundLeafPositions.erase(it);
+      }
+    }
+  }
+
   m_opaqueData.Clear();
   // m_translucentData.Clear();
   m_waterData.Clear();
@@ -179,6 +204,12 @@ glm::ivec3 Chunk::IndexToPos(size_t index) {
   return glm::ivec3(
     index % SIZE.x, (index / SIZE.x) % SIZE.y, index / (SIZE.x * SIZE.y)
   );
+}
+
+bool Chunk::ValidPos(glm::ivec3 pos) {
+  return pos.x >= 0 && pos.x < SIZE.x &&
+         pos.y >= 0 && pos.y < SIZE.y &&
+         pos.z >= 0 && pos.z < SIZE.z;
 }
 
 bool Chunk::ValidIndex(size_t index) {
