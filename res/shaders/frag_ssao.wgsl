@@ -57,11 +57,13 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) f32 {
 
     let sampleView = textureSampleLevel(gBufferPosition, gBufferSampler, screenOffset, 0.0);
     // if object at position is fully transparent, will have w of 0.5
-    if (sampleView.w == 0.5) { continue; }
+    let skip = f32(sampleView.w != 0.5);
+    // if (sampleView.w == 0.5) { continue; }
+
     let sampleDepth = sampleView.z;
      // range check & accumulate
     let rangeCheck = smoothstep(0.0, 1.0, opts.radius / abs(fragViewPos.z - sampleDepth));
-    occlusion += select(0.0, 1.0, sampleDepth >= samplePos.z + opts.bias) * rangeCheck;
+    occlusion += select(0.0, 1.0, sampleDepth >= samplePos.z + opts.bias) * rangeCheck * skip;
   }
   occlusion = 1.0 - (occlusion / f32(opts.sampleSize));
 

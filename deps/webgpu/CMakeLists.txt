@@ -7,20 +7,25 @@ add_library(webgpu INTERFACE)
 
 if (EMSCRIPTEN)
 
-	# This is used to advertise the flavor of WebGPU that this zip provides
-	target_compile_definitions(webgpu INTERFACE WEBGPU_BACKEND_EMSCRIPTEN)
+  target_include_directories(webgpu INTERFACE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include-emscripten"
+  )
+
+  # This is used to advertise the flavor of WebGPU that this zip provides
+  target_compile_definitions(webgpu INTERFACE WEBGPU_BACKEND_EMSCRIPTEN)
 
 else (EMSCRIPTEN)
 
-	include(cmake/FetchDawn.cmake)
+  include(cmake/FetchDawn.cmake)
 
-	target_link_libraries(webgpu INTERFACE webgpu_dawn)
-	# target_include_directories(webgpu INTERFACE
-	# 	"${CMAKE_BINARY_DIR}/_deps/dawn-src/include"
-	# )
+  target_link_libraries(webgpu INTERFACE webgpu_dawn)
+  target_include_directories(webgpu INTERFACE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_BINARY_DIR}/_deps/dawn-src/include"
+  )
 
-	# This is used to advertise the flavor of WebGPU that this zip provides
-	target_compile_definitions(webgpu INTERFACE WEBGPU_BACKEND_DAWN)
+  # This is used to advertise the flavor of WebGPU that this zip provides
+  target_compile_definitions(webgpu INTERFACE WEBGPU_BACKEND_DAWN)
 
 endif (EMSCRIPTEN)
 
