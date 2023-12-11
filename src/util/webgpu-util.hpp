@@ -1,12 +1,8 @@
 #pragma once
 
-#include "gfx/context.hpp"
-#include <functional>
-#include <optional>
+#include <filesystem>
 #include <vector>
-#include <array>
 #include <webgpu/webgpu_cpp.h>
-#include <fstream>
 
 namespace util {
 

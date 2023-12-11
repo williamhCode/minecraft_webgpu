@@ -4,7 +4,6 @@
 #include "glm/ext/matrix_float4x4.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "util/frustum.hpp"
-#include <optional>
 
 struct GameState;
 

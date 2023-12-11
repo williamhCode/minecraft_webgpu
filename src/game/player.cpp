@@ -1,4 +1,6 @@
 #include "player.hpp"
+#include "glm/gtx/rotate_vector.hpp"
+#include "glm/trigonometric.hpp"
 
 namespace game {
 

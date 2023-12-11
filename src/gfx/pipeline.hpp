@@ -1,7 +1,6 @@
 #pragma once
 
 #include <webgpu/webgpu_cpp.h>
-#include <vector>
 
 namespace gfx {
 

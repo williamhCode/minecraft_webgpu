@@ -2,11 +2,7 @@
 #include "dawn/utils/WGPUHelpers.h"
 #include "game/chunk.hpp"
 #include "gfx/context.hpp"
-#include "gfx/renderer.hpp"
 #include "util/webgpu-util.hpp"
-#include "game/mesh.hpp"
-#include "glm-include.hpp"
-#include "game/mesh.hpp"
 #include <vector>
 
 namespace gfx {

@@ -1,11 +1,13 @@
 #include "sun.hpp"
-#include "game.hpp"
+
+#include "dawn/utils/WGPUHelpers.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float2.hpp"
+
+#include "game.hpp"
 #include "util/webgpu-util.hpp"
-#include <iostream>
 
 namespace gfx {
 

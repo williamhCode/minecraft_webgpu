@@ -5,7 +5,6 @@
 #include <dawn/utils/TextureUtils.h>
 
 #include <iostream>
-#include <sstream>
 
 namespace gfx {
 

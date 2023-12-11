@@ -1,14 +1,10 @@
 #include "game.hpp"
 
-#include <numeric>
-#include <tuple>
-
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 #include <webgpu/webgpu_cpp.h>
-#include <webgpu/webgpu_glfw.h>
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_wgpu.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_wgpu.h>
 
 #include "game/block.hpp"
 #include "game/chunk.hpp"
@@ -20,15 +16,9 @@
 #include "gfx/context.hpp"
 #include "gfx/renderer.hpp"
 #include "util/timer.hpp"
-#include "util/webgpu-util.hpp"
-#include "util/load.hpp"
 #include "gfx/pipeline.hpp"
 
-#include <array>
-#include <fstream>
 #include <iostream>
-#include <sstream>
-#include <vector>
 
 void _KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   Game *game = reinterpret_cast<Game *>(glfwGetWindowUserPointer(window));
@@ -128,7 +118,8 @@ Game::Game() {
 
   game::InitMesh();
   game::Chunk::InitSharedData();
-  m_state.chunkManager = std::make_unique<game::ChunkManager>(&m_ctx, &m_state);
+  // initialize in same memory to avoid copying, because it passes its own pointer to members when initializing
+  new (&m_state.chunkManager) game::ChunkManager(&m_ctx, &m_state);
 
   // auto sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.1));
   auto sunDir = glm::normalize(glm::vec3(1, 1, 1));
@@ -165,7 +156,7 @@ Game::Game() {
     m_state.player.Update();
 
     m_state.sun.Update();
-    m_state.chunkManager->Update(glm::vec2(m_state.player.GetPosition()));
+    m_state.chunkManager.Update(glm::vec2(m_state.player.GetPosition()));
 
     // render
     renderer.Render();
@@ -218,22 +209,22 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
       auto castData = game::Raycast(
         m_state.player.GetPosition(), m_state.player.GetDirection(), 10,
-        *m_state.chunkManager
+        m_state.chunkManager
       );
       if (castData) {
         auto [pos, dir] = *castData;
-        m_state.chunkManager->SetBlock(pos, game::BlockId::Air);
+        m_state.chunkManager.SetBlock(pos, game::BlockId::Air);
         m_state.sun.InvokeUpdate();
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
       auto castData = game::Raycast(
         m_state.player.GetPosition(), m_state.player.GetDirection(), 10,
-        *m_state.chunkManager
+        m_state.chunkManager
       );
       if (castData) {
         auto [pos, dir] = *castData;
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_state.chunkManager->SetBlock(placePos, m_state.currBlock);
+        m_state.chunkManager.SetBlock(placePos, m_state.currBlock);
         m_state.sun.InvokeUpdate();
       }
     }

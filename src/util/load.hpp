@@ -1,13 +1,10 @@
 #pragma once
 
+#include "glm/ext/vector_float3.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include <webgpu/webgpu_cpp.h>
-#include "gfx/context.hpp"
-#include "glm/vec3.hpp"
-#include "glm/vec2.hpp"
 
-#include <fstream>
 #include <vector>
-#include <sstream>
 
 namespace util {
 

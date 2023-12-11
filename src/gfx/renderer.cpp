@@ -1,17 +1,21 @@
-#include "dawn/utils/WGPUHelpers.h"
-#include "game.hpp"
-#include "glm/gtx/string_cast.hpp"
 #include "renderer.hpp"
-#include "game/block.hpp"
+
 #include <iostream>
 #include <ostream>
 #include <random>
 #include <vector>
-#include "glm/gtx/compatibility.hpp"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_wgpu.h"
+
+#include <dawn/utils/WGPUHelpers.h>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/compatibility.hpp>
+#include <glm/gtx/transform.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_wgpu.h>
+
+#include "game.hpp"
 #include "gfx/context.hpp"
+#include "game/block.hpp"
 
 namespace gfx {
 
@@ -295,10 +299,10 @@ void Renderer::ImguiRender() {
 
       // chunk options ---------------------------------------------
       if (ImGui::CollapsingHeader("Chunk")) {
-        ImGui::SliderInt("Radius##chunk", &m_state->chunkManager->radius, 0, 64);
-        if (ImGui::DragInt("Max Gens", &m_state->chunkManager->max_gens, 1, 1, 100)) {
-          if (m_state->chunkManager->max_gens < 1) {
-            m_state->chunkManager->max_gens = 1;
+        ImGui::SliderInt("Radius##chunk", &m_state->chunkManager.radius, 0, 64);
+        if (ImGui::DragInt("Max Gens", &m_state->chunkManager.max_gens, 1, 1, 100)) {
+          if (m_state->chunkManager.max_gens < 1) {
+            m_state->chunkManager.max_gens = 1;
           }
         }
       }
@@ -331,7 +335,7 @@ void Renderer::Render() {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_shadowPassDesc);
     passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
     passEncoder.SetBindGroup(0, m_state->sun.bindGroup);
-    m_state->chunkManager->RenderShadowMap(passEncoder, 1);
+    m_state->chunkManager.RenderShadowMap(passEncoder, 1);
     passEncoder.End();
   }
   // gbuffer pass
@@ -340,7 +344,7 @@ void Renderer::Render() {
     passEncoder.SetPipeline(m_ctx->pipeline.gBufferRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
-    m_state->chunkManager->Render(passEncoder, 2);
+    m_state->chunkManager.Render(passEncoder, 2);
     passEncoder.End();
   }
   // water pass
@@ -350,7 +354,7 @@ void Renderer::Render() {
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
     passEncoder.SetBindGroup(2, m_state->sun.bindGroup);
-    m_state->chunkManager->RenderWater(passEncoder, 3);
+    m_state->chunkManager.RenderWater(passEncoder, 3);
     passEncoder.End();
   }
   // ssao pass

@@ -4,11 +4,9 @@
 #include "game/block.hpp"
 #include "game/chunk_manager.hpp"
 #include "gfx/sun.hpp"
-#include "glm-include.hpp"
 
 #include "game/player.hpp"
 #include "gfx/context.hpp"
-#include "gfx/renderer.hpp"
 
 struct GameState {
   glm::uvec2 size;
@@ -21,7 +19,8 @@ struct GameState {
   float fps;
 
   game::Player player;
-  std::unique_ptr<game::ChunkManager> chunkManager;
+  // std::unique_ptr<game::ChunkManager> chunkManager;
+  game::ChunkManager chunkManager;
 
   gfx::Sun sun;
 

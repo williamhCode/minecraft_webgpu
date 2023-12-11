@@ -26,8 +26,7 @@ public:
   int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
-  // no default constructor,
-  // we need its pointer to be stable because it is passed on
+  ChunkManager() = default;
   ChunkManager(gfx::Context *ctx, GameState *state);
   void Update(glm::vec2 position);
   void RenderShadowMap(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);

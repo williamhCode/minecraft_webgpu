@@ -1,10 +1,7 @@
 #include "camera.hpp"
-#include "glm/gtx/string_cast.hpp"
+#include "glm/gtx/transform.hpp"
 #include "util/webgpu-util.hpp"
 #include "dawn/utils/WGPUHelpers.h"
-#include <algorithm>
-#include <iostream>
-#include <vector>
 
 namespace util {
 

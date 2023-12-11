@@ -1,5 +1,4 @@
 #include "frustum.hpp"
-#include <iostream>
 
 namespace util {
 

@@ -1,9 +1,8 @@
 #pragma once
 
+#include <webgpu/webgpu_cpp.h>
 #include "dawn/utils/WGPUHelpers.h"
-#include "glm/ext/vector_uint2.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "webgpu/webgpu_cpp.h"
 #include "gfx/context.hpp"
 #include <array>
 #include "util/webgpu-util.hpp"

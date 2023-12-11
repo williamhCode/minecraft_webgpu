@@ -1,6 +1,5 @@
 #pragma once
 
-#include "glm-include.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "gfx/context.hpp"
 #include "frustum.hpp"

@@ -1,9 +1,8 @@
 #include "webgpu-util.hpp"
 #include "dawn/utils/WGPUHelpers.h"
-#include "gfx/context.hpp"
 #include <iostream>
-#include <map>
 #include <ostream>
+#include <fstream>
 
 namespace util {
 // using namespace util;
