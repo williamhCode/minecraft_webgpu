@@ -18,6 +18,10 @@ Tested on macOS (m1).
 <img width="1312" alt="Terrain with Shadows" src="https://github.com/williamhCode/minecraft_webgpu/assets/83525937/c0eb237b-8d90-4bde-80d5-88f9781bd0cd">
 <img width="1312" alt="Shadows Working" src="https://github.com/williamhCode/minecraft_webgpu/assets/83525937/a6d144d9-dc09-418c-9736-1f9da897b2c5">
 
+2023/12/21:  
+Some blocky trees added yay
+<img width="1312" alt="blocky trees" src="https://github.com/williamhCode/minecraft_webgpu/assets/83525937/271dca38-be6b-4594-a282-3084517cef28">
+
 ## Build/Run Instructions
 ```
 git clone https://github.com/williamhCode/minecraft_webgpu.git --recurse-submodules
