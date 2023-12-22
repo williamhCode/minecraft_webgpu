@@ -1,13 +1,10 @@
 #include "gen.hpp"
 #include "chunk.hpp"
-#include "chunk_manager.hpp"
-#include <cmath>
 #include <random>
-#include "glm/gtx/hash.hpp"
-#include <unordered_map>
+#include "glm/common.hpp"
+#include "glm/geometric.hpp"
 #include "PerlinNoise.hpp"
 #include "game/block.hpp"
-#include "glm/gtx/string_cast.hpp"
 #include "glm/gtx/norm.hpp"
 
 namespace game {
@@ -47,6 +44,18 @@ enum Biome {
 };
 constexpr int WATER_LEVEL = 64;
 
+void SetBlock(Chunk &chunk, glm::ivec3 pos, BlockId blockId) {
+  if (pos.z < 0 || pos.z >= Chunk::SIZE.z) {
+    return;
+  } else if (pos.x < 0 || pos.x >= Chunk::SIZE.x || pos.y < 0 || pos.y >= Chunk::SIZE.y) {
+    // if extends out of chunk, store for later use
+    auto globalPos = pos + chunk.GetWorldOffset();
+    chunk.outOfBoundLeafPositions.push_back(globalPos);
+    return;
+  }
+  chunk.SetBlock(pos, blockId);
+}
+
 void Tree(Chunk &chunk, glm::ivec3 rootPos) {
   auto &data = chunk.GetBlockIdData();
 
@@ -57,31 +66,37 @@ void Tree(Chunk &chunk, glm::ivec3 rootPos) {
 
   // generate leaves
   static std::uniform_real_distribution<float> randomFloat(2, 3);
-  // float radius = randomFloat(gen);
-  float radius = 2;
-  float radiusSq = radius * radius;
-  auto center = rootPos + glm::ivec3(0, 0, height - 1);
+  auto center = rootPos + glm::ivec3(0, 0, height - 2);
 
-  int radiusInt = std::ceil(radius);
-  for (int x = -radiusInt; x <= radiusInt; x++) {
-    for (int y = -radiusInt; y <= radiusInt; y++) {
-      for (int z = -radiusInt; z <= radiusInt; z++) {
-        auto posFromCenter = glm::ivec3(x, y, z);
-        auto localPos = center + posFromCenter;
-        auto index = Chunk::PosToIndex(localPos);
-        // if (glm::length2(glm::vec3(posFromCenter)) > radiusSq) continue;
-        if (localPos.z < 0 || localPos.z >= Chunk::SIZE.z) {
-          continue;
-        } else if (localPos.x < 0 || localPos.x >= Chunk::SIZE.x || localPos.y < 0 || localPos.y >= Chunk::SIZE.y) {
-          // if extends out of chunk, store for later use
-          auto globalPos = localPos + chunk.GetWorldOffset();
-          chunk.outOfBoundLeafPositions.push_back(globalPos);
-          continue;
+  auto layer = [&](int zStart, int height, float radius, float cornerScale) {
+    for (int x = -radius; x <= radius; x++) {
+      for (int y = -radius; y <= radius; y++) {
+        for (int z = 0; z < height; z++) {
+          auto posFromCenter = glm::ivec3(x, y, z + zStart);
+          auto localPos = center + posFromCenter;
+
+          // some sus math for interpolation between circle and square
+          auto xy = glm::vec2(x, y);
+          auto normVec = glm::normalize(xy);
+          auto circleVec = normVec * radius;
+          auto axisVec = glm::vec2(0, 0);
+          if (glm::abs(circleVec.x) > glm::abs(circleVec.y)) {
+            axisVec.x = glm::sign(circleVec.x);
+          } else {
+            axisVec.y = glm::sign(circleVec.y);
+          }
+          float scale = 1 - glm::dot(normVec, axisVec);
+          auto finalXy = circleVec * (1 + scale * cornerScale);
+          if (glm::length2(xy) > glm::length2(finalXy) + 0.2) continue;
+
+          SetBlock(chunk, localPos, BlockId::Leaf);
         }
-        data[index] = BlockId::Leaf;
       }
     }
-  }
+  };
+
+  layer(0, 3, 2, 1.0);
+  layer(3, 1, 1, 1.0);
 
   // generate stem
   for (int i = 0; i < height; i++) {

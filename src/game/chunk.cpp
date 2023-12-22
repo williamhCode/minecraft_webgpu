@@ -62,11 +62,11 @@ void Chunk::UpdateMesh() {
       auto neighborOffset = chunkOffset + glm::ivec2(x, y);
       auto neighborChunk = m_chunkManager->GetChunk(neighborOffset);
       if (!neighborChunk) continue;
-      auto &neighborChunkRef = **neighborChunk;
+      auto &outOfBoundLeafPositions = (*neighborChunk)->outOfBoundLeafPositions;
 
       for (
-        auto it = neighborChunkRef.outOfBoundLeafPositions.begin();
-        it != neighborChunkRef.outOfBoundLeafPositions.end();
+        auto it = outOfBoundLeafPositions.begin();
+        it != outOfBoundLeafPositions.end();
       ) {
         auto localPos = *it - m_worldOffset;
         if (!ValidPos(localPos)) {
@@ -75,7 +75,8 @@ void Chunk::UpdateMesh() {
         }
         auto index = Chunk::PosToIndex(localPos);
         m_blockIdData[index] = BlockId::Leaf;
-        it = neighborChunkRef.outOfBoundLeafPositions.erase(it);
+        // TODO: fix leaf dissapearing after same generation
+        it = outOfBoundLeafPositions.erase(it);
       }
     }
   }
@@ -248,12 +249,16 @@ BlockId Chunk::GetBlock(glm::ivec3 position) {
   return m_blockIdData[PosToIndex(position)];
 }
 
-void Chunk::SetBlock(glm::ivec3 position, BlockId blockID) {
+void Chunk::SetBlock(glm::ivec3 position, BlockId blockId) {
+  m_blockIdData[PosToIndex(position)] = blockId;
+}
+
+void Chunk::SetBlockAndUpdate(glm::ivec3 position, BlockId blockId) {
   if (position.z < 0 || position.z >= SIZE.z) {
     return;
   }
   auto index = PosToIndex(position);
-  m_blockIdData[index] = blockID;
+  m_blockIdData[index] = blockId;
 
   static std::array<glm::ivec2, 4> neighborOffsets = {
     glm::ivec2(0, 1),

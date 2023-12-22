@@ -126,7 +126,6 @@ Game::Game() {
   m_state.sun = gfx::Sun(&m_ctx, &m_state, sunDir);
 
   m_state.currBlock = game::BlockId::Dirt;
-
   // setup rendering
   gfx::Renderer renderer(&m_ctx, &m_state);
 
@@ -213,7 +212,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       );
       if (castData) {
         auto [pos, dir] = *castData;
-        m_state.chunkManager.SetBlock(pos, game::BlockId::Air);
+        m_state.chunkManager.SetBlockAndUpdate(pos, game::BlockId::Air);
         m_state.sun.InvokeUpdate();
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
@@ -224,7 +223,7 @@ void Game::MouseButtonCallback(int button, int action, int mods) {
       if (castData) {
         auto [pos, dir] = *castData;
         glm::ivec3 placePos = pos + game::g_DIR_OFFSETS[dir];
-        m_state.chunkManager.SetBlock(placePos, m_state.currBlock);
+        m_state.chunkManager.SetBlockAndUpdate(placePos, m_state.currBlock);
         m_state.sun.InvokeUpdate();
       }
     }

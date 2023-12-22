@@ -143,7 +143,8 @@ public:
   bool ShouldRender(BlockId id, glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);
   BlockId GetBlock(glm::ivec3 position);
-  void SetBlock(glm::ivec3 position, BlockId blockID);
+  void SetBlock(glm::ivec3 position, BlockId blockId);
+  void SetBlockAndUpdate(glm::ivec3 position, BlockId blockId);
   auto &GetBlockIdData() {
     return m_blockIdData;
   }

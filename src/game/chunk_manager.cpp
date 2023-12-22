@@ -217,13 +217,13 @@ bool ChunkManager::HasBlock(glm::ivec3 position) {
   return chunkPtr->HasBlock(localPos);
 }
 
-void ChunkManager::SetBlock(glm::ivec3 position, BlockId blockId) {
+void ChunkManager::SetBlockAndUpdate(glm::ivec3 position, BlockId blockId) {
   auto chunk = GetChunkAndPos(position);
   if (!chunk) {
     return;
   }
   auto &[chunkPtr, localPos] = *chunk;
-  chunkPtr->SetBlock(localPos, blockId);
+  chunkPtr->SetBlockAndUpdate(localPos, blockId);
 }
 
 } // namespace game

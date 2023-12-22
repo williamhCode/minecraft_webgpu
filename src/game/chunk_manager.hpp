@@ -38,7 +38,7 @@ public:
   std::optional<std::tuple<Chunk *, glm::ivec3>> GetChunkAndPos(glm::ivec3 position);
   bool ShouldRender(BlockId id, glm::ivec3 position);
   bool HasBlock(glm::ivec3 position);
-  void SetBlock(glm::ivec3 position, BlockId blockId);
+  void SetBlockAndUpdate(glm::ivec3 position, BlockId blockId);
 };
 
 } // namespace game
