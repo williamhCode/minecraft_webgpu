@@ -19,8 +19,8 @@ Tested on macOS (m1).
 <img width="1312" alt="Shadows Working" src="https://github.com/williamhCode/minecraft_webgpu/assets/83525937/a6d144d9-dc09-418c-9736-1f9da897b2c5">
 
 2023/12/21:  
-Some blocky trees added yay
-<img width="1312" alt="blocky trees" src="https://github.com/williamhCode/minecraft_webgpu/assets/83525937/271dca38-be6b-4594-a282-3084517cef28">
+normal looking trees added yay
+<img width="1312" alt="normal looking trees" src="https://github.com/williamhCode/minecraft_webgpu/assets/83525937/83551ace-7523-4f86-9339-69b59c2a0bb5">
 
 ## Build/Run Instructions
 ```
