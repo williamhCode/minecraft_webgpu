@@ -70,6 +70,7 @@ void ChunkManager::Update(glm::vec2 position) {
     }
   }
 exit:
+
   // update shadow map if chunks are added
   if (gens > 0) m_state->sun.InvokeUpdate();
 
@@ -94,15 +95,6 @@ exit:
     }
   );
 
-  m_shadowOffsets.clear();
-  frustum = m_state->sun.GetFrustum();
-  for (auto &[offset, chunk] : chunks) {
-    auto boundingBox = chunk->GetBoundingBox();
-    if (frustum.Intersects(boundingBox)) {
-      m_shadowOffsets.push_back(offset);
-    }
-  }
-
   // sort offsets back to front based on distance to camera for transparent objects
   /* m_sortedFrustumOffsets = m_frustumOffsets;
   glm::vec2 pos = glm::vec2(m_state->player.GetPosition()) / glm::vec2(Chunk::SIZE);
@@ -126,9 +118,18 @@ exit:
 }
 
 void ChunkManager::RenderShadowMap(
-  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex, int cascadeLevel
 ) {
-  for (auto offset : m_shadowOffsets) {
+  std::vector<glm::ivec2> shadowOffsets;
+  auto frustum = m_state->sun.GetFrustum(cascadeLevel);
+  for (auto &[offset, chunk] : chunks) {
+    auto boundingBox = chunk->GetBoundingBox();
+    if (frustum.Intersects(boundingBox)) {
+      shadowOffsets.push_back(offset);
+    }
+  }
+
+  for (auto offset : shadowOffsets) {
     chunks[offset]->Render(passEncoder, groupIndex);
   }
 }

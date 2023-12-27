@@ -12,6 +12,8 @@ struct Pipeline {
   wgpu::BindGroupLayout chunkBGL;
   wgpu::BindGroupLayout sunBGL;
 
+  wgpu::BindGroupLayout shadowBGL;
+
   wgpu::BindGroupLayout gBufferBGL;
   wgpu::BindGroupLayout ssaoSamplingBGL;
 

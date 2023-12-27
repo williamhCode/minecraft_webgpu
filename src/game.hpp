@@ -10,7 +10,7 @@
 
 struct GameState {
   glm::uvec2 size;
-  glm::uvec2 fbSize;
+  glm::uvec2 fb_size;
 
   bool focused = true;
 
@@ -42,6 +42,5 @@ public:
   void KeyCallback(int key, int scancode, int action, int mods);
   void MouseButtonCallback(int button, int action, int mods);
   void CursorPosCallback(double xpos, double ypos);
-  void Run();
   bool KeyPressed(int key);
 };

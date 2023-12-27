@@ -4,31 +4,37 @@
 #include "glm/ext/matrix_float4x4.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "util/frustum.hpp"
+#include <array>
 
 struct GameState;
 
 namespace gfx {
 
 class Sun {
+public:
+  static constexpr int numCascades = 3;
+
 private:
   gfx::Context *m_ctx;
   GameState *m_state;
 
-  glm::vec3 m_dir;  // player -> sun
-  glm::mat4 m_proj;
-  glm::mat4 m_viewProj;
+  glm::vec3 m_dir;  // direction is ground to sun
+  std::array<glm::mat4, numCascades> m_projs;
+  std::array<glm::mat4, numCascades> m_views;
+  std::array<glm::mat4, numCascades> m_viewProjs;
 
   wgpu::Buffer m_sunDirBuffer;
-  wgpu::Buffer m_sunViewProjBuffer;
+  wgpu::Buffer m_sunViewProjsBuffer;
 
   bool shouldRender = false;
   bool shouldUpdate = false;
   float minTime = 0.2;
 
-  glm::mat4 MakeView();
+  void UpdateViews();
 
 public:
-  static constexpr float area = 16 * 20;
+  static constexpr float areaLength = 16 * 40;
+
   wgpu::BindGroup bindGroup;
 
   float timeSinceUpdate = 1;
@@ -45,9 +51,7 @@ public:
   }
   void SetDir(glm::vec3 dir);
 
-  util::Frustum GetFrustum() {
-    return util::Frustum(m_viewProj);
-  }
+  util::Frustum GetFrustum(int cascadeLevel);
 };
 
 } // namespace gfx

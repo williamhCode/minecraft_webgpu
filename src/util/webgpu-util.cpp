@@ -148,6 +148,10 @@ wgpu::Buffer CreateUniformBuffer(wgpu::Device &device, size_t size, const void *
   return CreateBuffer(device, BufferUsage::Uniform, size, data);
 }
 
+wgpu::Buffer CreateStorageBuffer(wgpu::Device &device, size_t size, const void *data) {
+  return CreateBuffer(device, BufferUsage::Storage, size, data);
+}
+
 wgpu::Texture CreateTexture(
   wgpu::Device &device,
   wgpu::Extent3D size,

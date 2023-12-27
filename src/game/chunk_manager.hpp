@@ -19,7 +19,6 @@ private:
 
   std::vector<glm::ivec2> m_frustumOffsets;
   std::vector<glm::ivec2> m_sortedFrustumOffsets;
-  std::vector<glm::ivec2> m_shadowOffsets;
 
 public:
   int radius = 16;
@@ -29,7 +28,7 @@ public:
   ChunkManager() = default;
   ChunkManager(gfx::Context *ctx, GameState *state);
   void Update(glm::vec2 position);
-  void RenderShadowMap(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+  void RenderShadowMap(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex, int cascadeLevel);
   void Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
   void RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
 

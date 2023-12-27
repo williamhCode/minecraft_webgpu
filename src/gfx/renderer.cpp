@@ -1,6 +1,5 @@
 #include "renderer.hpp"
 
-
 #include <iostream>
 #include <ostream>
 #include <random>
@@ -17,6 +16,7 @@
 #include "game.hpp"
 #include "gfx/context.hpp"
 #include "game/block.hpp"
+#include "util/webgpu-util.hpp"
 
 namespace gfx {
 
@@ -38,26 +38,41 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
     m_ctx->device, quadVertices.size() * sizeof(QuadVertex), quadVertices.data()
   );
 
-  Extent3D textureSize = {m_state->fbSize.x, m_state->fbSize.y, 1};
+  Extent3D textureSize = {m_state->fb_size.x, m_state->fb_size.y, 1};
   TextureView depthTextureView =
     util::CreateRenderTexture(m_ctx->device, textureSize, m_ctx->depthFormat)
       .CreateView();
 
   // shadow pass ----------------------------------------------
-  Extent3D shadowMapSize{16384, 16384};
-  TextureView shadowMapTextureView =
-    util::CreateRenderTexture(m_ctx->device, shadowMapSize, TextureFormat::Depth32Float)
-      .CreateView();
-
-  m_shadowPassDesc = util::RenderPassDescriptor(
-    {},
-    {
-      .view = shadowMapTextureView,
-      .depthLoadOp = LoadOp::Clear,
-      .depthStoreOp = StoreOp::Store,
-      .depthClearValue = 1.0,
-    }
+  Extent3D shadowMapSize{4096, 4096, Sun::numCascades};
+  Texture shadowMapTextures = util::CreateRenderTexture(
+    m_ctx->device, shadowMapSize, TextureFormat::Depth32Float
   );
+  TextureView shadowMapTexturesView = shadowMapTextures.CreateView();
+
+  for (size_t i = 0; i < Sun::numCascades; i++) {
+    TextureView textureView = shadowMapTextures.CreateView(ToPtr(TextureViewDescriptor{
+      .baseArrayLayer = static_cast<uint32_t>(i), .arrayLayerCount = 1
+    }));
+
+    m_shadowPassDescs[i] = util::RenderPassDescriptor(
+      {},
+      {
+        .view = textureView,
+        .depthLoadOp = LoadOp::Clear,
+        .depthStoreOp = StoreOp::Store,
+        .depthClearValue = 1.0,
+      }
+    );
+
+    Buffer buffer = util::CreateUniformBuffer(ctx->device, sizeof(uint32_t), &i);
+    m_cascadeIndicesBG[i] = dawn::utils::MakeBindGroup(
+      ctx->device, ctx->pipeline.shadowBGL,
+      {
+        {0, buffer},
+      }
+    );
+  }
 
   // gbuffer pass -----------------------------------------------------
   // create textures: position (view-space), normal, color
@@ -226,7 +241,7 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
     {
       {0, ssaoTextureViews[1]},
       {1, waterTextureView},
-      {2, shadowMapTextureView},
+      {2, shadowMapTexturesView},
       {3, shadowSampler},
     }
   );
@@ -258,7 +273,9 @@ void Renderer::ImguiRender() {
         "##Frame Times", frameTimes, NUM_FRAMES, frameTimeIndex, nullptr, 0.0f,
         0.033333f, ImVec2(ImGui::GetWindowSize().x - 20, 150)
       );
-      ImGui::Text("Position: %s", glm::to_string(m_state->player.GetPosition()).c_str());
+      ImGui::Text(
+        "Position: %s", glm::to_string(m_state->player.GetPosition()).c_str()
+      );
     }
     ImGui::End();
   }
@@ -333,11 +350,21 @@ void Renderer::Render() {
   CommandEncoder commandEncoder = m_ctx->device.CreateCommandEncoder();
   // shadow pass
   if (m_state->sun.ShouldRender()) {
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_shadowPassDesc);
-    passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
-    passEncoder.SetBindGroup(0, m_state->sun.bindGroup);
-    m_state->chunkManager.RenderShadowMap(passEncoder, 1);
-    passEncoder.End();
+    for (size_t i = 0; i < Sun::numCascades; i++) {
+      RenderPassEncoder passEncoder =
+        commandEncoder.BeginRenderPass(&m_shadowPassDescs[i]);
+      passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
+      passEncoder.SetBindGroup(0, m_cascadeIndicesBG[i]);
+      passEncoder.SetBindGroup(1, m_state->sun.bindGroup);
+      m_state->chunkManager.RenderShadowMap(passEncoder, 2, i);
+      passEncoder.End();
+    }
+    // RenderPassEncoder passEncoder =
+    //   commandEncoder.BeginRenderPass(&m_shadowPassDescs[0]);
+    // passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
+    // passEncoder.SetBindGroup(0, m_state->sun.bindGroup);
+    // m_state->chunkManager.RenderShadowMap(passEncoder, 1);
+    // passEncoder.End();
   }
   // gbuffer pass
   {

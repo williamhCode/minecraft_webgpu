@@ -54,7 +54,7 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     ctx.device,
     {
       {0, ShaderStage::Fragment, BufferBindingType::Uniform},
-      {1, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+      {1, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::ReadOnlyStorage},
     }
   );
 
@@ -62,10 +62,15 @@ Pipeline::Pipeline(gfx::Context &ctx) {
   ShaderModule shaderVertShadow =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/vert_shadow.wgsl", ctx.device);
 
+  shadowBGL = dawn::utils::MakeBindGroupLayout(
+    ctx.device, {{0, ShaderStage::Vertex, BufferBindingType::Uniform}}
+  );
+
   shadowRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
     .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
       {
+        shadowBGL,
         sunBGL,
         chunkBGL,
       }
@@ -79,8 +84,8 @@ Pipeline::Pipeline(gfx::Context &ctx) {
       },
     .primitive =
       PrimitiveState{
-        .cullMode = CullMode::Back,
-        // .cullMode = CullMode::Front,
+        // .cullMode = CullMode::Back,
+        .cullMode = CullMode::Front,
       },
     .depthStencil = ToPtr(DepthStencilState{
       .format = TextureFormat::Depth32Float,
@@ -123,8 +128,8 @@ Pipeline::Pipeline(gfx::Context &ctx) {
       .entryPoint = "fs_main",
       .targetCount = 3,
       .targets = ToPtr<ColorTargetState>({
-        { .format = TextureFormat::RGBA16Float }, // position
-        { .format = TextureFormat::RGBA16Float }, // normal
+        {.format = TextureFormat::RGBA16Float}, // position
+        {.format = TextureFormat::RGBA16Float}, // normal
         {
           .format = TextureFormat::BGRA8Unorm,
           .blend = &util::BlendState::AlphaBlending,
@@ -278,7 +283,8 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     {
       {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
       {1, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
-      {2, ShaderStage::Fragment, TextureSampleType::Depth},
+      {2, ShaderStage::Fragment, TextureSampleType::Depth,
+       TextureViewDimension::e2DArray},
       {3, ShaderStage::Fragment, SamplerBindingType::Comparison},
     }
   );

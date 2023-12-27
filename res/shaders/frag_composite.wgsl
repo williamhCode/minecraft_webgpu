@@ -8,11 +8,11 @@
 @group(1) @binding(3) var gBufferSampler: sampler;
 
 @group(2) @binding(0) var<uniform> sunDir: vec3f;
-@group(2) @binding(1) var<uniform> sunViewProj: mat4x4f;
+@group(2) @binding(1) var<storage> sunViewProjs: array<mat4x4f>;
 
 @group(3) @binding(0) var ssaoTexture: texture_2d<f32>;
 @group(3) @binding(1) var waterTexture: texture_2d<f32>;
-@group(3) @binding(2) var shadowMap: texture_depth_2d;
+@group(3) @binding(2) var shadowMaps: texture_depth_2d_array;
 @group(3) @binding(3) var shadowSampler: sampler_comparison;
 
 
@@ -37,9 +37,9 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f) -> f32 {
   }
 
   // let bias = max(0.001 * (1.0 - dot(normal, sunDir)), 0.0001);
-  // let bias = 0.0005;
-  let bias = 0.00005;
-  let depth = textureSampleCompareLevel(shadowMap, shadowSampler, projCoords.xy, projCoords.z - bias);
+  // let bias = 0.00005;
+  let bias = 0.0;
+  let depth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy, 0, projCoords.z - bias);
   return depth;
 }
 
@@ -48,7 +48,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   var samplePos = textureSampleLevel(gBufferPosition, gBufferSampler, uv, 0.0);
   samplePos.w = 1.0;  // w might be 0.5, set to 1.0 for correct matrix multiplication
   let position = (inverseView * samplePos).xyz;
-  let sunSpacePos = sunViewProj * vec4f(position, 1.0);
+  let sunSpacePos = sunViewProjs[0] * vec4f(position, 1.0);
 
   let sampleNormal = textureSampleLevel(gBufferNormal, gBufferSampler, uv, 0.0);
   let normal = sampleNormal.xyz;

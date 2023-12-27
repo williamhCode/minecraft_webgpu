@@ -81,10 +81,10 @@ Game::Game() {
   int FBWidth, FBHeight;
   glfwGetFramebufferSize(m_window, &FBWidth, &FBHeight);
   // m_state.fbSize = {FBWidth, FBHeight};
-  m_state.fbSize = {FBWidth, FBHeight};
+  m_state.fb_size = {FBWidth, FBHeight};
 
   std::cout << "Window size: " << glm::to_string(m_state.size) << std::endl;
-  std::cout << "Framebuffer size: " << glm::to_string(m_state.fbSize) << std::endl;
+  std::cout << "Framebuffer size: " << glm::to_string(m_state.fb_size) << std::endl;
 
   double xpos, ypos;
   glfwGetCursorPos(m_window, &xpos, &ypos);
@@ -92,7 +92,7 @@ Game::Game() {
   // end window ----------------------------------
 
   // init wgpu context
-  m_ctx = gfx::Context(m_window, m_state.fbSize);
+  m_ctx = gfx::Context(m_window, m_state.fb_size);
 
   // setup imgui -----------------------------------------
   // Setup Dear ImGui context
@@ -240,7 +240,4 @@ void Game::CursorPosCallback(double xpos, double ypos) {
 
 bool Game::KeyPressed(int key) {
   return glfwGetKey(m_window, key) == GLFW_PRESS;
-}
-
-void Game::Run() {
 }

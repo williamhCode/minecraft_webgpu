@@ -8,14 +8,17 @@ struct VertexInput {
   @location(1) data2: u32,
 }
 
-// @group(0) @binding(0) var<uniform> sunDir: vec3f;
-@group(0) @binding(1) var<uniform> sunViewProj: mat4x4f;
+@group(0) @binding(0) var<uniform> index: u32;
 
-@group(1) @binding(0) var<uniform> worldOffset: vec3f;
+// @group(0) @binding(0) var<uniform> sunDir: vec3f;
+@group(1) @binding(1) var<storage> sunViewProjs: array<mat4x4f>;
+
+@group(2) @binding(0) var<uniform> worldOffset: vec3f;
+
 
 @vertex
 fn vs_main(in: VertexInput) -> @builtin(position) vec4f {
   let position = vec3f(f32(in.data1 & 0x1Fu), f32((in.data1 >> 5u) & 0x1Fu), f32((in.data1 >> 10u) & 0x3FFu));
-  return sunViewProj * vec4f(position + worldOffset, 1.0f);
+  return sunViewProjs[index] * vec4f(position + worldOffset, 1.0f);
 }
 

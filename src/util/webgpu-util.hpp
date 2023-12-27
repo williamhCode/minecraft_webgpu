@@ -23,6 +23,7 @@ wgpu::Buffer CreateBuffer(wgpu::Device &device, wgpu::BufferUsage usage, size_t 
 wgpu::Buffer CreateVertexBuffer(wgpu::Device &device, size_t size, const void *data = nullptr);
 wgpu::Buffer CreateIndexBuffer(wgpu::Device &device, size_t size, const void *data = nullptr);
 wgpu::Buffer CreateUniformBuffer(wgpu::Device &device, size_t size, const void *data = nullptr);
+wgpu::Buffer CreateStorageBuffer(wgpu::Device &device, size_t size, const void *data = nullptr);
 
 wgpu::Texture CreateTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format, const void *data = nullptr);
 wgpu::Texture CreateRenderTexture(wgpu::Device &device, wgpu::Extent3D size, wgpu::TextureFormat format);

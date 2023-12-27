@@ -3,9 +3,12 @@
 #include <webgpu/webgpu_cpp.h>
 #include "dawn/utils/WGPUHelpers.h"
 #include "glm/ext/vector_float2.hpp"
+
 #include "gfx/context.hpp"
-#include <array>
 #include "util/webgpu-util.hpp"
+#include "gfx/sun.hpp"
+
+#include <array>
 
 // forward declaration
 struct GameState;
@@ -47,7 +50,9 @@ private:
   wgpu::Buffer m_quadBuffer;
 
   // shadow
-  util::RenderPassDescriptor m_shadowPassDesc;
+  // util::RenderPassDescriptor m_shadowPassDesc;
+  std::array<util::RenderPassDescriptor, Sun::numCascades> m_shadowPassDescs;
+  std::array<wgpu::BindGroup, Sun::numCascades> m_cascadeIndicesBG;
 
   // gbuffer
   // position (view-space), normal, color
