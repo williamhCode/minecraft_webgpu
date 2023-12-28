@@ -9,7 +9,7 @@
 
 @group(2) @binding(0) var<uniform> sunDir: vec3f;
 @group(2) @binding(1) var<storage> sunViewProjs: array<mat4x4f>;
-@group(2) @binding(2) var<uniform> numCascades: u32;
+@group(2) @binding(2) var<uniform> numCascades: i32;
 
 @group(3) @binding(0) var ssaoTexture: texture_2d<f32>;
 @group(3) @binding(1) var waterTexture: texture_2d<f32>;
@@ -35,8 +35,7 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f, cascadeLevel: i32) -> 
   // let bias = max(0.001 * (1.0 - dot(normal, sunDir)), 0.0001);
 
   // increase bias for futher cascades
-  let scale = (i32(numCascades) - 1) - cascadeLevel;
-  let bias = 0.00005 + f32(scale) * 0.0001;
+  let scale = (numCascades - 1) - cascadeLevel; let bias = 0.00005 + f32(scale) * 0.0001;
   let depth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy, cascadeLevel, projCoords.z - bias);
   return depth;
 }
@@ -89,7 +88,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   // shadow mapping 
   var cascadeLevel = -1;
   var sunSpacePos: vec4f;
-  for (var i = i32(numCascades - 1); i >= 0; i--) {
+  for (var i = numCascades - 1; i >= 0; i--) {
     sunSpacePos = sunViewProjs[i] * vec4f(position, 1.0);
     if (ValidLightSpacePos(sunSpacePos)) {
       cascadeLevel = i;

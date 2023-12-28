@@ -317,7 +317,9 @@ void Renderer::ImguiRender() {
 
       // chunk options ---------------------------------------------
       if (ImGui::CollapsingHeader("Chunk")) {
-        ImGui::SliderInt("Radius##chunk", &m_state->chunkManager.radius, 0, 64);
+        if (ImGui::SliderInt("Radius##chunk", &m_state->chunkManager.radius, 0, 64)) {
+          m_state->chunkManager.update = true;
+        }
         if (ImGui::DragInt("Max Gens", &m_state->chunkManager.max_gens, 1, 1, 100)) {
           if (m_state->chunkManager.max_gens < 1) {
             m_state->chunkManager.max_gens = 1;

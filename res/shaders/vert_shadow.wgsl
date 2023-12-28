@@ -12,7 +12,7 @@ struct VertexInput {
 
 // @group(1) @binding(0) var<uniform> sunDir: vec3f;
 @group(1) @binding(1) var<storage> sunViewProjs: array<mat4x4f>;
-// @group(1) @binding(2) var<uniform> numCascades: u32;
+// @group(1) @binding(2) var<uniform> numCascades: i32;
 
 @group(2) @binding(0) var<uniform> worldOffset: vec3f;
 

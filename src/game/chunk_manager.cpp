@@ -38,9 +38,17 @@ ChunkManager::ChunkManager(gfx::Context *ctx, GameState *state)
 }
 
 void ChunkManager::Update(glm::vec2 position) {
+  int gens = 0;
   const glm::ivec2 centerPos = glm::floor(position / glm::vec2(Chunk::SIZE)),
                    minOffset = centerPos - glm::ivec2(radius, radius),
                    maxOffset = centerPos + glm::ivec2(radius, radius);
+
+  if (glm::length(position - m_prevPos) > 16) {
+    m_prevPos = position;
+    update = true;
+  }
+
+  if (!update) goto exit;
 
   // remove chunks not in radius
   std::erase_if(chunks, [&](auto &pair) {
@@ -52,7 +60,6 @@ void ChunkManager::Update(glm::vec2 position) {
   });
 
   // add chunks in radius
-  int gens = 0;
   for (int x = minOffset.x; x <= maxOffset.x; x++) {
     for (int y = minOffset.y; y <= maxOffset.y; y++) {
       if (gens >= max_gens) goto exit;
@@ -70,6 +77,8 @@ void ChunkManager::Update(glm::vec2 position) {
     }
   }
 exit:
+
+  if (gens == 0) update = false;
 
   // update shadow map if chunks are added
   if (gens > 0) m_state->sun.InvokeUpdate();

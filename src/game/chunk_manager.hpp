@@ -20,7 +20,11 @@ private:
   std::vector<glm::ivec2> m_frustumOffsets;
   std::vector<glm::ivec2> m_sortedFrustumOffsets;
 
+  glm::vec2 m_prevPos;
+
 public:
+  bool update = true;
+
   int radius = 16;
   int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;

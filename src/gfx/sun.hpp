@@ -12,13 +12,14 @@ namespace gfx {
 
 class Sun {
 public:
-  static constexpr u_int32_t numCascades = 5;
+  static constexpr int numCascades = 5;
 
 private:
   gfx::Context *m_ctx;
   GameState *m_state;
 
   glm::vec3 m_dir;  // direction is ground to sun
+
   std::array<glm::mat4, numCascades> m_projs;
   std::array<glm::mat4, numCascades> m_views;
   std::array<glm::mat4, numCascades> m_viewProjs;
@@ -28,7 +29,7 @@ private:
 
   bool shouldRender = false;
   bool shouldUpdate = false;
-  float minTime = 0.2;
+  float minTime = 0.2;  // time for shadow maps to update
 
   void UpdateViews();
 

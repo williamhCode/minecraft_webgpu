@@ -22,7 +22,6 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
       -halfLength, halfLength, -halfLength, halfLength, depth_range.x, depth_range.y
     );
     halfLength /= 2;
-    // depth_range.y /= 2;
   }
 
   m_sunViewProjsBuffer =
