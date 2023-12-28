@@ -12,7 +12,7 @@ namespace gfx {
 
 class Sun {
 public:
-  static constexpr int numCascades = 3;
+  static constexpr u_int32_t numCascades = 5;
 
 private:
   gfx::Context *m_ctx;
@@ -33,7 +33,7 @@ private:
   void UpdateViews();
 
 public:
-  static constexpr float areaLength = 16 * 40;
+  static constexpr float areaLength = 16 * 160;
 
   wgpu::BindGroup bindGroup;
 

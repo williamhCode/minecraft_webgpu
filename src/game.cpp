@@ -118,7 +118,7 @@ Game::Game() {
 
   game::InitMesh();
   game::Chunk::InitSharedData();
-  // initialize in same memory to avoid copying, because it passes its own pointer to members when initializing
+  // initialize in same memory to avoid changing of memory address, because it passes its own pointer to members when initializing
   new (&m_state.chunkManager) game::ChunkManager(&m_ctx, &m_state);
 
   // auto sunDir = glm::normalize(glm::vec3(0.5, 0.5, 0.1));

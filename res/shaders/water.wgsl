@@ -25,6 +25,7 @@ struct VertexOutput {
 
 @group(2) @binding(0) var<uniform> sunDir: vec3f;
 // @group(2) @binding(1) var<uniform> sunViewProj: mat4x4f;
+// @group(2) @binding(2) var<uniform> numCascades: u32;
 
 @group(3) @binding(0) var<uniform> worldOffset: vec3f;
 

@@ -18,7 +18,9 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
   glm::vec2 depth_range(1, 1024);
   auto halfLength = areaLength / 2;
   for (size_t i = 0; i < numCascades; i++) {
-    m_projs[i] = glm::ortho(-halfLength, halfLength, -halfLength, halfLength, depth_range.x, depth_range.y);
+    m_projs[i] = glm::ortho(
+      -halfLength, halfLength, -halfLength, halfLength, depth_range.x, depth_range.y
+    );
     halfLength /= 2;
     // depth_range.y /= 2;
   }
@@ -26,11 +28,15 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
   m_sunViewProjsBuffer =
     util::CreateStorageBuffer(m_ctx->device, sizeof(glm::mat4) * numCascades);
 
+  auto numCascadesBuffer =
+    util::CreateUniformBuffer(m_ctx->device, sizeof(numCascades), &numCascades);
+
   bindGroup = dawn::utils::MakeBindGroup(
     ctx->device, ctx->pipeline.sunBGL,
     {
       {0, m_sunDirBuffer},
       {1, m_sunViewProjsBuffer},
+      {2, numCascadesBuffer},
     }
   );
 
@@ -46,15 +52,16 @@ void Sun::UpdateViews() {
   auto view = glm::lookAt(eyePos, centerPos, m_state->player.camera.up);
 
   for (size_t i = 0; i < numCascades; i++) {
+    // sus math to center shadow maps, probably more expensive than it needs to be
     m_viewProjs[i] = m_projs[i] * view;
     auto centerView = m_viewProjs[i] * glm::vec4(centerPos, 1.0);
     auto centerFixed = glm::vec3(centerView.xy() - 0.5f, centerView.z);
-    auto centerFixedW = (glm::inverse(m_viewProjs[i]) * glm::vec4(centerFixed, 1.0)).xyz();
+    auto centerFixedW =
+      (glm::inverse(m_viewProjs[i]) * glm::vec4(centerFixed, 1.0)).xyz();
 
     eyePos = centerFixedW + m_dir * distance;
     m_views[i] = glm::lookAt(eyePos, centerFixedW, m_state->player.camera.up);
   }
-  // center the shadow map
 }
 
 void Sun::InvokeUpdate() {
@@ -77,7 +84,9 @@ void Sun::Update() {
     for (size_t i = 0; i < numCascades; i++) {
       m_viewProjs[i] = m_projs[i] * m_views[i];
       auto stride = sizeof(glm::mat4);
-      m_ctx->queue.WriteBuffer(m_sunViewProjsBuffer, stride * i, &m_viewProjs[i], stride);
+      m_ctx->queue.WriteBuffer(
+        m_sunViewProjsBuffer, stride * i, &m_viewProjs[i], stride
+      );
     }
 
     timeSinceUpdate = 0;
@@ -97,4 +106,3 @@ util::Frustum Sun::GetFrustum(int cascadeLevel) {
 }
 
 } // namespace gfx
-

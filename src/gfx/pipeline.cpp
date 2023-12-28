@@ -55,6 +55,7 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     {
       {0, ShaderStage::Fragment, BufferBindingType::Uniform},
       {1, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::ReadOnlyStorage},
+      {2, ShaderStage::Fragment, BufferBindingType::Uniform},
     }
   );
 
@@ -84,8 +85,8 @@ Pipeline::Pipeline(gfx::Context &ctx) {
       },
     .primitive =
       PrimitiveState{
-        // .cullMode = CullMode::Back,
-        .cullMode = CullMode::Front,
+        .cullMode = CullMode::Back,
+        // .cullMode = CullMode::Front,
       },
     .depthStencil = ToPtr(DepthStencilState{
       .format = TextureFormat::Depth32Float,

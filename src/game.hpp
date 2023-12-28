@@ -19,7 +19,6 @@ struct GameState {
   float fps;
 
   game::Player player;
-  // std::unique_ptr<game::ChunkManager> chunkManager;
   game::ChunkManager chunkManager;
 
   gfx::Sun sun;
