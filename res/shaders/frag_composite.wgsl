@@ -101,7 +101,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     shadow = ShadowCalculation(sunSpacePos, normal, cascadeLevel);
   }
 
-  // return ShadowDebug(cascadeLevel, ambientOcclusion);
+  return ShadowDebug(cascadeLevel, ambientOcclusion);
 
   // if (shadow == 0.0) {
   //   return vec4f(ambientOcclusion, ambientOcclusion, ambientOcclusion, 1.0);

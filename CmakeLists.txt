@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.0...3.25)
+
 project(
   LearnWebGPU
   VERSION 0.1.0
@@ -6,8 +7,12 @@ project(
 )
 
 # variables
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
 set(DAWN_FETCH_DEPENDENCIES 1)
+
 
 # dependencies
 add_subdirectory(deps/glfw)
@@ -75,10 +80,10 @@ target_link_libraries(App PRIVATE
   dawn_glfw dawncpp dawn_utils
 )
 
-set_target_properties(App PROPERTIES
-  CXX_STANDARD 20
+# set_target_properties(App PROPERTIES
+#   CXX_STANDARD 20
   # COMPILE_WARNING_AS_ERROR ON
-)
+# )
 # DAWN_DEBUG_BREAK_ON_ERROR
 
 if (MSVC)

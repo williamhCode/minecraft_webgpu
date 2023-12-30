@@ -55,7 +55,7 @@ Texture LoadTextureMipmap(gfx::Context &ctx, std::filesystem::path path) {
     .dimension = TextureDimension::e2D,
     .size = size,
     .format = TextureFormat::RGBA8Unorm,
-    .mipLevelCount = std::bit_width(std::max(size.width, size.height)),
+    .mipLevelCount = static_cast<uint32_t>(std::bit_width(std::max(size.width, size.height))),
   };
   Texture texture = ctx.device.CreateTexture(&textureDesc);
 

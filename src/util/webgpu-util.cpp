@@ -3,6 +3,7 @@
 #include <iostream>
 #include <ostream>
 #include <fstream>
+// #include <cassert>
 
 namespace util {
 // using namespace util;
@@ -31,7 +32,7 @@ Adapter RequestAdapter(Instance &instance, RequestAdapterOptions const *options)
 
   instance.RequestAdapter(options, onAdapterRequestEnded, &userData);
 
-  assert(userData.requestEnded);
+  // assert(userData.requestEnded);
 
   return userData.adapter;
 }
@@ -58,7 +59,7 @@ Device RequestDevice(Adapter &instance, DeviceDescriptor const *descriptor) {
 
   instance.RequestDevice(descriptor, onDeviceRequestEnded, &userData);
 
-  assert(userData.requestEnded);
+  // assert(userData.requestEnded);
 
   return userData.device;
 }

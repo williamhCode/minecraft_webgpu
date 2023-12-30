@@ -2,10 +2,9 @@
 
 BACKEND = dawn
 TYPE = debug
-# TYPE = release
 
 build:
-	cmake --build build/$(BACKEND)/$(TYPE)
+	cmake --build build/$(BACKEND)/$(TYPE) --target App
 	cp build/$(BACKEND)/$(TYPE)/compile_commands.json .
 
 build-tint:
