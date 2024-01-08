@@ -34,17 +34,19 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f, cascadeLevel: i32) -> 
 
   // let bias = max(0.001 * (1.0 - dot(normal, sunDir)), 0.0001);
 
-  // increase bias for futher cascades
-  let scale = (numCascades - 1) - cascadeLevel; let bias = 0.00005 + f32(scale) * 0.0001;
+  // increase bias for futher cascades (because quality is lower so more prone to visual artifacts)
+  let scale = (numCascades - 1) - cascadeLevel; 
+  let bias = 0.00005 + f32(scale) * 0.0001;
+
   let depth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy, cascadeLevel, projCoords.z - bias);
   return depth;
 }
 
 fn ValidLightSpacePos(lightSpacePos: vec4f) -> bool {
-  return !(
-    lightSpacePos.x > 1.0 || lightSpacePos.x < 0.0 ||
-    lightSpacePos.y > 1.0 || lightSpacePos.y < 0.0 ||
-    lightSpacePos.z > 1.0 || lightSpacePos.z < 0.0
+  return (
+    lightSpacePos.x >= -1 && lightSpacePos.x <= 1 &&
+    lightSpacePos.y >= -1 && lightSpacePos.y <= 1 &&
+    lightSpacePos.z >= 0 && lightSpacePos.z <= 1
   );
 }
 
@@ -101,7 +103,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     shadow = ShadowCalculation(sunSpacePos, normal, cascadeLevel);
   }
 
-  return ShadowDebug(cascadeLevel, ambientOcclusion);
+  // return ShadowDebug(cascadeLevel, ambientOcclusion);
 
   // if (shadow == 0.0) {
   //   return vec4f(ambientOcclusion, ambientOcclusion, ambientOcclusion, 1.0);

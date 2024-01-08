@@ -44,7 +44,7 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
       .CreateView();
 
   // shadow pass ----------------------------------------------
-  Extent3D shadowMapSize{4096, 4096, Sun::numCascades};
+  Extent3D shadowMapSize{4096, 4096, Sun::numCascades + 1};
   Texture shadowMapTextures = util::CreateRenderTexture(
     m_ctx->device, shadowMapSize, TextureFormat::Depth32Float
   );
@@ -326,6 +326,16 @@ void Renderer::ImguiRender() {
           }
         }
       }
+
+      // sun options -------------------------------------------------
+      if (ImGui::CollapsingHeader("Sun")) {
+        if (ImGui::SliderFloat("Rise", &m_state->sun.riseTurn.x, 0, 90)) {
+          m_state->sun.InvokeUpdate();
+        }
+        if (ImGui::SliderFloat("Turn", &m_state->sun.riseTurn.y, 0, 360)) {
+          m_state->sun.InvokeUpdate();
+        }
+      }
     }
     ImGui::End();
   }
@@ -361,12 +371,6 @@ void Renderer::Render() {
       m_state->chunkManager.RenderShadowMap(passEncoder, 2, i);
       passEncoder.End();
     }
-    // RenderPassEncoder passEncoder =
-    //   commandEncoder.BeginRenderPass(&m_shadowPassDescs[0]);
-    // passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
-    // passEncoder.SetBindGroup(0, m_state->sun.bindGroup);
-    // m_state->chunkManager.RenderShadowMap(passEncoder, 1);
-    // passEncoder.End();
   }
   // gbuffer pass
   {

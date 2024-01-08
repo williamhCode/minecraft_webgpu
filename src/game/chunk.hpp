@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bitset>
-#include <iostream>
 #include <sys/types.h>
 #include <vector>
 #include <array>
@@ -15,7 +13,6 @@
 #include "util/frustum.hpp"
 #include "game/block.hpp"
 #include "mesh.hpp"
-#include <inttypes.h>
 
 // forward decl
 struct GameState;
@@ -124,9 +121,7 @@ private:
   }
 
 public:
-  Chunk(
-    gfx::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset
-  );
+  Chunk(gfx::Context *ctx, GameState *state, ChunkManager *chunkManager, glm::ivec2 offset);
 
   static void InitSharedData();
 

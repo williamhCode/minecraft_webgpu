@@ -7,6 +7,7 @@ namespace gfx {
 struct Context;
 
 struct Pipeline {
+  // shared bind-group-layouts
   wgpu::BindGroupLayout cameraBGL;
   wgpu::BindGroupLayout textureBGL;
   wgpu::BindGroupLayout chunkBGL;
@@ -21,6 +22,7 @@ struct Pipeline {
 
   wgpu::BindGroupLayout compositeBGL;
 
+  // render pipelines
   wgpu::RenderPipeline shadowRPL;
   wgpu::RenderPipeline gBufferRPL;
   wgpu::RenderPipeline waterRPL;

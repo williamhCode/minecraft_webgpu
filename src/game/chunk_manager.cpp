@@ -43,7 +43,7 @@ void ChunkManager::Update(glm::vec2 position) {
                    minOffset = centerPos - glm::ivec2(radius, radius),
                    maxOffset = centerPos + glm::ivec2(radius, radius);
 
-  if (glm::length(position - m_prevPos) > 16) {
+  if (glm::length(position - m_prevPos) > gfx::Sun::updateDist) {
     m_prevPos = position;
     update = true;
   }

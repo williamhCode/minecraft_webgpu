@@ -5,20 +5,22 @@
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float2.hpp"
+#include "glm/gtx/transform.hpp"
 
 #include "game.hpp"
 #include "util/webgpu-util.hpp"
 
 namespace gfx {
 
-Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
-    : m_ctx(ctx), m_state(state), m_dir(dir) {
+Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec2 riseTurn)
+    : m_ctx(ctx), m_state(state), riseTurn(riseTurn) {
+  UpdateDirAndUp();
   m_sunDirBuffer = util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &dir);
 
   glm::vec2 depth_range(1, 1024);
   auto halfLength = areaLength / 2;
   for (size_t i = 0; i < numCascades; i++) {
-    m_projs[i] = glm::ortho(
+    m_projs[i] = glm::ortho<float>(
       -halfLength, halfLength, -halfLength, halfLength, depth_range.x, depth_range.y
     );
     halfLength /= 2;
@@ -42,25 +44,23 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir)
   InvokeUpdate();
 }
 
-void Sun::UpdateViews() {
+glm::mat4 Sun::GetView() {
   const float distance = 512;
 
   auto centerPos = m_state->player.GetPosition();
   centerPos.z = 100;
-  auto eyePos = centerPos + m_dir * distance;
-  auto view = glm::lookAt(eyePos, centerPos, m_state->player.camera.up);
+  auto eyePos = centerPos + dir * distance;
 
-  for (size_t i = 0; i < numCascades; i++) {
-    // sus math to center shadow maps, probably more expensive than it needs to be
-    m_viewProjs[i] = m_projs[i] * view;
-    auto centerView = m_viewProjs[i] * glm::vec4(centerPos, 1.0);
-    auto centerFixed = glm::vec3(centerView.xy() - 0.5f, centerView.z);
-    auto centerFixedW =
-      (glm::inverse(m_viewProjs[i]) * glm::vec4(centerFixed, 1.0)).xyz();
+  auto view = glm::lookAt(eyePos, centerPos, up);
+  return view;
+}
 
-    eyePos = centerFixedW + m_dir * distance;
-    m_views[i] = glm::lookAt(eyePos, centerFixedW, m_state->player.camera.up);
-  }
+void Sun::UpdateDirAndUp() {
+  auto riseMat = glm::rotate(glm::radians(-riseTurn.x), glm::vec3(0, 1, 0));
+  auto turnMat = glm::rotate(glm::radians(riseTurn.y), glm::vec3(0, 0, 1));
+  auto transformMat = turnMat * riseMat;
+  dir = transformMat * glm::vec4(1, 0, 0, 1);
+  up = transformMat * glm::vec4(0, 0, 1, 1);
 }
 
 void Sun::InvokeUpdate() {
@@ -79,9 +79,11 @@ void Sun::Update() {
   timeSinceUpdate += m_state->dt;
 
   if (timeSinceUpdate > minTime && shouldUpdate) {
-    UpdateViews();
+    UpdateDirAndUp();
+    m_ctx->queue.WriteBuffer(m_sunDirBuffer, 0, &dir, sizeof(dir));
+    auto view = GetView();
     for (size_t i = 0; i < numCascades; i++) {
-      m_viewProjs[i] = m_projs[i] * m_views[i];
+      m_viewProjs[i] = m_projs[i] * view;
       auto stride = sizeof(glm::mat4);
       m_ctx->queue.WriteBuffer(
         m_sunViewProjsBuffer, stride * i, &m_viewProjs[i], stride
@@ -93,11 +95,6 @@ void Sun::Update() {
 
     shouldRender = true;
   }
-}
-
-void Sun::SetDir(glm::vec3 dir) {
-  m_dir = dir;
-  m_ctx->queue.WriteBuffer(m_sunDirBuffer, 0, &m_dir, sizeof(m_dir));
 }
 
 util::Frustum Sun::GetFrustum(int cascadeLevel) {

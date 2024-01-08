@@ -12,16 +12,13 @@ namespace gfx {
 
 class Sun {
 public:
-  static constexpr int numCascades = 5;
+  static constexpr int numCascades = 4;
 
 private:
   gfx::Context *m_ctx;
   GameState *m_state;
 
-  glm::vec3 m_dir;  // direction is ground to sun
-
   std::array<glm::mat4, numCascades> m_projs;
-  std::array<glm::mat4, numCascades> m_views;
   std::array<glm::mat4, numCascades> m_viewProjs;
 
   wgpu::Buffer m_sunDirBuffer;
@@ -29,28 +26,37 @@ private:
 
   bool shouldRender = false;
   bool shouldUpdate = false;
-  float minTime = 0.2;  // time for shadow maps to update
 
-  void UpdateViews();
+  static constexpr float minTime = 0.3;  // time for shadow maps to update
+
+  // these two are calculated from riseTurn
+  glm::vec3 dir;  // direction is ground to sun
+  glm::vec3 up;
+
+  glm::mat4 GetView();
+  void UpdateDirAndUp();
 
 public:
-  static constexpr float areaLength = 16 * 160;
+  // distance player has to travel for shadow map to update
+  static constexpr int updateDist = 4;
+  static constexpr float areaLength = 16 * 40;
+
+  glm::vec2 riseTurn;  // rise and turn of sun angle
 
   wgpu::BindGroup bindGroup;
 
   float timeSinceUpdate = 1;
 
   Sun() = default;
-  Sun(gfx::Context *ctx, GameState *state, glm::vec3 dir);
+  Sun(gfx::Context *ctx, GameState *state, glm::vec2 riseTurn);
 
   void InvokeUpdate();
   bool ShouldRender();
 
   void Update();
   glm::vec3 GetDir() {
-    return m_dir;
+    return dir;
   }
-  void SetDir(glm::vec3 dir);
 
   util::Frustum GetFrustum(int cascadeLevel);
 };

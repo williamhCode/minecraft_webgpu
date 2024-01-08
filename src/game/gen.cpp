@@ -24,7 +24,7 @@ void GenTest(Chunk &chunk) {
     for (int y = 0; y < Chunk::SIZE.y; y++) {
       for (int z = 0; z < Chunk::SIZE.z; z++) {
         auto index = Chunk::PosToIndex({x, y, z});
-        int height = 100;
+        int height = 99;
         if (z < height) {
           data[index] = BlockId::Dirt;
         } else if (z == height) {
