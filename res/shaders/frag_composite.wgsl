@@ -38,7 +38,20 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f, cascadeLevel: i32) -> 
   let scale = (numCascades - 1) - cascadeLevel; 
   let bias = 0.00005 + f32(scale) * 0.0001;
 
-  let depth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy, cascadeLevel, projCoords.z - bias);
+  // let depth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy, cascadeLevel, projCoords.z - bias);
+
+  // sample over 3x3 area instead
+  var depth = 0.0;
+  let texelSize = vec2f(1.0) / vec2f(textureDimensions(shadowMaps));
+  for (var x = -1; x <= 1; x++) {
+    for (var y = -1; y <= 1; y++) {
+      let offset = vec2f(f32(x), f32(y)) * texelSize;
+      let sampleDepth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy + offset, cascadeLevel, projCoords.z - bias);
+      depth += sampleDepth;
+    }
+  }
+  depth /= 9.0;
+  
   return depth;
 }
 

@@ -60,8 +60,8 @@ Pipeline::Pipeline(gfx::Context &ctx) {
   );
 
   // shadow pipeline --------------------------------------------------
-  ShaderModule shaderVertShadow =
-    util::LoadShaderModule(ROOT_DIR "/res/shaders/vert_shadow.wgsl", ctx.device);
+  ShaderModule shaderShadow =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/shadow.wgsl", ctx.device);
 
   shadowBGL = dawn::utils::MakeBindGroupLayout(
     ctx.device, {{0, ShaderStage::Vertex, BufferBindingType::Uniform}}
@@ -73,12 +73,13 @@ Pipeline::Pipeline(gfx::Context &ctx) {
       {
         shadowBGL,
         sunBGL,
+        textureBGL,
         chunkBGL,
       }
     ),
     .vertex =
       VertexState{
-        .module = shaderVertShadow,
+        .module = shaderShadow,
         .entryPoint = "vs_main",
         .bufferCount = 1,
         .buffers = &chunkVBL,
@@ -86,12 +87,15 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     .primitive =
       PrimitiveState{
         .cullMode = CullMode::Back,
-        // .cullMode = CullMode::Front,
       },
     .depthStencil = ToPtr(DepthStencilState{
       .format = TextureFormat::Depth32Float,
       .depthWriteEnabled = true,
       .depthCompare = CompareFunction::Less,
+    }),
+    .fragment = ToPtr(FragmentState{
+      .module = shaderShadow,
+      .entryPoint = "fs_main",
     }),
   }));
 

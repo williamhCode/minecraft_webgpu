@@ -12,7 +12,7 @@ namespace gfx {
 
 class Sun {
 public:
-  static constexpr int numCascades = 4;
+  static constexpr int numCascades = 5;
 
 private:
   gfx::Context *m_ctx;
@@ -37,8 +37,8 @@ private:
   void UpdateDirAndUp();
 
 public:
-  // distance player has to travel for shadow map to update
-  static constexpr int updateDist = 4;
+  // distance player has to travel for shadow map and chunks to update
+  static constexpr int updateDist = 10;
   static constexpr float areaLength = 16 * 40;
 
   glm::vec2 riseTurn;  // rise and turn of sun angle

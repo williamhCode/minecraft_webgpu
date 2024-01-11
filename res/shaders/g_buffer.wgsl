@@ -58,9 +58,9 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
   // dont use mipmap if object is transparent 
   // this is to prevent messing up the alpha, since only translucent, not transparent objects are sorted
   if (transparency >= 2u) {
-    color = vec4f(textureSampleLevel(texture, textureSampler, uv, 0.0).rgba);
+    color = textureSampleLevel(texture, textureSampler, uv, 0.0);
   } else @diagnostic(off,derivative_uniformity) {
-    color = vec4f(textureSample(texture, textureSampler, uv).rgba);
+    color = textureSample(texture, textureSampler, uv);
   }
   if (color.a < 0.01) {
     discard;
