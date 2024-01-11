@@ -35,7 +35,8 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f, cascadeLevel: i32) -> 
   // let bias = max(0.001 * (1.0 - dot(normal, sunDir)), 0.0001);
 
   // increase bias for futher cascades (because quality is lower so more prone to visual artifacts)
-  let scale = (numCascades - 1) - cascadeLevel; 
+  // let scale = (numCascades - 1) - cascadeLevel; 
+  let scale = cascadeLevel; 
   let bias = 0.00005 + f32(scale) * 0.0001;
 
   // let depth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy, cascadeLevel, projCoords.z - bias);
@@ -64,9 +65,13 @@ fn ValidLightSpacePos(lightSpacePos: vec4f) -> bool {
 }
 
 fn ShadowDebug(cascadeLevel: i32, ambientOcclusion: f32) -> vec4f {
-  var out = vec4f(1.0);
+  if (cascadeLevel == -1) {
+    return vec4f(vec3f(1.0) * ambientOcclusion, 1.0);
+  }
+
+  var out = vec4f(0.1);
+  out += f32(cascadeLevel) * 0.2;
   out *= ambientOcclusion;
-  out -= f32(cascadeLevel + 1) * 0.2;
 
   out.a = 1.0;
   return out;
@@ -103,7 +108,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   // shadow mapping 
   var cascadeLevel = -1;
   var sunSpacePos: vec4f;
-  for (var i = numCascades - 1; i >= 0; i--) {
+  for (var i = 0; i < numCascades; i++) {
     sunSpacePos = sunViewProjs[i] * vec4f(position, 1.0);
     if (ValidLightSpacePos(sunSpacePos)) {
       cascadeLevel = i;

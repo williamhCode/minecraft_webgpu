@@ -361,8 +361,19 @@ void Renderer::Render() {
 
   CommandEncoder commandEncoder = m_ctx->device.CreateCommandEncoder();
   // shadow pass
+  if (m_state->sun.ShouldRenderFirst()) {
+    int i = 0;
+    RenderPassEncoder passEncoder =
+      commandEncoder.BeginRenderPass(&m_shadowPassDescs[i]);
+    passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);
+    passEncoder.SetBindGroup(0, m_cascadeIndicesBG[i]);
+    passEncoder.SetBindGroup(1, m_state->sun.bindGroup);
+    passEncoder.SetBindGroup(2, m_blocksTextureBindGroup);
+    m_state->chunkManager.RenderShadowMap(passEncoder, 3, i);
+    passEncoder.End();
+  }
   if (m_state->sun.ShouldRender()) {
-    for (size_t i = 0; i < Sun::numCascades; i++) {
+    for (size_t i = 1; i < Sun::numCascades; i++) {
       RenderPassEncoder passEncoder =
         commandEncoder.BeginRenderPass(&m_shadowPassDescs[i]);
       passEncoder.SetPipeline(m_ctx->pipeline.shadowRPL);

@@ -19,7 +19,7 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec2 riseTurn)
 
   glm::vec2 depth_range(1, 1024);
   auto halfLength = areaLength / 2;
-  for (size_t i = 0; i < numCascades; i++) {
+  for (int i = numCascades - 1; i >= 0; i--) {
     m_projs[i] = glm::ortho<float>(
       -halfLength, halfLength, -halfLength, halfLength, depth_range.x, depth_range.y
     );
@@ -65,6 +65,7 @@ void Sun::UpdateDirAndUp() {
 
 void Sun::InvokeUpdate() {
   shouldUpdate = true;
+  shouldUpdateFirst = true;
 }
 
 bool Sun::ShouldRender() {
@@ -75,25 +76,48 @@ bool Sun::ShouldRender() {
   return false;
 }
 
+bool Sun::ShouldRenderFirst() {
+  if (shouldRenderFirst) {
+    shouldRenderFirst = false;
+    return true;
+  }
+  return false;
+}
+
 void Sun::Update() {
   timeSinceUpdate += m_state->dt;
 
-  if (timeSinceUpdate > minTime && shouldUpdate) {
+  bool shouldUpdateRest = timeSinceUpdate > minTime && shouldUpdate;
+  if (shouldUpdateFirst || shouldUpdateRest) {
     UpdateDirAndUp();
     m_ctx->queue.WriteBuffer(m_sunDirBuffer, 0, &dir, sizeof(dir));
     auto view = GetView();
-    for (size_t i = 0; i < numCascades; i++) {
+
+    if (shouldUpdateFirst) {
+      int i = 0;
       m_viewProjs[i] = m_projs[i] * view;
       auto stride = sizeof(glm::mat4);
       m_ctx->queue.WriteBuffer(
         m_sunViewProjsBuffer, stride * i, &m_viewProjs[i], stride
       );
+
+      shouldUpdateFirst = false;
+      shouldRenderFirst = true;
     }
 
-    timeSinceUpdate = 0;
-    shouldUpdate = false;
+    if (shouldUpdateRest) {
+      for (size_t i = 1; i < numCascades; i++) {
+        m_viewProjs[i] = m_projs[i] * view;
+        auto stride = sizeof(glm::mat4);
+        m_ctx->queue.WriteBuffer(
+          m_sunViewProjsBuffer, stride * i, &m_viewProjs[i], stride
+        );
+      }
 
-    shouldRender = true;
+      timeSinceUpdate = 0;
+      shouldUpdate = false;
+      shouldRender = true;
+    }
   }
 }
 

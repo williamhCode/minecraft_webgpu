@@ -24,8 +24,11 @@ private:
   wgpu::Buffer m_sunDirBuffer;
   wgpu::Buffer m_sunViewProjsBuffer;
 
-  bool shouldRender = false;
-  bool shouldUpdate = false;
+  bool shouldRender;
+  bool shouldUpdate;
+
+  bool shouldRenderFirst;
+  bool shouldUpdateFirst;
 
   static constexpr float minTime = 0.3;  // time for shadow maps to update
 
@@ -52,6 +55,7 @@ public:
 
   void InvokeUpdate();
   bool ShouldRender();
+  bool ShouldRenderFirst();
 
   void Update();
   glm::vec3 GetDir() {
