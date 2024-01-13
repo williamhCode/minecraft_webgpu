@@ -37,7 +37,7 @@ private:
   glm::vec3 up;
 
   glm::mat4 GetView();
-  void UpdateDirAndUp();
+  void UpdateDirAndProj();
 
 public:
   // distance player has to travel for shadow map and chunks to update

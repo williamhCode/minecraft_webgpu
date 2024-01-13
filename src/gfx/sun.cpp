@@ -9,22 +9,23 @@
 
 #include "game.hpp"
 #include "util/webgpu-util.hpp"
+#include <iostream>
 
 namespace gfx {
 
 Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec2 riseTurn)
     : m_ctx(ctx), m_state(state), riseTurn(riseTurn) {
-  UpdateDirAndUp();
+  UpdateDirAndProj();
   m_sunDirBuffer = util::CreateUniformBuffer(m_ctx->device, sizeof(glm::vec3), &dir);
 
-  glm::vec2 depth_range(1, 1024);
-  auto halfLength = areaLength / 2;
-  for (int i = numCascades - 1; i >= 0; i--) {
-    m_projs[i] = glm::ortho<float>(
-      -halfLength, halfLength, -halfLength, halfLength, depth_range.x, depth_range.y
-    );
-    halfLength /= 2;
-  }
+  // glm::vec2 depth_range(1, 1024);
+  // auto halfLength = areaLength / 2;
+  // for (int i = numCascades - 1; i >= 0; i--) {
+  //   m_projs[i] = glm::ortho<float>(
+  //     -halfLength, halfLength, -halfLength, halfLength, depth_range.x, depth_range.y
+  //   );
+  //   halfLength /= 2;
+  // }
 
   m_sunViewProjsBuffer =
     util::CreateStorageBuffer(m_ctx->device, sizeof(glm::mat4) * numCascades);
@@ -47,20 +48,46 @@ Sun::Sun(gfx::Context *ctx, GameState *state, glm::vec2 riseTurn)
 glm::mat4 Sun::GetView() {
   const float distance = 512;
 
+  // get current block height at play pos
   auto centerPos = m_state->player.GetPosition();
-  centerPos.z = 100;
+  auto pos = centerPos;
+  pos.z = 0;
+  auto [currChunk, localPos] = *(m_state->chunkManager.GetChunkAndPos(pos));
+  for (int i = game::Chunk::SIZE.z - 1; i >= 0; i--) {
+    auto pos = localPos;
+    pos.z = i;
+    auto blockId = currChunk->GetBlock(pos);
+    if (blockId != game::BlockId::Air) {
+      centerPos.z = i + 1;
+      break;
+    }
+  }
   auto eyePos = centerPos + dir * distance;
 
   auto view = glm::lookAt(eyePos, centerPos, up);
   return view;
 }
 
-void Sun::UpdateDirAndUp() {
+void Sun::UpdateDirAndProj() {
   auto riseMat = glm::rotate(glm::radians(-riseTurn.x), glm::vec3(0, 1, 0));
   auto turnMat = glm::rotate(glm::radians(riseTurn.y), glm::vec3(0, 0, 1));
   auto transformMat = turnMat * riseMat;
   dir = transformMat * glm::vec4(1, 0, 0, 1);
   up = transformMat * glm::vec4(0, 0, 1, 1);
+
+  auto angle = glm::radians(90 - riseTurn.x);
+  auto scale = glm::cos(angle);
+  scale = glm::pow(scale, 0.4);
+
+  glm::vec2 depth_range(1, 1024);
+  auto halfLength = areaLength / 2;
+  for (int i = numCascades - 1; i >= 0; i--) {
+    auto vertHalfLength = halfLength * scale;
+    m_projs[i] = glm::ortho<float>(
+      -halfLength, halfLength, -vertHalfLength, vertHalfLength, depth_range.x, depth_range.y
+    );
+    halfLength /= 2;
+  }
 }
 
 void Sun::InvokeUpdate() {
@@ -89,7 +116,7 @@ void Sun::Update() {
 
   bool shouldUpdateRest = timeSinceUpdate > minTime && shouldUpdate;
   if (shouldUpdateFirst || shouldUpdateRest) {
-    UpdateDirAndUp();
+    UpdateDirAndProj();
     m_ctx->queue.WriteBuffer(m_sunDirBuffer, 0, &dir, sizeof(dir));
     auto view = GetView();
 

@@ -122,7 +122,7 @@ Game::Game() {
   new (&m_state.chunkManager) game::ChunkManager(&m_ctx, &m_state);
 
   // auto sunDir = glm::normalize(glm::vec3(1, 1, 1));
-  auto sunRiseTurn = glm::vec2(90, 0);
+  auto sunRiseTurn = glm::vec2(45, 0);
   m_state.sun = gfx::Sun(&m_ctx, &m_state, sunRiseTurn);
 
   m_state.currBlock = game::BlockId::Dirt;

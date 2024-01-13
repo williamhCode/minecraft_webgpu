@@ -1,16 +1,12 @@
 #include "chunk.hpp"
 #include "chunk_manager.hpp"
-#include "dawn/utils/Timer.h"
 #include "game/block.hpp"
 #include "game/direction.hpp"
 #include "game/mesh.hpp"
 #include "glm/ext/vector_uint3.hpp"
-#include "glm/gtx/string_cast.hpp"
 #include "util/webgpu-util.hpp"
 #include "dawn/utils/WGPUHelpers.h"
 #include "game.hpp"
-#include <iostream>
-#include <numeric>
 #include <vector>
 
 namespace game {
