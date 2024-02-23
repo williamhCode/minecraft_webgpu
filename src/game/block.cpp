@@ -8,7 +8,7 @@ namespace game {
 
 using namespace wgpu;
 
-const std::array<BlockType, 9> g_BLOCK_TYPES = {
+const std::array<BlockType, size_t(BlockId::Last)> g_BLOCK_TYPES = {
   // Air
   BlockType{.opaque = false},
   // Water
@@ -76,6 +76,12 @@ const std::array<BlockType, 9> g_BLOCK_TYPES = {
     },
     .opaque = false,
     .transparency = 3,
+  },
+  // light
+  BlockType{
+    .GetTextureLoc = [](Direction dir) -> glm::uvec2 {
+      return {1, 4};
+    },
   },
 };
 

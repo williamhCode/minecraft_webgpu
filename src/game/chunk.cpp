@@ -51,7 +51,7 @@ void Chunk::InitSharedData() {
 }
 
 void Chunk::UpdateMesh() {
-  // generate out of bound meshes from neighboring chunks
+  // generate out of bound blocks from neighboring chunks
   for (int x = -1; x <= 1; x++) {
     for (int y = -1; y <= 1; y++) {
       if (!x && !y) continue;
@@ -83,13 +83,13 @@ void Chunk::UpdateMesh() {
 
   for (size_t i_block = 0; i_block < VOLUME; i_block++) {
     const Cube &cube = m_cubeData[i_block];
-    BlockId id = m_blockIdData[i_block];
-    if (id == BlockId::Air) continue;
-    BlockType blockType = g_BLOCK_TYPES[(size_t)id];
+    BlockId blockId = m_blockIdData[i_block];
+    if (blockId == BlockId::Air) continue;
+    BlockType blockType = g_BLOCK_TYPES[(size_t)blockId];
     auto posOffset = IndexToPos(i_block);
 
     for (size_t i_face = 0; i_face < cube.faces.size(); i_face++) {
-      if (!ShouldRender(id, posOffset, (Direction)i_face)) continue;
+      if (!ShouldRender(blockId, posOffset, (Direction)i_face)) continue;
 
       const game::Face &faceSrc = cube.faces[i_face];
       Chunk::Face face;
@@ -117,18 +117,35 @@ void Chunk::UpdateMesh() {
         // 0 normal (2 bit x 3)
         // map (-1, 1) to (0, 2)
         glm::uvec3 normal = vertexSrc.normal + 1;
-        BitPackHelper(&attribs.data2).Set({
+        auto helper = BitPackHelper(&attribs.data2);
+        helper.Set({
           {normal.x, 2},
           {normal.y, 2},
           {normal.z, 2},
         });
+        if (blockId == BlockId::Light) {
+          helper.Set({
+            {255, 8},
+            {255, 8},
+            {255, 8},
+          });
+        }
       }
 
       FaceIndex faceIndex;
       for (size_t i = 0; i < g_FACE_INDICES.size(); i++) {
-        faceIndex.indices[i] = GetMeshData(id).faceNum * 4 + g_FACE_INDICES[i];
+        faceIndex.indices[i] = GetMeshData(blockId).faceNum * 4 + g_FACE_INDICES[i];
       }
-      GetMeshData(id).AddFace(face, faceIndex);
+
+      const std::array<uint32_t, 10> WIRE_FACE_INDICES = {
+        0, 1, 1, 2, 2, 3, 3, 0, 0, 2,
+      };
+      WireFaceIndex wireFaceIndex;
+      for (size_t i = 0; i < 10; i++) {
+        wireFaceIndex.indices[i] = GetMeshData(blockId).faceNum * 4 + WIRE_FACE_INDICES[i];
+      }
+
+      GetMeshData(blockId).AddFace(face, faceIndex, wireFaceIndex);
     }
   }
 
@@ -144,6 +161,15 @@ void Chunk::Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupInd
     m_opaqueData.ebo, IndexFormat::Uint32, 0, m_opaqueData.ebo.GetSize()
   );
   passEncoder.DrawIndexed(m_opaqueData.indices.size() * 6);
+}
+
+void Chunk::RenderWire(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex) {
+  passEncoder.SetBindGroup(groupIndex, bindGroup);
+  passEncoder.SetVertexBuffer(0, m_opaqueData.vbo, 0, m_opaqueData.vbo.GetSize());
+  passEncoder.SetIndexBuffer(
+    m_opaqueData.wireEbo, IndexFormat::Uint32, 0, m_opaqueData.wireEbo.GetSize()
+  );
+  passEncoder.DrawIndexed(m_opaqueData.indices.size() * 10);
 }
 
 void Chunk::RenderTranslucent(
@@ -193,6 +219,17 @@ void Chunk::RenderWater(
   passEncoder.DrawIndexed(m_waterData.indices.size() * 6);
 }
 
+void Chunk::RenderWaterWire(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
+  passEncoder.SetBindGroup(groupIndex, bindGroup);
+  passEncoder.SetVertexBuffer(0, m_waterData.vbo, 0, m_waterData.vbo.GetSize());
+  passEncoder.SetIndexBuffer(
+    m_waterData.wireEbo, IndexFormat::Uint32, 0, m_waterData.wireEbo.GetSize()
+  );
+  passEncoder.DrawIndexed(m_waterData.indices.size() * 10);
+}
+
 size_t Chunk::PosToIndex(glm::ivec3 pos) {
   return pos.x + pos.y * SIZE.x + pos.z * SIZE.x * SIZE.y;
 }
@@ -229,14 +266,14 @@ bool Chunk::ShouldRender(BlockId id, glm::ivec3 position, Direction direction) {
   }
 }
 
-bool Chunk::ShouldRender(BlockId id, glm::ivec3 position) {
-  auto neighborId = GetBlock(position);
+bool Chunk::ShouldRender(BlockId id, glm::ivec3 neighborPos) {
+  auto neighborId = GetBlock(neighborPos);
   switch (id) {
-  // blocks that don't render when it's facing its own type (blocks 'link' together)
   case BlockId::Water:
   case BlockId::Glass:
+    // non-opaque blocks that don't render when it's facing its own type (blocks 'link' together)
     return !g_BLOCK_TYPES[(size_t)neighborId].opaque && neighborId != id;
-  default:
+  default:  // render if neighbor is not-opaque
     return !g_BLOCK_TYPES[(size_t)neighborId].opaque;
   }
 }

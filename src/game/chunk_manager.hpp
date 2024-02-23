@@ -25,7 +25,7 @@ private:
 public:
   bool update = true;
 
-  int radius = 16;
+  int radius = 32;
   int max_gens = 4;
   std::unordered_map<glm::ivec2, std::unique_ptr<Chunk>> chunks;
 
@@ -35,6 +35,8 @@ public:
   void RenderShadowMap(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex, int cascadeLevel);
   void Render(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
   void RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+  void RenderWire(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+  void RenderWaterWire(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
 
   std::optional<Chunk *> GetChunk(glm::ivec2 offset);
   std::vector<Chunk *> GetChunkNeighbors(glm::ivec2 offset);

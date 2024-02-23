@@ -43,6 +43,8 @@ struct SSAO {
 
 class Renderer {
 private:
+  bool wireframe = false;
+
   gfx::Context *m_ctx;
   GameState *m_state;
 
@@ -57,6 +59,8 @@ private:
   // gbuffer
   // position (view-space), normal, color
   dawn::utils::ComboRenderPassDescriptor m_gBufferPassDesc;
+  dawn::utils::ComboRenderPassDescriptor m_gBufferWirePassDesc;
+  dawn::utils::ComboRenderPassDescriptor m_gBufferDepthPassDesc;
 
   // water
   dawn::utils::ComboRenderPassDescriptor m_waterPassDesc;

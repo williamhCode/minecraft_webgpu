@@ -8,6 +8,7 @@
 #include "game/player.hpp"
 #include "gfx/context.hpp"
 
+
 struct GameState {
   glm::uvec2 size;
   glm::uvec2 fb_size;

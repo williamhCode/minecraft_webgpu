@@ -103,6 +103,12 @@ Pipeline::Pipeline(gfx::Context &ctx) {
   ShaderModule shaderGBuffer =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer.wgsl", ctx.device);
 
+  ShaderModule shaderGBufferWire =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer_wire.wgsl", ctx.device);
+
+  ShaderModule shaderGBufferDepth =
+    util::LoadShaderModule(ROOT_DIR "/res/shaders/g_buffer_depth.wgsl", ctx.device);
+
   gBufferRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
     .layout = dawn::utils::MakePipelineLayout(
       ctx.device,
@@ -143,6 +149,75 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     }),
   }));
 
+  gBufferWireRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        cameraBGL,
+        textureBGL,
+        chunkBGL,
+      }
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderGBufferWire,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &chunkVBL,
+      },
+    .primitive =
+      PrimitiveState{
+        .topology = PrimitiveTopology::LineList,
+        .cullMode = CullMode::Back,
+      },
+    .depthStencil = ToPtr(DepthStencilState{
+      .format = ctx.depthFormat,
+      .depthWriteEnabled = true,
+      .depthCompare = CompareFunction::LessEqual,
+    }),
+    .fragment = ToPtr(FragmentState{
+      .module = shaderGBufferWire,
+      .entryPoint = "fs_main",
+      .targetCount = 3,
+      .targets = ToPtr<ColorTargetState>({
+        {.format = TextureFormat::RGBA16Float}, // position
+        {.format = TextureFormat::RGBA16Float}, // normal
+        {
+          .format = TextureFormat::BGRA8Unorm,
+          .blend = &util::BlendState::AlphaBlending,
+        }, // albedo
+      }),
+    }),
+  }));
+
+  gBufferDepthRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        cameraBGL,
+        textureBGL,
+        chunkBGL,
+      }
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderGBufferDepth,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &chunkVBL,
+      },
+    .primitive =
+      PrimitiveState{
+        .topology = PrimitiveTopology::TriangleList,
+        .cullMode = CullMode::Back,
+      },
+    .depthStencil = ToPtr(DepthStencilState{
+      .format = ctx.depthFormat,
+      .depthWriteEnabled = true,
+      .depthCompare = CompareFunction::LessEqual,
+    }),
+  }));
+
   // water pipeline --------------------------------------------------
   ShaderModule shaderWater =
     util::LoadShaderModule(ROOT_DIR "/res/shaders/water.wgsl", ctx.device);
@@ -167,6 +242,42 @@ Pipeline::Pipeline(gfx::Context &ctx) {
     .primitive =
       PrimitiveState{
         .topology = PrimitiveTopology::TriangleList,
+      },
+    .depthStencil = ToPtr(DepthStencilState{
+      .format = ctx.depthFormat,
+      .depthWriteEnabled = true,
+      .depthCompare = CompareFunction::Less,
+    }),
+    .fragment = ToPtr(FragmentState{
+      .module = shaderWater,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
+        {.format = TextureFormat::BGRA8Unorm},
+      }),
+    }),
+  }));
+
+  waterWireRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = dawn::utils::MakePipelineLayout(
+      ctx.device,
+      {
+        cameraBGL,
+        textureBGL,
+        sunBGL,
+        chunkBGL,
+      }
+    ),
+    .vertex =
+      VertexState{
+        .module = shaderWater,
+        .entryPoint = "vs_main",
+        .bufferCount = 1,
+        .buffers = &chunkVBL,
+      },
+    .primitive =
+      PrimitiveState{
+        .topology = PrimitiveTopology::LineList,
       },
     .depthStencil = ToPtr(DepthStencilState{
       .format = ctx.depthFormat,
@@ -236,7 +347,6 @@ Pipeline::Pipeline(gfx::Context &ctx) {
         .bufferCount = 1,
         .buffers = &quadVertexBufferLayout,
       },
-    .primitive = PrimitiveState{},
     .fragment = ToPtr(FragmentState{
       .module = shaderFragSsao,
       .entryPoint = "fs_main",

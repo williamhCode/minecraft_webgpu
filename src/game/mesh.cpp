@@ -41,7 +41,7 @@ const glm::uvec2 TEX_COORDS[] = {
 // clang-format on
 
 Cube g_CUBE;
-const std::array<uint32_t, 6> g_FACE_INDICES = {0, 1, 3, 2, 3, 1};
+const std::array<uint32_t, 6> g_FACE_INDICES = {0, 1, 2, 0, 2, 3};
 
 void InitMesh() {
   for (size_t i = 0; i < g_CUBE.faces.size(); i++) {

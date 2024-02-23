@@ -100,6 +100,27 @@ Renderer::Renderer(gfx::Context *ctx, GameState *state) : m_ctx(ctx), m_state(st
   m_gBufferPassDesc.cColorAttachments[1].clearValue = {0.0, 0.0, 0.0, 0.0};
   m_gBufferPassDesc.cColorAttachments[2].clearValue = {0.5, 0.8, 0.9, 1.0};
 
+  // wire pass desc
+  m_gBufferWirePassDesc = dawn::utils::ComboRenderPassDescriptor(
+    {
+      gBufferTextureViews[0],
+      gBufferTextureViews[1],
+      gBufferTextureViews[2],
+    },
+    depthTextureView
+  );
+  m_gBufferWirePassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
+  m_gBufferWirePassDesc.cDepthStencilAttachmentInfo.depthLoadOp = LoadOp::Load;
+  m_gBufferWirePassDesc.cDepthStencilAttachmentInfo.depthStoreOp = StoreOp::Discard;
+  // position (view-space), normal, color
+  m_gBufferWirePassDesc.cColorAttachments[0].clearValue = {0.0, 0.0, -10000, 0.0};
+  m_gBufferWirePassDesc.cColorAttachments[1].clearValue = {0.0, 0.0, 0.0, 0.0};
+  m_gBufferWirePassDesc.cColorAttachments[2].clearValue = {0.5, 0.8, 0.9, 1.0};
+
+  // depth pass desc
+  m_gBufferDepthPassDesc = dawn::utils::ComboRenderPassDescriptor({}, depthTextureView);
+  m_gBufferDepthPassDesc.UnsetDepthStencilLoadStoreOpsForFormat(ctx->depthFormat);
+
   // water pass ---------------------------------------------------
   TextureView waterTextureView =
     util::CreateRenderTexture(m_ctx->device, textureSize, TextureFormat::BGRA8Unorm)
@@ -283,13 +304,15 @@ void Renderer::ImguiRender() {
   if (!m_state->focused) {
     static bool isFirstFrame = true;
     if (isFirstFrame) {
-      ImGui::SetNextWindowPos(ImVec2(m_state->size.x - 300, 30));
+      ImGui::SetNextWindowPos(ImVec2(m_state->size.x - 320, 20));
       // ImGui::SetNextWindowSize(ImVec2(270, 200));
       isFirstFrame = false;
     }
 
     ImGui::Begin("Options");
     {
+      ImGui::Checkbox("Wireframe", &wireframe);
+
       // ssao options ---------------------------------------------
       bool tempEnabled = m_ssao.enabled;
       if (ImGui::Checkbox("##Hidden", &tempEnabled)) {
@@ -385,22 +408,50 @@ void Renderer::Render() {
     }
   }
   // gbuffer pass
-  {
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
-    passEncoder.SetPipeline(m_ctx->pipeline.gBufferRPL);
-    passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
-    passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
-    m_state->chunkManager.Render(passEncoder, 2);
-    passEncoder.End();
+  if (!wireframe) {
+    {
+      RenderPassEncoder passEncoder =
+        commandEncoder.BeginRenderPass(&m_gBufferPassDesc);
+      passEncoder.SetPipeline(m_ctx->pipeline.gBufferRPL);
+      passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
+      passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
+      m_state->chunkManager.Render(passEncoder, 2);
+      passEncoder.End();
+    }
+  } else {
+    {
+      RenderPassEncoder passEncoder =
+        commandEncoder.BeginRenderPass(&m_gBufferDepthPassDesc);
+      passEncoder.SetPipeline(m_ctx->pipeline.gBufferDepthRPL);
+      passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
+      passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
+      m_state->chunkManager.Render(passEncoder, 2);
+      passEncoder.End();
+    }
+    {
+      RenderPassEncoder passEncoder =
+        commandEncoder.BeginRenderPass(&m_gBufferWirePassDesc);
+      passEncoder.SetPipeline(m_ctx->pipeline.gBufferWireRPL);
+      passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
+      passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
+      m_state->chunkManager.RenderWire(passEncoder, 2);
+      passEncoder.End();
+    }
   }
   // water pass
   {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&m_waterPassDesc);
-    passEncoder.SetPipeline(m_ctx->pipeline.waterRPL);
+    if (wireframe)
+      passEncoder.SetPipeline(m_ctx->pipeline.waterWireRPL);
+    else
+      passEncoder.SetPipeline(m_ctx->pipeline.waterRPL);
     passEncoder.SetBindGroup(0, m_state->player.camera.bindGroup);
     passEncoder.SetBindGroup(1, m_blocksTextureBindGroup);
     passEncoder.SetBindGroup(2, m_state->sun.bindGroup);
-    m_state->chunkManager.RenderWater(passEncoder, 3);
+    if (wireframe)
+      m_state->chunkManager.RenderWaterWire(passEncoder, 3);
+    else
+      m_state->chunkManager.RenderWater(passEncoder, 3);
     passEncoder.End();
   }
   // ssao pass

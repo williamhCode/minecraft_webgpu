@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sys/types.h>
+#include <unordered_map>
 #include <vector>
 #include <array>
 #include <webgpu/webgpu_cpp.h>
@@ -54,6 +55,7 @@ public:
     // 30 transparency (2 bits)
     u_int32_t data1 = 0;
     // 0 normal (2 bit x 3)
+    // 6 color (8 bit x 3)
     u_int32_t data2 = 0;
   };
 
@@ -82,17 +84,21 @@ private:
   static std::array<Cube, VOLUME> m_cubeData;
 
   std::array<BlockId, VOLUME> m_blockIdData; // block data
+  // std::unordered_map<size_t, glm::vec3> m_lightColors;
 
   struct MeshData {
     std::vector<Face> faces;
     std::vector<FaceIndex> indices;
+    std::vector<WireFaceIndex> wireIndices;
     wgpu::Buffer vbo;
     wgpu::Buffer ebo;
+    wgpu::Buffer wireEbo;
     size_t faceNum;
 
     void Clear() {
       faces.clear();
       indices.clear();
+      wireIndices.clear();
       faceNum = 0;
     }
 
@@ -102,10 +108,20 @@ private:
       faceNum++;
     }
 
+    void AddFace(Face face, FaceIndex index, WireFaceIndex wireIndex) {
+      faces.push_back(face);
+      indices.push_back(index);
+      wireIndices.push_back(wireIndex);
+      faceNum++;
+    }
+
     void CreateBuffers(wgpu::Device &device) {
       vbo = util::CreateVertexBuffer(device, faces.size() * sizeof(Face), faces.data());
       ebo = util::CreateIndexBuffer(
         device, indices.size() * sizeof(FaceIndex), indices.data()
+      );
+      wireEbo = util::CreateIndexBuffer(
+        device, wireIndices.size() * sizeof(WireFaceIndex), wireIndices.data()
       );
     }
   };
@@ -130,12 +146,15 @@ public:
   void RenderTranslucent(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
   void RenderWater(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
 
+  void RenderWire(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+  void RenderWaterWire(const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex);
+
   static size_t PosToIndex(glm::ivec3 pos);
   static glm::ivec3 IndexToPos(size_t index);
   static bool ValidPos(glm::ivec3 pos);
   static bool ValidIndex(size_t index);
   bool ShouldRender(BlockId id, glm::ivec3 position, Direction direction);
-  bool ShouldRender(BlockId id, glm::ivec3 position);
+  bool ShouldRender(BlockId id, glm::ivec3 neighborPos);
   bool HasBlock(glm::ivec3 position);
   BlockId GetBlock(glm::ivec3 position);
   void SetBlock(glm::ivec3 position, BlockId blockId);

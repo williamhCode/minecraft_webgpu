@@ -61,7 +61,7 @@ Game::Game() {
   // m_state.size = {1400, 1000};
 
   m_window =
-    glfwCreateWindow(m_state.size.x, m_state.size.y, "Learn WebGPU", primary, NULL);
+    glfwCreateWindow(m_state.size.x, m_state.size.y, "Minecraft Clone", primary, NULL);
   if (!m_window) {
     std::cerr << "Could not open window!" << std::endl;
     std::exit(1);
@@ -80,7 +80,6 @@ Game::Game() {
 
   int FBWidth, FBHeight;
   glfwGetFramebufferSize(m_window, &FBWidth, &FBHeight);
-  // m_state.fbSize = {FBWidth, FBHeight};
   m_state.fb_size = {FBWidth, FBHeight};
 
   std::cout << "Window size: " << glm::to_string(m_state.size) << std::endl;
@@ -111,7 +110,7 @@ Game::Game() {
 
   // setup game state
   util::Camera camera(
-    &m_ctx, glm::vec3(0, 0.0, 105.0), glm::vec3(glm::radians(0.0f), 0, 0),
+    &m_ctx, glm::vec3(-52, 2.0, 101.5), glm::radians(glm::vec3(0, 15, -52)),
     glm::radians(50.0f), (float)m_state.size.x / m_state.size.y, 0.1, 2000
   );
   m_state.player = game::Player(camera);
@@ -150,7 +149,7 @@ Game::Game() {
       if (KeyPressed(GLFW_KEY_D)) moveDir.y -= 1;
       if (KeyPressed(GLFW_KEY_SPACE)) moveDir.z += 1;
       if (KeyPressed(GLFW_KEY_LEFT_SHIFT)) moveDir.z -= 1;
-      m_state.player.Move(moveDir * m_state.dt);
+      m_state.player.Move(moveDir, m_state.dt);
     }
     m_state.player.Update();
 
@@ -187,10 +186,7 @@ void Game::KeyCallback(int key, int scancode, int action, int mods) {
     }
     // any ctrl key
     if (mods & GLFW_MOD_CONTROL) {
-      if (m_state.player.speed == 10)
-        m_state.player.speed = 100;
-      else
-        m_state.player.speed = 10;
+      m_state.player.ToggleSpeed();
     }
 
     for (auto blockId = game::BlockId::Air; blockId < game::BlockId::Last;

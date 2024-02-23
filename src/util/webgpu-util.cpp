@@ -1,9 +1,8 @@
 #include "webgpu-util.hpp"
 #include "dawn/utils/WGPUHelpers.h"
 #include <iostream>
-#include <ostream>
 #include <fstream>
-// #include <cassert>
+#include <sstream>
 
 namespace util {
 // using namespace util;
@@ -79,13 +78,10 @@ ShaderModule LoadShaderModule(const fs::path &path, Device &device) {
   if (!file.is_open()) {
     throw std::runtime_error("Could not open shader file" + path.string());
   }
-  file.seekg(0, std::ios::end);
-  size_t size = file.tellg();
-  std::string shaderSource(size, ' ');
-  file.seekg(0);
-  file.read(shaderSource.data(), size);
+  std::stringstream buffer;
+  buffer << file.rdbuf();
 
-  return dawn::utils::CreateShaderModule(device, shaderSource.c_str());
+  return dawn::utils::CreateShaderModule(device, buffer.str());
 }
 
 // clang-format off

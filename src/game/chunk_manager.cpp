@@ -164,6 +164,28 @@ void ChunkManager::RenderWater(
   }
 }
 
+void ChunkManager::RenderWire(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
+  // opaque objects
+  for (auto offset : m_frustumOffsets) {
+    chunks[offset]->RenderWire(passEncoder, groupIndex);
+  }
+
+  // translucent objects
+  // for (auto offset : m_sortedFrustumOffsets) {
+  //   chunks[offset]->RenderTranslucent(passEncoder, groupIndex);
+  // }
+}
+
+void ChunkManager::RenderWaterWire(
+  const wgpu::RenderPassEncoder &passEncoder, uint32_t groupIndex
+) {
+  for (auto offset : m_frustumOffsets) {
+    chunks[offset]->RenderWaterWire(passEncoder, groupIndex);
+  }
+}
+
 std::optional<Chunk *> ChunkManager::GetChunk(glm::ivec2 offset) {
   const auto it = chunks.find(offset);
   if (it == chunks.end()) {

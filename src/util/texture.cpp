@@ -1,5 +1,7 @@
 #include "texture.hpp"
 
+#include "util/webgpu-util.hpp"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -14,31 +16,13 @@ namespace util {
 
 using namespace wgpu;
 
-Texture LoadTexture(gfx::Context &ctx, std::filesystem::path path) {
+Texture LoadTexture(wgpu::Device &device, std::filesystem::path path) {
   int width, height, channels;
   unsigned char *pixelData =
     stbi_load(path.string().c_str(), &width, &height, &channels, 4);
 
   Extent3D size{static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
-  
-  TextureDescriptor textureDesc{
-    .usage = TextureUsage::TextureBinding | TextureUsage::CopyDst,
-    .dimension = TextureDimension::e2D,
-    .size = size,
-    .format = TextureFormat::RGBA8Unorm,
-  };
-  Texture texture = ctx.device.CreateTexture(&textureDesc);
-
-  ImageCopyTexture destination{
-    .texture = texture,
-  };
-  TextureDataLayout source{
-    .bytesPerRow = 4 * size.width,
-    .rowsPerImage = size.height,
-  };
-  ctx.queue.WriteTexture(
-    &destination, pixelData, width * height * 4, &source, &size
-  );
+  Texture texture = util::CreateTexture(device, size, TextureFormat::RGBA8Unorm, pixelData);
 
   stbi_image_free(pixelData);
 

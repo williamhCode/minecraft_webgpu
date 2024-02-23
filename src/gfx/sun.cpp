@@ -77,7 +77,7 @@ void Sun::UpdateDirAndProj() {
 
   auto angle = glm::radians(90 - riseTurn.x);
   auto scale = glm::cos(angle);
-  scale = glm::pow(scale, 0.4);
+  scale = glm::pow(scale, 0.4);  // tone down the scaling a bit
 
   glm::vec2 depth_range(1, 1024);
   auto halfLength = areaLength / 2;

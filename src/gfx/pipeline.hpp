@@ -25,7 +25,10 @@ struct Pipeline {
   // render pipelines
   wgpu::RenderPipeline shadowRPL;
   wgpu::RenderPipeline gBufferRPL;
+  wgpu::RenderPipeline gBufferWireRPL;
+  wgpu::RenderPipeline gBufferDepthRPL;
   wgpu::RenderPipeline waterRPL;
+  wgpu::RenderPipeline waterWireRPL;
   wgpu::RenderPipeline ssaoRPL;
   wgpu::RenderPipeline blurRPL;
   wgpu::RenderPipeline compositeRPL;

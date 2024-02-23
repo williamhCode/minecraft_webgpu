@@ -8,8 +8,6 @@
 
 namespace gfx {
 
-struct Pipeline;
-
 struct Context {
   wgpu::Instance instance;
   wgpu::Surface surface;

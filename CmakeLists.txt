@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0...3.25)
+cmake_minimum_required(VERSION 3.25)
 
 project(
   LearnWebGPU
@@ -96,8 +96,8 @@ endif()
 
 if(XCODE)
   set_target_properties(App PROPERTIES
-      XCODE_GENERATE_SCHEME ON
-      XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
+    XCODE_GENERATE_SCHEME ON
+    XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
   )
   set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
 endif()

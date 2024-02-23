@@ -68,9 +68,6 @@ fn fs_main(in: VertexOutput) -> GBufferOutput {
     } else @diagnostic(off,derivative_uniformity) {
       color = textureSample(texture, textureSampler, uv);
     }
-    if (color.a < 0.01) {
-      discard;
-    }
   }
 
   out.albedo = color;

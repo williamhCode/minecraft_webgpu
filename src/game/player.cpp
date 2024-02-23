@@ -5,6 +5,7 @@
 namespace game {
 
 Player::Player(util::Camera &camera) : camera(camera) {
+  ToggleSpeed();
 }
 
 void Player::Look(glm::vec2 delta) {
@@ -13,10 +14,19 @@ void Player::Look(glm::vec2 delta) {
   camera.orientation.y = std::max(-pi_4, std::min(camera.orientation.y, pi_4));
 }
 
-void Player::Move(glm::vec3 moveDir) {
-  moveDir *= speed;
+void Player::Move(glm::vec3 moveDir, float dt) {
+  moveDir *= speed * dt;
   moveDir = glm::rotateZ(moveDir, camera.orientation.z);
   camera.position += moveDir;
+}
+
+void Player::ToggleSpeed() {
+  if (slow) {
+    speed = 100;
+  } else {
+    speed = 20;
+  }
+  slow = !slow;
 }
 
 void Player::Update() {

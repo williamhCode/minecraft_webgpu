@@ -16,7 +16,6 @@
 @group(3) @binding(2) var shadowMaps: texture_depth_2d_array;
 @group(3) @binding(3) var shadowSampler: sampler_comparison;
 
-
 fn Blend(src: vec4f, dst: vec4f) -> vec4f {
   let outAlpha = dst.a;
   let outColor = src.rgb * src.a + dst.rgb * (1.0 - src.a);
@@ -31,17 +30,13 @@ fn ShadowCalculation(lightSpacePos: vec4f, normal: vec3f, cascadeLevel: i32) -> 
     lightSpacePos.z
   );
 
-
   // let bias = max(0.001 * (1.0 - dot(normal, sunDir)), 0.0001);
 
   // increase bias for futher cascades (because quality is lower so more prone to visual artifacts)
-  // let scale = (numCascades - 1) - cascadeLevel; 
   let scale = cascadeLevel; 
   let bias = 0.00005 + f32(scale) * 0.0001;
 
-  // let depth = textureSampleCompareLevel(shadowMaps, shadowSampler, projCoords.xy, cascadeLevel, projCoords.z - bias);
-
-  // sample over 3x3 area instead
+  // sample over 3x3 area
   var depth = 0.0;
   let texelSize = vec2f(1.0) / vec2f(textureDimensions(shadowMaps));
   for (var x = -1; x <= 1; x++) {
@@ -127,6 +122,8 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   //   return vec4f(ambientOcclusion, ambientOcclusion, ambientOcclusion, 1.0);
   // }
 
+  // let color = albedo * (ambient);
+  // let color = albedo * (ambient + diffuse);
   let color = albedo * (ambient + diffuse * shadow);
   var finalColor = vec4f(color, 1.0);
 

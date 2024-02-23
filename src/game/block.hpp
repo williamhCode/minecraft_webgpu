@@ -22,6 +22,8 @@ enum class BlockId : uint8_t {
   // transparent
   Leaf,
   Glass,
+  // special
+  Light,
 
   Last,
 };
@@ -44,7 +46,7 @@ struct BlockType {
   unsigned char transparency = 0;
 };
 
-const extern std::array<BlockType, 9> g_BLOCK_TYPES;
+const extern std::array<BlockType, (size_t)BlockId::Last> g_BLOCK_TYPES;
 
 wgpu::BindGroup CreateBlocksTexture(gfx::Context &ctx);
 

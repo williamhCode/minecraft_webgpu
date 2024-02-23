@@ -24,6 +24,10 @@ struct FaceIndex {
   std::array<uint32_t, 6> indices;
 };
 
+struct WireFaceIndex {
+  std::array<uint32_t, 10> indices;
+};
+
 extern Cube g_CUBE;
 extern const std::array<uint32_t, 6> g_FACE_INDICES;
 
